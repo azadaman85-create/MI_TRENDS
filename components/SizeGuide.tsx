@@ -122,6 +122,7 @@ export function SizeGuide({ open, onClose, productType = "T-shirt" }: SizeGuideP
         .size-guide__dialog {
           width: min(600px, 100%);
           max-height: min(760px, calc(100vh - 40px));
+          max-height: min(760px, calc(100dvh - 40px));
           overflow: auto;
           border-radius: 16px;
           background: #fff;
@@ -150,7 +151,7 @@ export function SizeGuide({ open, onClose, productType = "T-shirt" }: SizeGuideP
         @keyframes rise { from { transform: translateY(16px); opacity: 0; } }
         @media (max-width: 520px) {
           .size-guide { align-items: end; padding: 0; }
-          .size-guide__dialog { max-height: 88vh; border-radius: 18px 18px 0 0; padding: 22px 18px calc(22px + env(safe-area-inset-bottom)); }
+          .size-guide__dialog { max-height: 88vh; max-height: 88dvh; border-radius: 18px 18px 0 0; padding: 22px 18px calc(22px + env(safe-area-inset-bottom)); }
         }
         @media (prefers-reduced-motion: reduce) { .size-guide, .size-guide__dialog { animation: none; } }
       `}</style>

@@ -46,7 +46,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
 
   if (!ready || !user) {
     return (
-      <div style={{ display: "grid", placeItems: "center", minHeight: "100vh", gap: 14 }}>
+      <div style={{ display: "grid", placeItems: "center", minHeight: "100dvh", gap: 14 }}>
         <span className="admin-brand-mark" style={{ background: "var(--ink)", color: "var(--white)" }} aria-hidden="true">
           MI
         </span>

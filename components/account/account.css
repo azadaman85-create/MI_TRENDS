@@ -7,6 +7,7 @@
   display: grid;
   grid-template-columns: 1.02fr 1fr;
   min-height: calc(100vh - 180px);
+  min-height: calc(100dvh - 180px);
 }
 
 .acct__art {

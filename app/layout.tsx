@@ -9,6 +9,9 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
+  // Without `cover`, env(safe-area-inset-*) resolves to 0 on iOS, and the fixed
+  // bottom bars (tab bar, product buy bar) end up under the home indicator.
+  viewportFit: "cover",
   themeColor: "#171716",
 };
 
