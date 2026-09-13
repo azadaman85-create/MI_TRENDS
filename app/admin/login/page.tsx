@@ -7,7 +7,7 @@ import { useEffect, useState, type FormEvent } from "react";
 
 import { Button } from "@/components/admin/ui/Button";
 import { Input } from "@/components/admin/ui/Field";
-import { DEMO_EMAIL, DEMO_PASSWORD, useAdminAuth } from "@/lib/admin/auth";
+import { useAdminAuth } from "@/lib/admin/auth";
 import { shakeAnimation, smooth, spring } from "@/lib/admin/motion";
 
 export default function AdminLoginPage() {
@@ -228,13 +228,6 @@ export default function AdminLoginPage() {
               {!submitting && !success ? <ArrowRight size={16} aria-hidden="true" /> : null}
             </Button>
           </form>
-
-          <div className="admin-login__hint">
-            <strong className="a-micro" style={{ display: "block", marginBottom: 4, color: "var(--ink)" }}>
-              Demo credentials
-            </strong>
-            Email <code>{DEMO_EMAIL}</code> · Password <code>{DEMO_PASSWORD}</code>
-          </div>
 
           <p className="admin-login__foot" style={{ display: "flex", alignItems: "center", gap: 7 }}>
             <ShieldCheck size={14} aria-hidden="true" />

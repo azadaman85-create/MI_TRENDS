@@ -7,12 +7,49 @@ const SESSION_KEY = "mitrends-admin-session-v2";
 const LEGACY_SESSION_KEYS = ["mitrends-admin-session-v1"];
 
 /**
- * Demo credentials. The storefront has no backend in this project, so the panel ships
- * with a local session instead of a real identity provider — swap `signIn` for an API
- * call when one exists.
+ * Super admin identity.
+ *
+ * There is no backend in this project, so the panel verifies the password in the
+ * browser. That means this is NOT a real security boundary — anyone can edit the
+ * client bundle to walk past it. What it does guarantee is that the password
+ * itself is never written down: only a salted SHA-256 digest is ever compared,
+ * and the digest lives in env rather than in the repository.
+ *
+ * Set these in `.env.local` (gitignored). Replace `signIn` with a server call the
+ * moment a real identity provider exists.
  */
-export const DEMO_EMAIL = "admin@mitrends.in";
-export const DEMO_PASSWORD = "mitrends2026";
+export const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "").trim().toLowerCase();
+export const ADMIN_NAME = process.env.NEXT_PUBLIC_ADMIN_NAME ?? "Admin";
+
+const ADMIN_PASSWORD_SALT = process.env.NEXT_PUBLIC_ADMIN_PASSWORD_SALT ?? "";
+const ADMIN_PASSWORD_HASH = process.env.NEXT_PUBLIC_ADMIN_PASSWORD_HASH ?? "";
+
+/** True when the four env vars above are present, so the UI can explain itself. */
+export const ADMIN_CONFIGURED = Boolean(ADMIN_EMAIL && ADMIN_PASSWORD_SALT && ADMIN_PASSWORD_HASH);
+
+/** Same construction as the storefront account store: SHA-256 over `salt:password`. */
+async function hashPassword(password: string, salt: string) {
+  const data = new TextEncoder().encode(`${salt}:${password}`);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/** Length-constant compare so a wrong password cannot be timed character by character. */
+function safeEqual(a: string, b: string) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+/** Initials for the avatar, derived from the configured name. */
+function initialsFor(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "AD";
+  const first = parts[0]![0] ?? "";
+  const last = parts.length > 1 ? (parts[parts.length - 1]![0] ?? "") : (parts[0]![1] ?? "");
+  return (first + last).toUpperCase();
+}
 
 export type AdminUser = {
   name: string;
@@ -55,15 +92,23 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     // Simulated round trip so the loading state is visible and honest about latency.
     await new Promise((resolve) => setTimeout(resolve, 850));
 
-    if (email.trim().toLowerCase() !== DEMO_EMAIL || password !== DEMO_PASSWORD) {
+    if (!ADMIN_CONFIGURED) {
+      return {
+        ok: false,
+        message: "No admin account is configured. Set NEXT_PUBLIC_ADMIN_* in .env.local.",
+      };
+    }
+
+    const attempted = await hashPassword(password, ADMIN_PASSWORD_SALT);
+    if (email.trim().toLowerCase() !== ADMIN_EMAIL || !safeEqual(attempted, ADMIN_PASSWORD_HASH)) {
       return { ok: false, message: "Those credentials do not match an admin account." };
     }
 
     const nextUser: AdminUser = {
-      name: "Demo Admin",
-      email: DEMO_EMAIL,
-      role: "Store owner",
-      initials: "DA",
+      name: ADMIN_NAME,
+      email: ADMIN_EMAIL,
+      role: "Super admin",
+      initials: initialsFor(ADMIN_NAME),
     };
 
     setUser(nextUser);

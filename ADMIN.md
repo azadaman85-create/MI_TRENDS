@@ -8,12 +8,29 @@ specified in *MI TRENDS Admin Panel Design Requirements* (sections 51–71).
 | | |
 |---|---|
 | Login | http://localhost:3000/admin/login |
-| Email | `admin@mitrends.in` |
-| Password | `mitrends2026` |
+| Credentials | Configured per environment — see below |
 
-The storefront has no backend in this project, so the panel ships with a local session
-(`lib/admin/auth.tsx`) instead of a real identity provider. Swap `signIn()` for an API call when
-one exists; the route guard in `app/admin/(panel)/layout.tsx` stays the same.
+The super admin identity comes from four env vars, set in `.env.local` (gitignored) and listed
+without values in `.env.example`:
+
+| Variable | Holds |
+|---|---|
+| `NEXT_PUBLIC_ADMIN_EMAIL` | The sign-in address |
+| `NEXT_PUBLIC_ADMIN_NAME` | Display name, shown in the topbar and used for the avatar initials |
+| `NEXT_PUBLIC_ADMIN_PASSWORD_SALT` | Random per-install salt |
+| `NEXT_PUBLIC_ADMIN_PASSWORD_HASH` | SHA-256 of `salt:password` |
+
+Generate a fresh pair after any password change:
+
+```bash
+node -e 'const c=require("crypto");const s=c.randomBytes(16).toString("hex");console.log("salt",s);console.log("hash",c.createHash("sha256").update(s+":"+process.argv[1]).digest("hex"))' 'YOUR_PASSWORD'
+```
+
+**This is not a real security boundary.** The project has no backend, so `lib/admin/auth.tsx`
+compares the digest in the browser, and anyone can edit the client bundle to walk past it. Storing
+a salted digest rather than the password only ensures the password itself is never written into the
+repository or the bundle. Swap `signIn()` for a server call the moment a real identity provider
+exists; the route guard in `app/admin/(panel)/layout.tsx` stays the same.
 
 ## Screens
 
