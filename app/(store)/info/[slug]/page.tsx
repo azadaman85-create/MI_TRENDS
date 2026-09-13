@@ -417,11 +417,11 @@ function AccountBody() {
   return (
     <div className="account-body">
       <div className="account-icon"><UserRound size={26} /></div>
-      <p className="account-copy">Create a MI TRENDS account to keep your wishlist, orders and addresses in one place — or carry on and check out as a guest with just your delivery details.</p>
+      <p className="account-copy">You need a MI TRENDS account to place an order. It keeps your bag, wishlist, delivery details and order history in one place.</p>
       <div className="account-links">
         <Link href="/account/login"><UserRound size={17} /><span>Sign in to your account</span><ArrowRight size={15} /></Link>
         <Link href="/account/signup"><Sparkles size={17} /><span>Create an account</span><ArrowRight size={15} /></Link>
-        <Link href="/info/track-order"><Package size={17} /><span>Track an order as a guest</span><ArrowRight size={15} /></Link>
+        <Link href="/info/track-order"><Package size={17} /><span>Track an order</span><ArrowRight size={15} /></Link>
         <Link href="/shop"><ShieldCheck size={17} /><span>Continue shopping</span><ArrowRight size={15} /></Link>
       </div>
     </div>
@@ -437,7 +437,7 @@ export default function InfoPage() {
     faqs: { header: { eyebrow: "Quick answers", title: "FREQUENTLY\nASKED.", intro: "Everything most people ask before or after ordering.", sections: [] }, body: <FaqsBody /> },
     "track-order": { header: { eyebrow: "Where's my order", title: "TRACK YOUR\nORDER.", intro: "Enter your order ID to see the latest status.", sections: [] }, body: <TrackOrderBody /> },
     "size-guide": { header: { eyebrow: "Find your fit", title: "SIZE\nGUIDE.", intro: "Measurements are in inches unless noted, for the most reliable fit.", sections: [] }, body: <SizeGuideBody /> },
-    account: { header: { eyebrow: "Your account", title: "YOUR MI TRENDS\nACCOUNT.", intro: "Sign in for saved wishlists and order history, or keep checking out as a guest.", sections: [] }, body: <AccountBody /> },
+    account: { header: { eyebrow: "Your account", title: "YOUR MI TRENDS\nACCOUNT.", intro: "Sign in to shop — your bag, wishlist and order history live here.", sections: [] }, body: <AccountBody /> },
   };
 
   let header: PageContent | null = null;

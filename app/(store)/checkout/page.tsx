@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Banknote, Check, ChevronDown, LockKeyhole, MapPin, ShieldCheck, Smartphone, Truck } from "lucide-react";
 import { ProductVisual } from "@/components/ProductVisual";
 import { useStore } from "@/components/StoreProvider";
+import { useCustomer } from "@/lib/account/auth";
 import { pushOrderToAdmin } from "@/lib/order-inbox";
 import { codPlanFor, DEFAULT_STORE_SETTINGS, readStoreSettings, type StoreSettings } from "@/lib/store-settings";
 import type { Order, PaymentMode } from "@/lib/admin/types";
@@ -23,6 +24,7 @@ type PaymentMethod = "upi" | "cod";
 export default function CheckoutPage() {
   const store = useStore();
   const router = useRouter();
+  const { customer, ready } = useCustomer();
   const [payment, setPayment] = useState<PaymentMethod>("upi");
   // Checkout rules come from the admin panel; defaults apply until they load.
   const [settings, setSettings] = useState<StoreSettings>(DEFAULT_STORE_SETTINGS);
@@ -31,6 +33,11 @@ export default function CheckoutPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSettings(readStoreSettings());
   }, []);
+
+  // Checkout is for account holders: send everyone else to sign up first.
+  useEffect(() => {
+    if (ready && !customer) router.replace("/account/signup?next=/checkout");
+  }, [ready, customer, router]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const subtotal = store.cartLines.reduce((sum, line) => sum + line.product.price * line.quantity, 0);
@@ -154,6 +161,21 @@ export default function CheckoutPage() {
     }, 500);
   };
 
+  if (!ready || !customer) {
+    return (
+      <div className="checkout-empty">
+        <span>{ready ? "Account needed" : "Checking your account"}</span>
+        <h1>{ready ? "Sign up to check out." : "One moment."}</h1>
+        <p>
+          {ready
+            ? "MI TRENDS orders are tied to an account so you can track delivery and returns. Creating one takes a few seconds — your bag is waiting."
+            : "Bringing up your details."}
+        </p>
+        {ready && <Link href="/account/signup?next=/checkout">Create an account</Link>}
+      </div>
+    );
+  }
+
   if (!store.cartLines.length) {
     return (
       <div className="checkout-empty">
@@ -184,9 +206,9 @@ export default function CheckoutPage() {
             <section className="panel">
               <div className="panel-title"><b>01</b><div><span>Your details</span><h2>Contact</h2></div></div>
               <div className="fields two-col">
-                <label><span>Full name</span><input name="name" autoComplete="name" aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? "name-error" : undefined} placeholder="Your full name" onChange={() => setErrors((old) => ({ ...old, name: "" }))} />{fieldError("name")}</label>
-                <label><span>Mobile number</span><div className="phone"><i>+91</i><input name="mobile" inputMode="numeric" autoComplete="tel" maxLength={10} aria-invalid={Boolean(errors.mobile)} aria-describedby={errors.mobile ? "mobile-error" : undefined} placeholder="10-digit number" onChange={() => setErrors((old) => ({ ...old, mobile: "" }))} /></div>{fieldError("mobile")}</label>
-                <label className="full"><span>Email address</span><input name="email" type="email" autoComplete="email" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? "email-error" : undefined} placeholder="you@example.com" onChange={() => setErrors((old) => ({ ...old, email: "" }))} />{fieldError("email")}<small>Order updates and your invoice will arrive here.</small></label>
+                <label><span>Full name</span><input name="name" defaultValue={customer.name} autoComplete="name" aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? "name-error" : undefined} placeholder="Your full name" onChange={() => setErrors((old) => ({ ...old, name: "" }))} />{fieldError("name")}</label>
+                <label><span>Mobile number</span><div className="phone"><i>+91</i><input name="mobile" defaultValue={(customer.phone ?? "").replace(/\D/g, "").slice(-10)} inputMode="numeric" autoComplete="tel" maxLength={10} aria-invalid={Boolean(errors.mobile)} aria-describedby={errors.mobile ? "mobile-error" : undefined} placeholder="10-digit number" onChange={() => setErrors((old) => ({ ...old, mobile: "" }))} /></div>{fieldError("mobile")}</label>
+                <label className="full"><span>Email address</span><input name="email" type="email" defaultValue={customer.email} autoComplete="email" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? "email-error" : undefined} placeholder="you@example.com" onChange={() => setErrors((old) => ({ ...old, email: "" }))} />{fieldError("email")}<small>Order updates and your invoice will arrive here.</small></label>
               </div>
             </section>
 

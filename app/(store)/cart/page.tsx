@@ -7,12 +7,14 @@ import { products } from "@/lib/catalog";
 import { ProductVisual } from "@/components/ProductVisual";
 import { ProductCard } from "@/components/ProductCard";
 import { useStore } from "@/components/StoreProvider";
+import { useCustomer } from "@/lib/account/auth";
 
 const money = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 const FREE_SHIPPING = 999;
 
 export default function CartPage() {
   const store = useStore();
+  const { customer } = useCustomer();
   const [couponInput, setCouponInput] = useState(store.couponCode || "");
   const [couponMessage, setCouponMessage] = useState("");
   const cart = store.cartLines;
@@ -125,7 +127,7 @@ export default function CartPage() {
               <div className="total"><dt>Total to pay</dt><dd>{money.format(total)}</dd></div>
             </dl>
             <p className="total-saving">You save {money.format(productDiscount + couponDiscount)} on this order</p>
-            <Link className="checkout" href="/checkout">Secure checkout <span>{money.format(total)}</span></Link>
+            <Link className="checkout" href={customer ? "/checkout" : "/account/signup?next=/checkout"}>{customer ? "Secure checkout" : "Sign up to check out"} <span>{money.format(total)}</span></Link>
             <div className="secure"><ShieldCheck size={16} /><span><strong>Safe & secure payments</strong>Your information stays protected.</span></div>
           </div>
         </aside>

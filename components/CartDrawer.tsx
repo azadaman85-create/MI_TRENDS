@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { useStore } from "@/components/StoreProvider";
+import { useCustomer } from "@/lib/account/auth";
 import { money } from "@/lib/format";
 
 const FREE_SHIPPING_AT = 999;
@@ -26,6 +27,7 @@ export function CartDrawer() {
     updateQuantity,
     removeFromCart,
   } = useStore();
+  const { customer } = useCustomer();
 
   if (!drawerOpen) return null;
 
@@ -206,10 +208,10 @@ export function CartDrawer() {
               </p>
               <Link
                 className="button button-primary button-full"
-                href="/checkout"
+                href={customer ? "/checkout" : "/account/signup?next=/checkout"}
                 onClick={closeCart}
               >
-                Checkout
+                {customer ? "Checkout" : "Sign up to check out"}
                 <ArrowRight aria-hidden="true" size={17} />
               </Link>
               <Link

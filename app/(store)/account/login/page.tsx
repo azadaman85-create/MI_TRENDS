@@ -145,8 +145,8 @@ function LoginContent() {
       </p>
 
       <p className="acct__legal">
-        Prefer not to sign in? You can still{" "}
-        <Link href="/checkout">check out as a guest</Link>.
+        An account is needed to place an order — it keeps your bag, delivery details and
+        order history together.
       </p>
     </AuthShell>
   );
