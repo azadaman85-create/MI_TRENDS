@@ -110,11 +110,20 @@ export function CartDrawer() {
                       className="cart-line-art"
                       role="img"
                       aria-label={`${line.product.name} in ${line.color.name}`}
-                      style={{
-                        background: `linear-gradient(145deg, ${line.product.palette[0]}, ${line.product.palette[1]} 58%, ${line.product.palette[2]})`,
-                      }}
+                      style={
+                        line.product.imageUrl
+                          ? undefined
+                          : {
+                              background: `linear-gradient(145deg, ${line.product.palette[0]}, ${line.product.palette[1]} 58%, ${line.product.palette[2]})`,
+                            }
+                      }
                     >
-                      <span aria-hidden="true">{line.product.art}</span>
+                      {line.product.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={line.product.imageUrl} alt="" loading="lazy" />
+                      ) : (
+                        <span aria-hidden="true">{line.product.art}</span>
+                      )}
                     </span>
                   </Link>
 

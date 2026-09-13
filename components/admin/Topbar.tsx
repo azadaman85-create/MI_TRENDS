@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { CommandPalette } from "@/components/admin/CommandPalette";
 import { Button } from "@/components/admin/ui/Button";
@@ -80,12 +80,77 @@ export function Topbar({
   const profileRef = useRef<HTMLDivElement>(null);
   const bellRef = useRef<HTMLDivElement>(null);
 
-  const pendingOrders = orders.filter((order) => order.status === "pending");
-  const pendingReviews = reviews.filter((review) => review.status === "pending");
-  const lowStock = products.filter(
-    (product) => Object.values(product.stock).reduce((sum, units) => sum + units, 0) <= 12,
-  );
-  const notificationCount = pendingOrders.length + pendingReviews.length;
+  /**
+   * One list drives both the badge and the panel, so the count can never disagree with
+   * what is listed. Everything here is derived from live store state — nothing seeded.
+   */
+  const notifications = useMemo(() => {
+    const items: {
+      id: string;
+      href: string;
+      icon: typeof ShoppingCart;
+      body: ReactNode;
+      at: string | null;
+    }[] = [];
+
+    orders
+      .filter((order) => order.status === "pending")
+      .slice(0, 6)
+      .forEach((order) =>
+        items.push({
+          id: `order-${order.id}`,
+          href: `/admin/orders/${order.id}`,
+          icon: ShoppingCart,
+          body: (
+            <>
+              <strong>{order.id}</strong> from {order.customerName} needs confirmation.
+            </>
+          ),
+          at: order.placedAt,
+        }),
+      );
+
+    reviews
+      .filter((review) => review.status === "pending")
+      .slice(0, 4)
+      .forEach((review) =>
+        items.push({
+          id: `review-${review.id}`,
+          href: "/admin/reviews",
+          icon: Star,
+          body: (
+            <>
+              {review.rating}★ review waiting on <strong>{review.productName}</strong>.
+            </>
+          ),
+          at: review.createdAt,
+        }),
+      );
+
+    const lowStock = products.filter(
+      (product) => Object.values(product.stock).reduce((sum, units) => sum + units, 0) <= 12,
+    );
+    if (lowStock.length) {
+      items.push({
+        id: "low-stock",
+        href: "/admin/inventory",
+        icon: Warehouse,
+        body: (
+          <>
+            <strong>
+              {lowStock.length} {lowStock.length === 1 ? "product is" : "products are"}
+            </strong>{" "}
+            at or below the low-stock threshold.
+          </>
+        ),
+        at: null,
+      });
+    }
+
+    return items;
+  }, [orders, reviews, products]);
+
+  const notificationCount = notifications.length;
 
   useEffect(() => {
     const onClick = (event: MouseEvent) => {
@@ -187,57 +252,32 @@ export function Topbar({
               </header>
 
               <div style={{ maxHeight: 330, overflowY: "auto" }}>
-                {pendingOrders.slice(0, 4).map((order) => (
-                  <Link
-                    key={order.id}
-                    className="admin-notification"
-                    href={`/admin/orders/${order.id}`}
-                    onClick={() => setNotificationsOpen(false)}
+                {notifications.length === 0 ? (
+                  <p
+                    className="a-muted"
+                    style={{ padding: "26px 18px", textAlign: "center", fontSize: "0.8rem", lineHeight: 1.6 }}
                   >
-                    <span className="admin-notification__icon">
-                      <ShoppingCart size={15} aria-hidden="true" />
-                    </span>
-                    <div>
-                      <p>
-                        <strong>{order.id}</strong> from {order.customerName} needs confirmation.
-                      </p>
-                      <time>{formatRelative(order.placedAt)}</time>
-                    </div>
-                  </Link>
-                ))}
-
-                {pendingReviews.slice(0, 3).map((review) => (
-                  <Link
-                    key={review.id}
-                    className="admin-notification"
-                    href="/admin/reviews"
-                    onClick={() => setNotificationsOpen(false)}
-                  >
-                    <span className="admin-notification__icon">
-                      <Star size={15} aria-hidden="true" />
-                    </span>
-                    <div>
-                      <p>
-                        {review.rating}★ review waiting on <strong>{review.productName}</strong>.
-                      </p>
-                      <time>{formatRelative(review.createdAt)}</time>
-                    </div>
-                  </Link>
-                ))}
-
-                {lowStock.length > 0 ? (
-                  <Link className="admin-notification" href="/admin/inventory" onClick={() => setNotificationsOpen(false)}>
-                    <span className="admin-notification__icon">
-                      <Warehouse size={15} aria-hidden="true" />
-                    </span>
-                    <div>
-                      <p>
-                        <strong>{lowStock.length} products</strong> are at or below the low-stock threshold.
-                      </p>
-                      <time>Updated today</time>
-                    </div>
-                  </Link>
-                ) : null}
+                    You&apos;re all caught up. New orders, reviews awaiting a decision and
+                    low-stock warnings show up here.
+                  </p>
+                ) : (
+                  notifications.map((item) => (
+                    <Link
+                      key={item.id}
+                      className="admin-notification"
+                      href={item.href}
+                      onClick={() => setNotificationsOpen(false)}
+                    >
+                      <span className="admin-notification__icon">
+                        <item.icon size={15} aria-hidden="true" />
+                      </span>
+                      <div>
+                        <p>{item.body}</p>
+                        <time>{item.at ? formatRelative(item.at) : "Updated just now"}</time>
+                      </div>
+                    </Link>
+                  ))
+                )}
               </div>
             </motion.div>
           ) : null}

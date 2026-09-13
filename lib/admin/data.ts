@@ -141,7 +141,14 @@ function timelineFor(status: OrderStatus, placedAt: string) {
   });
 }
 
-export const orders: Order[] = Array.from({ length: 184 }, (_, index) => {
+/**
+ * Sample order history is off: the panel starts with an empty order book and fills up
+ * from real storefront checkouts. Flip this to true to regenerate the 184 demo orders.
+ */
+const DEMO_ORDERS = false;
+
+function generateDemoOrders(): Order[] {
+  return Array.from({ length: 184 }, (_, index) => {
   const random = rng(index * 53 + 29);
   const customer = customers[Math.floor(random() * customers.length)];
   const lineCount = Math.floor(random() * 3) + 1;
@@ -211,7 +218,10 @@ export const orders: Order[] = Array.from({ length: 184 }, (_, index) => {
     },
     timeline: timelineFor(status, placedAt),
   };
-}).sort((a, b) => (a.placedAt < b.placedAt ? 1 : -1));
+  }).sort((a, b) => (a.placedAt < b.placedAt ? 1 : -1));
+}
+
+export const orders: Order[] = DEMO_ORDERS ? generateDemoOrders() : [];
 
 const reviewTitles = [
   "Exactly what the photos promised",
@@ -222,7 +232,14 @@ const reviewTitles = [
   "Colour is deeper in person",
 ];
 
-export const reviews: Review[] = Array.from({ length: 64 }, (_, index) => {
+/**
+ * Sample reviews are off for the same reason as orders: the panel should only ever show
+ * things that actually happened. Flip this to true to regenerate the demo review queue.
+ */
+const DEMO_REVIEWS = false;
+
+function generateDemoReviews(): Review[] {
+  return Array.from({ length: 64 }, (_, index) => {
   const random = rng(index * 71 + 5);
   const product = adminProducts[Math.floor(random() * adminProducts.length)];
   const customer = customers[Math.floor(random() * customers.length)];
@@ -239,7 +256,10 @@ export const reviews: Review[] = Array.from({ length: 64 }, (_, index) => {
     createdAt: daysAgo(Math.floor(random() * 60)),
     status: index % 9 === 0 ? "pending" : index % 23 === 7 ? "rejected" : "published",
   };
-});
+  });
+}
+
+export const reviews: Review[] = DEMO_REVIEWS ? generateDemoReviews() : [];
 
 export const coupons: Coupon[] = [
   { id: "CPN-01", code: "MI10", type: "percent", value: 10, minimumSpend: 0, usage: 1842, usageLimit: 5000, startsAt: daysAgo(120), expiresAt: daysAgo(-60), status: "active" },

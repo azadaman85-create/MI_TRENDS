@@ -994,6 +994,8 @@
 .a-switch input:checked + .a-switch__track { background: var(--green); }
 .a-switch input:checked + .a-switch__track::after { transform: translateX(17px); }
 .a-switch input:focus-visible + .a-switch__track { outline: 3px solid var(--blue); outline-offset: 2px; }
+.a-switch[data-disabled] { cursor: default; opacity: 0.75; }
+.a-switch input:disabled + .a-switch__track { background: #a9a29a; }
 
 .a-checkbox {
   width: 17px;

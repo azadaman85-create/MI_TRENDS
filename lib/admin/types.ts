@@ -48,6 +48,8 @@ export type Order = {
   status: OrderStatus;
   payment: PaymentMode;
   paid: boolean;
+  /** COD only: the share already paid by UPI, so the courier collects the balance. */
+  advancePaid?: number;
   lines: OrderLine[];
   subtotal: number;
   discount: number;

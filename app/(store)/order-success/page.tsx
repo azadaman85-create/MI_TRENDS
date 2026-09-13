@@ -27,6 +27,8 @@ function OrderSuccessContent() {
   const payment = searchParams.get("payment") || "Online";
   const items = Number(searchParams.get("items") || 0);
   const eta = searchParams.get("eta") || "";
+  const advance = Number(searchParams.get("advance") || 0);
+  const balance = Number(searchParams.get("balance") || 0);
 
   if (!order) {
     return (
@@ -91,7 +93,8 @@ function OrderSuccessContent() {
           </div>
           <div>
             <ShoppingBag size={17} aria-hidden="true" />
-            <span><small>Amount paid</small><strong>{money.format(amount)}</strong></span>
+            <span><small>{balance > 0 ? "Advance paid" : "Amount paid"}</small><strong>{money.format(balance > 0 ? advance : amount)}</strong></span>
+            {balance > 0 && <span><small>Due on delivery</small><strong>{money.format(balance)}</strong></span>}
           </div>
           <div>
             <Check size={17} aria-hidden="true" />

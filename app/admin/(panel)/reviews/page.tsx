@@ -119,7 +119,7 @@ export default function ReviewsPage() {
         <KpiCard label="Total reviews" value={formatNumber(stats.total)} icon={<Star size={17} aria-hidden="true" />} />
         <KpiCard
           label="Average rating"
-          value={stats.average.toFixed(2)}
+          value={stats.total ? stats.average.toFixed(2) : "—"}
           caption="Published reviews only"
           icon={<Star size={17} aria-hidden="true" />}
           accent="#8a6100"

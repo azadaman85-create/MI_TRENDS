@@ -115,7 +115,7 @@ const SIMPLE_PAGES: Record<string, PageContent> = {
       { heading: "How we use it", body: ["Solely to process orders, provide support, and — only if you opt in — send you updates about new drops."] },
       { heading: "Cookies", body: ["We use cookies to remember your bag and preferences during a session. You can disable them in your browser, though parts of the site may work less smoothly."] },
       { heading: "Sharing with third parties", body: ["We only share the minimum required data with payment processors and courier partners needed to fulfil your order. We never sell your data."] },
-      { heading: "Data security", body: ["Payment details are encrypted end-to-end and we never store your full card or UPI information on our servers."] },
+      { heading: "Data security", body: ["Payment details are encrypted end-to-end and we never store your UPI information on our servers."] },
       { heading: "Your rights", body: ["You can request a copy of your data, ask us to correct it, or ask us to delete it by writing to privacy@mitrends.in."] },
     ],
   },

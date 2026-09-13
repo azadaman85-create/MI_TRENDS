@@ -12,6 +12,7 @@ import { Donut } from "@/components/admin/charts/Donut";
 import { Button } from "@/components/admin/ui/Button";
 import { Card } from "@/components/admin/ui/Card";
 import { Tabs } from "@/components/admin/ui/Tabs";
+import { EmptyState } from "@/components/admin/ui/States";
 import { TODAY } from "@/lib/admin/data";
 import { downloadCsv, stamp } from "@/lib/admin/csv";
 import { formatINR, formatNumber, percentChange } from "@/lib/admin/format";
@@ -179,6 +180,9 @@ export default function ReportsPage() {
 
       <div className="a-split a-split--wide" style={{ marginTop: 14 }}>
         <Card title="Revenue by collection" description="Which drops are carrying the season">
+          {report.collections.length === 0 ? (
+            <EmptyState title="No sales in range" message="Once orders come in, the collections that earn most show up here." />
+          ) : (
           <BarChart
             data={report.collections.map(([name, value], index) => ({
               label: name.split(" ")[0],
@@ -187,6 +191,7 @@ export default function ReportsPage() {
             }))}
             formatValue={(value) => `₹${Math.round(value / 1000)}k`}
           />
+          )}
         </Card>
 
         <Card title="Category mix" description="Share of revenue">
@@ -204,6 +209,9 @@ export default function ReportsPage() {
 
       <div className="a-split a-split--wide" style={{ marginTop: 14 }}>
         <Card title="Top states" description="Where orders are shipping" flush>
+          {report.states.length === 0 ? (
+            <EmptyState title="Nothing shipped yet" message="Delivery destinations appear here after the first order." />
+          ) : (
           <ul className="a-list">
             {report.states.map(([state, value]) => (
               <li key={state}>
@@ -223,6 +231,7 @@ export default function ReportsPage() {
               </li>
             ))}
           </ul>
+          )}
         </Card>
 
         <Card title="Customer base" description="All time">

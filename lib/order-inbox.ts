@@ -31,9 +31,16 @@ export function pushOrderToAdmin(order: Order) {
   }
 }
 
-/** Merges inbox orders into a list, newest first, without duplicating ids. */
+/**
+ * Adds inbox orders the panel hasn't seen yet, newest first.
+ *
+ * Orders the panel already holds always win: its copy carries any fulfilment the team
+ * has done since (packed, shipped, delivered), while the inbox copy is frozen at the
+ * moment of checkout. Letting the inbox overwrite would silently revert that work.
+ */
 export function mergeOrders(existing: Order[], inbox: Order[]) {
   if (!inbox.length) return existing;
-  const seen = new Set(inbox.map((order) => order.id));
-  return [...inbox, ...existing.filter((order) => !seen.has(order.id))];
+  const known = new Set(existing.map((order) => order.id));
+  const unseen = inbox.filter((order) => !known.has(order.id));
+  return unseen.length ? [...unseen, ...existing] : existing;
 }

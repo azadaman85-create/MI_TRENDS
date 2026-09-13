@@ -9,6 +9,7 @@ import { Badge } from "@/components/admin/ui/Badge";
 import { Button } from "@/components/admin/ui/Button";
 import { Card } from "@/components/admin/ui/Card";
 import { Input, Select, Switch, Textarea } from "@/components/admin/ui/Field";
+import { formatINR } from "@/lib/admin/format";
 import { ConfirmDialog } from "@/components/admin/ui/Modal";
 import { Tabs } from "@/components/admin/ui/Tabs";
 import { useAdminAuth } from "@/lib/admin/auth";
@@ -24,7 +25,7 @@ const tabs = [
 
 export default function SettingsPage() {
   const { user } = useAdminAuth();
-  const { notify, resetDemoData, products, orders } = useAdminStore();
+  const { notify, resetDemoData, products, orders, settings, updateSettings } = useAdminStore();
   const [tab, setTab] = useState("store");
   const [saving, setSaving] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -38,16 +39,6 @@ export default function SettingsPage() {
     description:
       "Original streetwear, graphic essentials and everyday statement pieces designed in India.",
     currency: "INR",
-  });
-
-  const [logistics, setLogistics] = useState({
-    freeShippingThreshold: 999,
-    standardShipping: 79,
-    codFee: 49,
-    codEnabled: true,
-    upiEnabled: true,
-    cardEnabled: true,
-    returnWindow: 30,
   });
 
   const save = async () => {
@@ -145,47 +136,110 @@ export default function SettingsPage() {
         <div className="a-split">
           <Card title="Shipping rules" description="What the checkout charges and when.">
             <div className="a-stack">
-              <div className="a-grid a-grid--3">
+              <div className="a-grid a-grid--2">
                 <Input
                   label="Free shipping above"
                   type="number"
                   prefix="₹"
-                  value={logistics.freeShippingThreshold}
-                  onChange={(event) => setLogistics({ ...logistics, freeShippingThreshold: Number(event.target.value) })}
+                  value={settings.freeShippingThreshold}
+                  onChange={(event) => updateSettings({ freeShippingThreshold: Number(event.target.value) })}
                 />
                 <Input
                   label="Standard shipping"
                   type="number"
                   prefix="₹"
-                  value={logistics.standardShipping}
-                  onChange={(event) => setLogistics({ ...logistics, standardShipping: Number(event.target.value) })}
-                />
-                <Input
-                  label="COD handling fee"
-                  type="number"
-                  prefix="₹"
-                  value={logistics.codFee}
-                  onChange={(event) => setLogistics({ ...logistics, codFee: Number(event.target.value) })}
+                  value={settings.standardShipping}
+                  onChange={(event) => updateSettings({ standardShipping: Number(event.target.value) })}
                 />
               </div>
-              <Input
-                label="Return window (days)"
-                type="number"
-                value={logistics.returnWindow}
-                onChange={(event) => setLogistics({ ...logistics, returnWindow: Number(event.target.value) })}
-                hint="Shown on the product page and in the returns policy."
-              />
+              <p className="a-muted" style={{ fontSize: "0.76rem", lineHeight: 1.6 }}>
+                <Truck size={13} aria-hidden="true" style={{ display: "inline", verticalAlign: "-2px", marginRight: 6 }} />
+                These apply at checkout the moment you change them — there is no separate publish step.
+              </p>
             </div>
           </Card>
 
           <Card title="Payment methods" className="a-sticky">
             <div className="a-stack">
-              <Switch checked={logistics.upiEnabled} onChange={(value) => setLogistics({ ...logistics, upiEnabled: value })} label="UPI" />
-              <Switch checked={logistics.cardEnabled} onChange={(value) => setLogistics({ ...logistics, cardEnabled: value })} label="Cards" />
-              <Switch checked={logistics.codEnabled} onChange={(value) => setLogistics({ ...logistics, codEnabled: value })} label="Cash on delivery" />
+              <div
+                className="a-row a-row--between"
+                style={{ padding: "11px 12px", border: "1px solid var(--line)", borderRadius: "var(--radius)" }}
+              >
+                <Switch checked disabled label="UPI" onChange={() => undefined} />
+                <Badge tone="success" dot>
+                  Always on
+                </Badge>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gap: 12,
+                  padding: "13px 14px",
+                  border: "1px solid var(--line)",
+                  borderRadius: "var(--radius)",
+                  background: settings.codEnabled ? "var(--green-soft)" : "var(--surface)",
+                }}
+              >
+                <div className="a-row a-row--between">
+                  <Switch
+                    checked={settings.codEnabled}
+                    onChange={(codEnabled) => {
+                      updateSettings({ codEnabled });
+                      notify(
+                        codEnabled ? "Cash on delivery is on" : "Cash on delivery is off",
+                        codEnabled ? "success" : "info",
+                        codEnabled ? "Shoppers can pick COD at checkout." : "Checkout now accepts UPI only.",
+                      );
+                    }}
+                    label="Cash on delivery"
+                  />
+                  <Badge tone={settings.codEnabled ? "success" : "quiet"} dot>
+                    {settings.codEnabled ? "Accepting" : "Off"}
+                  </Badge>
+                </div>
+
+                <div className="a-grid a-grid--2">
+                  <Input
+                    label="Available above"
+                    type="number"
+                    prefix="₹"
+                    value={settings.codMinimumOrder}
+                    disabled={!settings.codEnabled}
+                    onChange={(event) => updateSettings({ codMinimumOrder: Number(event.target.value) })}
+                  />
+                  <Input
+                    label="UPI advance"
+                    type="number"
+                    prefix="%"
+                    value={settings.codAdvancePercent}
+                    disabled={!settings.codEnabled}
+                    onChange={(event) =>
+                      updateSettings({
+                        codAdvancePercent: Math.max(0, Math.min(100, Number(event.target.value))),
+                      })
+                    }
+                  />
+                </div>
+
+                <Input
+                  label="COD handling fee"
+                  type="number"
+                  prefix="₹"
+                  value={settings.codFee}
+                  disabled={!settings.codEnabled}
+                  onChange={(event) => updateSettings({ codFee: Number(event.target.value) })}
+                />
+
+                <p className="a-muted" style={{ fontSize: "0.74rem", lineHeight: 1.6 }}>
+                  {settings.codEnabled
+                    ? `Judged on product value, before delivery. On ${formatINR(settings.codMinimumOrder + 700)} of product the shopper pays about ${formatINR(Math.round(((settings.codMinimumOrder + 700 + settings.codFee) * settings.codAdvancePercent) / 100))} now by UPI and the balance to the courier.`
+                    : "COD is hidden at checkout. Existing COD orders are unaffected."}
+                </p>
+              </div>
+
               <p className="a-muted" style={{ fontSize: "0.74rem", lineHeight: 1.6 }}>
-                <Truck size={13} aria-hidden="true" style={{ display: "inline", verticalAlign: "-2px", marginRight: 6 }} />
-                Turning off a method hides it at checkout immediately; existing orders keep their original method.
+                Cards and net banking were removed from checkout — MI TRENDS takes UPI and COD only.
               </p>
             </div>
           </Card>

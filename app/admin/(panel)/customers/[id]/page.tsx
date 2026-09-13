@@ -148,19 +148,15 @@ export default function CustomerDetailPage() {
             <dl className="a-meta-grid">
               <div>
                 <dt>Lifetime spend</dt>
-                <dd>{formatINR(Math.max(realSpend, customer.spend))}</dd>
+                <dd>{formatINR(realSpend)}</dd>
               </div>
               <div>
                 <dt>Orders</dt>
-                <dd>{Math.max(customerOrders.length, customer.orders)}</dd>
+                <dd>{customerOrders.length}</dd>
               </div>
               <div>
                 <dt>Average order</dt>
-                <dd>
-                  {formatINR(
-                    customerOrders.length ? realSpend / customerOrders.length : customer.spend / Math.max(1, customer.orders),
-                  )}
-                </dd>
+                <dd>{customerOrders.length ? formatINR(realSpend / customerOrders.length) : "—"}</dd>
               </div>
               <div>
                 <dt>Last order</dt>

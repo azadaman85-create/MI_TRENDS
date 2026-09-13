@@ -20,6 +20,12 @@ import {
   reviews as seedReviews,
 } from "@/lib/admin/data";
 import { mergeOrders, readOrderInbox } from "@/lib/order-inbox";
+import {
+  DEFAULT_STORE_SETTINGS,
+  readStoreSettings,
+  writeStoreSettings,
+  type StoreSettings,
+} from "@/lib/store-settings";
 import type {
   AdminProduct,
   Banner,
@@ -31,9 +37,13 @@ import type {
   Review,
 } from "@/lib/admin/types";
 
-const STORAGE_KEY = "mitrends-admin-state-v2";
+const STORAGE_KEY = "mitrends-admin-state-v4";
 /** State saved against the previous catalogue; cleared on load. */
-const LEGACY_STORAGE_KEYS = ["mitrends-admin-state-v1"];
+const LEGACY_STORAGE_KEYS = [
+  "mitrends-admin-state-v1",
+  "mitrends-admin-state-v2",
+  "mitrends-admin-state-v3",
+];
 
 export type AdminToast = {
   id: number;
@@ -53,6 +63,9 @@ type PersistedState = {
 
 type AdminStoreValue = PersistedState & {
   customers: Customer[];
+  /** Checkout rules the storefront reads — see lib/store-settings.ts. */
+  settings: StoreSettings;
+  updateSettings: (patch: Partial<StoreSettings>) => void;
   hydrated: boolean;
   toasts: AdminToast[];
   notify: (message: string, tone?: AdminToast["tone"], description?: string) => void;
@@ -91,6 +104,7 @@ function seedState(): PersistedState {
 export function AdminStoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<PersistedState>(seedState);
   const [hydrated, setHydrated] = useState(false);
+  const [settings, setSettings] = useState<StoreSettings>(DEFAULT_STORE_SETTINGS);
   const [toasts, setToasts] = useState<AdminToast[]>([]);
 
   // Persisted edits load after mount so the server and first client render match.
@@ -99,15 +113,18 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       LEGACY_STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key));
       const saved = window.localStorage.getItem(STORAGE_KEY);
       const parsed = saved ? (JSON.parse(saved) as Partial<PersistedState>) : null;
-      // Orders placed on the storefront land here too.
+      /* Settings, saved edits and storefront orders can only be read in the browser, so
+         they land after the first paint rather than during render. */
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setSettings(readStoreSettings());
       const inbox = readOrderInbox();
       if (parsed || inbox.length) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setState((current) => {
           const merged = { ...current, ...parsed };
           return { ...merged, orders: mergeOrders(merged.orders, inbox) };
         });
       }
+      /* eslint-enable react-hooks/set-state-in-effect */
     } catch {
       // A corrupt or blocked store just means we stay on the seeded data.
     }
@@ -134,6 +151,10 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const updateSettings = useCallback((patch: Partial<StoreSettings>) => {
+    setSettings(writeStoreSettings(patch));
+  }, []);
+
   const dismissToast = useCallback((id: number) => {
     setToasts((current) => current.filter((toast) => toast.id !== id));
   }, []);
@@ -142,9 +163,30 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     const patchProducts = (updater: (products: AdminProduct[]) => AdminProduct[]) =>
       setState((current) => ({ ...current, products: updater(current.products) }));
 
+    const customers: Customer[] = seedCustomers.map((customer) => {
+      const theirs = state.orders.filter(
+        (order) => order.customerId === customer.id && order.status !== "cancelled",
+      );
+      const spend = theirs.reduce((sum, order) => sum + order.total, 0);
+      const lastOrderAt = theirs.reduce<string | null>(
+        (latest, order) => (!latest || order.placedAt > latest ? order.placedAt : latest),
+        null,
+      );
+
+      return {
+        ...customer,
+        orders: theirs.length,
+        spend,
+        lastOrderAt,
+        tier: spend > 12000 ? "vip" : theirs.length > 2 ? "regular" : "new",
+      };
+    });
+
     return {
       ...state,
-      customers: seedCustomers,
+      customers,
+      settings,
+      updateSettings,
       hydrated,
       toasts,
       notify,
@@ -290,7 +332,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         }
       },
     };
-  }, [state, hydrated, toasts, notify, dismissToast]);
+  }, [state, hydrated, settings, updateSettings, toasts, notify, dismissToast]);
 
   return <AdminStoreContext.Provider value={value}>{children}</AdminStoreContext.Provider>;
 }

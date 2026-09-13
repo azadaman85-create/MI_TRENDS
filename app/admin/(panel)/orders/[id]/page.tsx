@@ -208,7 +208,12 @@ export default function OrderDetailPage() {
                 ["Subtotal", formatINR(order.subtotal)],
                 ["Discount", order.discount ? `− ${formatINR(order.discount)}` : "—"],
                 ["Shipping", order.shipping ? formatINR(order.shipping) : "Free"],
-                ["COD fee", order.payment === "cod" ? formatINR(49) : "—"],
+                ...(order.advancePaid
+                  ? ([
+                      ["Advance paid (UPI)", `− ${formatINR(order.advancePaid)}`],
+                      ["Collect on delivery", formatINR(order.total - order.advancePaid)],
+                    ] as [string, string][])
+                  : []),
               ].map(([label, value]) => (
                 <div key={label} className="a-row a-row--between">
                   <dt className="a-muted" style={{ fontSize: "0.78rem" }}>
@@ -231,8 +236,8 @@ export default function OrderDetailPage() {
             </dl>
 
             <div className="a-row" style={{ marginTop: 15, gap: 8, flexWrap: "wrap" }}>
-              <Badge tone={order.paid ? "success" : "warning"} dot>
-                {order.paid ? "Paid" : "Payment due"}
+              <Badge tone={order.paid ? "success" : order.advancePaid ? "info" : "warning"} dot>
+                {order.paid ? "Paid" : order.advancePaid ? "Advance paid" : "Payment due"}
               </Badge>
               <Badge tone="quiet">
                 <CreditCard size={12} aria-hidden="true" />

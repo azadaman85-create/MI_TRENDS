@@ -1322,6 +1322,13 @@ p {
   letter-spacing: -0.06em;
 }
 
+.cart-line-art img,
+.search-suggestion-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .cart-line-details { min-width: 0; }
 
 .cart-line-heading {

@@ -163,9 +163,8 @@ export function Footer() {
           <span className="footer-small-heading">Pay your way</span>
           <div className="payment-method-list" aria-label="Accepted payment methods">
             <span>UPI</span>
-            <span>Visa</span>
-            <span>Mastercard</span>
-            <span>RuPay</span>
+            <span>Google Pay</span>
+            <span>PhonePe</span>
             <span>COD</span>
           </div>
         </div>

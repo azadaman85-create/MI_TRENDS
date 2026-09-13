@@ -199,11 +199,20 @@ function SearchModal({ closeSearch }: { closeSearch: () => void }) {
                       className="search-suggestion-art"
                       role="img"
                       aria-label={`${product.name} product artwork`}
-                      style={{
-                        background: `linear-gradient(145deg, ${product.palette[0]}, ${product.palette[1]} 58%, ${product.palette[2]})`,
-                      }}
+                      style={
+                        product.imageUrl
+                          ? undefined
+                          : {
+                              background: `linear-gradient(145deg, ${product.palette[0]}, ${product.palette[1]} 58%, ${product.palette[2]})`,
+                            }
+                      }
                     >
-                      <span aria-hidden="true">{product.art}</span>
+                      {product.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={product.imageUrl} alt="" loading="lazy" />
+                      ) : (
+                        <span aria-hidden="true">{product.art}</span>
+                      )}
                     </span>
                     <span className="search-suggestion-copy">
                       <small>{product.collection}</small>

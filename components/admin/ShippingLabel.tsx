@@ -29,6 +29,7 @@ export function dispatchReference(orderId: string) {
 export function ShippingLabel({ order }: { order: Order }) {
   const units = order.lines.reduce((sum, line) => sum + line.quantity, 0);
   const collectOnDelivery = order.payment === "cod" && !order.paid;
+  const amountToCollect = Math.max(0, order.total - (order.advancePaid ?? 0));
   const placed = new Intl.DateTimeFormat("en-IN", {
     day: "2-digit",
     month: "short",
@@ -70,8 +71,8 @@ export function ShippingLabel({ order }: { order: Order }) {
       <section className={`ship-label__payment ${collectOnDelivery ? "is-cod" : ""}`.trim()}>
         {collectOnDelivery ? (
           <>
-            <span>Cash on delivery — collect</span>
-            <strong>{formatINR(order.total)}</strong>
+            <span>{order.advancePaid ? "Collect balance (advance paid)" : "Cash on delivery — collect"}</span>
+            <strong>{formatINR(amountToCollect)}</strong>
           </>
         ) : (
           <>

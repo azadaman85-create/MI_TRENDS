@@ -23,6 +23,7 @@ import { Donut } from "@/components/admin/charts/Donut";
 import { Button } from "@/components/admin/ui/Button";
 import { Card } from "@/components/admin/ui/Card";
 import { Badge, OrderStatusBadge, StockBadge } from "@/components/admin/ui/Badge";
+import { Switch } from "@/components/admin/ui/Field";
 import { Tabs } from "@/components/admin/ui/Tabs";
 import { EmptyState } from "@/components/admin/ui/States";
 import { LOW_STOCK_THRESHOLD, TODAY, totalStock } from "@/lib/admin/data";
@@ -39,7 +40,7 @@ const ranges = [
 ];
 
 export default function DashboardPage() {
-  const { orders, products, customers, reviews, notify } = useAdminStore();
+  const { orders, products, customers, reviews, notify, settings, updateSettings } = useAdminStore();
   const { user } = useAdminAuth();
   const [range, setRange] = useState("30");
   const days = Number(range);
@@ -194,7 +195,7 @@ export default function DashboardPage() {
         <KpiCard
           label="Pending orders"
           value={formatNumber(stats.pendingOrders.length)}
-          caption={`${stats.pendingReviews} reviews also need a decision`}
+          caption={stats.pendingReviews > 0 ? `${stats.pendingReviews} reviews also need a decision` : "Nothing else waiting on you"}
           icon={<Timer size={17} aria-hidden="true" />}
           accent="var(--red-dark)"
           accentSoft="#fdeeeb"
@@ -242,6 +243,13 @@ export default function DashboardPage() {
             </Link>
           }
         >
+          {recentOrders.length === 0 ? (
+            <EmptyState
+              icon={<ShoppingCart size={22} aria-hidden="true" />}
+              title="No orders yet"
+              message="Orders placed on the storefront land here the moment checkout completes."
+            />
+          ) : (
           <div className="a-table-wrap">
             <table className="a-table a-table--cards">
               <thead>
@@ -276,6 +284,7 @@ export default function DashboardPage() {
               </tbody>
             </table>
           </div>
+          )}
         </Card>
 
         <Card
@@ -359,9 +368,45 @@ export default function DashboardPage() {
                   </div>
                 );
               })}
-            <p className="a-muted" style={{ fontSize: "0.74rem" }}>
-              COD orders carry a ₹49 handling fee and settle on delivery.
-            </p>
+            <div
+              style={{
+                display: "grid",
+                gap: 10,
+                marginTop: 4,
+                padding: "14px 15px",
+                border: "1px solid var(--line)",
+                borderRadius: "var(--radius)",
+                background: settings.codEnabled ? "var(--green-soft)" : "var(--surface)",
+              }}
+            >
+              <div className="a-row a-row--between">
+                <Switch
+                  checked={settings.codEnabled}
+                  onChange={(codEnabled) => {
+                    updateSettings({ codEnabled });
+                    notify(
+                      codEnabled ? "Cash on delivery is on" : "Cash on delivery is off",
+                      codEnabled ? "success" : "info",
+                      codEnabled
+                        ? `Offered above ${formatINR(settings.codMinimumOrder)} with a ${settings.codAdvancePercent}% UPI advance.`
+                        : "Checkout now accepts UPI only.",
+                    );
+                  }}
+                  label="Cash on delivery"
+                />
+                <Badge tone={settings.codEnabled ? "success" : "quiet"} dot>
+                  {settings.codEnabled ? "Accepting" : "Off"}
+                </Badge>
+              </div>
+              <p className="a-muted" style={{ fontSize: "0.73rem", lineHeight: 1.5 }}>
+                {settings.codEnabled
+                  ? `Offered on orders above ${formatINR(settings.codMinimumOrder)}. ${settings.codAdvancePercent}% is taken by UPI up front, the rest plus the ${formatINR(settings.codFee)} fee is collected on delivery.`
+                  : "Turned off — the storefront hides COD and takes UPI only."}{" "}
+                <Link href="/admin/settings" style={{ fontWeight: 700, textDecoration: "underline" }}>
+                  Edit rules
+                </Link>
+              </p>
+            </div>
             <Badge tone="quiet">{formatNumber(stats.orderCount)} orders analysed</Badge>
           </div>
         </Card>

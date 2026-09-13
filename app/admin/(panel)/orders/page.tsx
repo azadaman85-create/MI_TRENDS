@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Download, Eye, PackageCheck, Truck } from "lucide-react";
+import { CheckCircle2, Download, Eye, PackageCheck, Truck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -204,34 +204,43 @@ export default function OrdersPage() {
           searchValue={(order) => `${order.id} ${order.customerName} ${order.email} ${order.address.city}`}
           initialSort={{ column: "id", direction: "desc" }}
           onRowClick={(order) => router.push(`/admin/orders/${order.id}`)}
-          emptyTitle="No orders here"
-          emptyMessage="Nothing matches this filter. Try a different status tab."
-          bulkActions={(ids, clear) => (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  ids.forEach((id) => setOrderStatus(id, "packed"));
-                  notify(`${ids.length} orders marked packed`);
-                  clear();
-                }}
-              >
-                Mark packed
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  ids.forEach((id) => setOrderStatus(id, "shipped"));
-                  notify(`${ids.length} orders marked shipped`);
-                  clear();
-                }}
-              >
-                Mark shipped
-              </Button>
-            </>
-          )}
+          emptyTitle={orders.length === 0 ? "No orders yet" : "No orders here"}
+          emptyMessage={
+            orders.length === 0
+              ? "Orders placed on the storefront land here the moment checkout completes."
+              : "Nothing matches this filter. Try a different status tab."
+          }
+          bulkActions={(ids, clear) => {
+            // Packed → Shipped → Delivered, in the order fulfilment actually happens.
+            const advance = (next: OrderStatus, label: string) => () => {
+              ids.forEach((id) => setOrderStatus(id, next));
+              notify(
+                `${ids.length} ${ids.length === 1 ? "order" : "orders"} marked ${label}`,
+                "success",
+                next === "delivered"
+                  ? "Moved to the Delivered tab. COD orders are now settled."
+                  : `Moved to the ${next === "packed" ? "In progress" : "Shipped"} tab.`,
+              );
+              clear();
+            };
+
+            return (
+              <>
+                <Button variant="outline" size="sm" onClick={advance("packed", "packed")}>
+                  <PackageCheck size={13} aria-hidden="true" />
+                  Mark packed
+                </Button>
+                <Button variant="outline" size="sm" onClick={advance("shipped", "shipped")}>
+                  <Truck size={13} aria-hidden="true" />
+                  Mark shipped
+                </Button>
+                <Button variant="outline" size="sm" onClick={advance("delivered", "delivered")}>
+                  <CheckCircle2 size={13} aria-hidden="true" />
+                  Mark delivered
+                </Button>
+              </>
+            );
+          }}
           rowActions={(order) => (
             <Link className="a-row-action" href={`/admin/orders/${order.id}`} aria-label={`Open ${order.id}`} title="Open order">
               <Eye size={15} aria-hidden="true" />
