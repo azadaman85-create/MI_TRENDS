@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Boxes, Minus, Plus, TriangleAlert, Warehouse } from "lucide-react";
+import { Boxes, Minus, Plus, RotateCcw, Save, TriangleAlert, Warehouse } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { PageHeader } from "@/components/admin/PageHeader";
 import { KpiCard } from "@/components/admin/KpiCard";
@@ -16,11 +16,89 @@ import { LOW_STOCK_THRESHOLD, totalStock } from "@/lib/admin/data";
 import { formatINR, formatNumber } from "@/lib/admin/format";
 import { listVariants } from "@/lib/admin/motion";
 import { useAdminStore } from "@/lib/admin/store";
+import { publishStockFeed, type StockFeed } from "@/lib/stock-feed";
 import type { AdminProduct } from "@/lib/admin/types";
 
 export default function InventoryPage() {
   const { products, setStock, notify } = useAdminStore();
   const [view, setView] = useState("all");
+
+  /**
+   * Edits are staged here rather than written straight through, so a count can be typed
+   * in full ("12", not 1 then 2) and reviewed before it reaches the storefront.
+   * Shape: productId → size → units. Only edited cells appear.
+   */
+  const [draft, setDraft] = useState<Record<number, Record<string, number>>>({});
+  const [saving, setSaving] = useState(false);
+
+  /** Staged value if this cell has been touched, otherwise what the store holds. */
+  const unitsOf = useCallback(
+    (product: AdminProduct, size: string) => draft[product.id]?.[size] ?? product.stock[size] ?? 0,
+    [draft],
+  );
+
+  const stageStock = useCallback((product: AdminProduct, size: string, units: number) => {
+    const next = Math.max(0, Math.floor(Number.isFinite(units) ? units : 0));
+    setDraft((current) => {
+      const forProduct = { ...(current[product.id] ?? {}), [size]: next };
+      // Dropping back to the saved value un-stages the cell, so the dirty count stays honest.
+      if (next === (product.stock[size] ?? 0)) {
+        delete forProduct[size];
+        if (!Object.keys(forProduct).length) {
+          const rest = { ...current };
+          delete rest[product.id];
+          return rest;
+        }
+      }
+      return { ...current, [product.id]: forProduct };
+    });
+  }, []);
+
+  /** On-hand total including anything staged but not yet saved. */
+  const stagedTotal = useCallback(
+    (product: AdminProduct) => product.sizes.reduce((sum, size) => sum + unitsOf(product, size), 0),
+    [unitsOf],
+  );
+
+  const dirtyCells = useMemo(
+    () => Object.values(draft).reduce((sum, sizes) => sum + Object.keys(sizes).length, 0),
+    [draft],
+  );
+  const dirtyProducts = Object.keys(draft).length;
+
+  const discard = useCallback(() => setDraft({}), []);
+
+  const save = useCallback(() => {
+    if (!dirtyCells) return;
+    setSaving(true);
+
+    // 1. Commit every staged cell to the panel's own store.
+    Object.entries(draft).forEach(([id, sizes]) => {
+      Object.entries(sizes).forEach(([size, units]) => setStock(Number(id), size, units));
+    });
+
+    // 2. Publish the whole catalogue's stock so the storefront has a complete picture —
+    //    publishing only the edited rows would leave every other product unknown to it.
+    const feed: StockFeed = {};
+    products.forEach((product) => {
+      const sizes: Record<string, number> = {};
+      product.sizes.forEach((size) => {
+        sizes[size] = draft[product.id]?.[size] ?? product.stock[size] ?? 0;
+      });
+      feed[String(product.id)] = sizes;
+    });
+    const published = publishStockFeed(feed);
+
+    setDraft({});
+    setSaving(false);
+    notify(
+      "Inventory saved",
+      published ? "success" : "info",
+      published
+        ? `${dirtyCells} size${dirtyCells === 1 ? "" : "s"} across ${dirtyProducts} product${dirtyProducts === 1 ? "" : "s"} updated. The storefront now shows these counts.`
+        : "Saved to the panel, but this browser blocked storage so the storefront cannot read it.",
+    );
+  }, [draft, dirtyCells, dirtyProducts, notify, products, setStock]);
 
   const rows = useMemo(() => {
     if (view === "low")
@@ -74,16 +152,18 @@ export default function InventoryPage() {
       render: (product) => (
         <div className="a-chip-row">
           {product.sizes.map((size) => {
-            const units = product.stock[size] ?? 0;
+            const units = unitsOf(product, size);
+            const edited = draft[product.id]?.[size] !== undefined;
             return (
               <span
                 key={size}
                 className="a-chip"
+                data-edited={edited || undefined}
                 style={{
                   gap: 4,
                   padding: "0 6px 0 9px",
-                  borderColor: units === 0 ? "#f0c3bb" : units <= 4 ? "#f0dca8" : "var(--line)",
-                  background: units === 0 ? "#fdeeeb" : "var(--white)",
+                  borderColor: edited ? "var(--accent, #b4451f)" : units === 0 ? "#f0c3bb" : units <= 4 ? "#f0dca8" : "var(--line)",
+                  background: edited ? "#fff4ec" : units === 0 ? "#fdeeeb" : "var(--white)",
                 }}
               >
                 <span className="a-micro" style={{ fontSize: "0.58rem" }}>
@@ -94,19 +174,26 @@ export default function InventoryPage() {
                   className="a-row-action"
                   style={{ opacity: 1, width: 22, height: 22 }}
                   aria-label={`Remove one ${size} from ${product.name}`}
-                  onClick={() => setStock(product.id, size, units - 1)}
+                  onClick={() => stageStock(product, size, units - 1)}
                 >
                   <Minus size={11} aria-hidden="true" />
                 </button>
-                <strong className="a-num" style={{ minWidth: 18, textAlign: "center", fontSize: "0.74rem" }}>
-                  {units}
-                </strong>
+                <input
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  className="a-stock-input"
+                  value={units}
+                  aria-label={`Units of ${size} for ${product.name}`}
+                  onChange={(event) => stageStock(product, size, event.target.valueAsNumber)}
+                  onFocus={(event) => event.target.select()}
+                />
                 <button
                   type="button"
                   className="a-row-action"
                   style={{ opacity: 1, width: 22, height: 22 }}
                   aria-label={`Add one ${size} to ${product.name}`}
-                  onClick={() => setStock(product.id, size, units + 1)}
+                  onClick={() => stageStock(product, size, units + 1)}
                 >
                   <Plus size={11} aria-hidden="true" />
                 </button>
@@ -120,15 +207,15 @@ export default function InventoryPage() {
       id: "total",
       header: "On hand",
       align: "right",
-      sortValue: (product) => totalStock(product),
-      render: (product) => <StockBadge units={totalStock(product)} threshold={LOW_STOCK_THRESHOLD} />,
+      sortValue: (product) => stagedTotal(product),
+      render: (product) => <StockBadge units={stagedTotal(product)} threshold={LOW_STOCK_THRESHOLD} />,
     },
     {
       id: "value",
       header: "Stock value",
       align: "right",
-      sortValue: (product) => totalStock(product) * product.costPrice,
-      render: (product) => <span>{formatINR(totalStock(product) * product.costPrice)}</span>,
+      sortValue: (product) => stagedTotal(product) * product.costPrice,
+      render: (product) => <span>{formatINR(stagedTotal(product) * product.costPrice)}</span>,
     },
   ];
 
@@ -139,12 +226,22 @@ export default function InventoryPage() {
         title="Inventory"
         description={`Adjust units per size without leaving the list. Anything at or below ${LOW_STOCK_THRESHOLD} units is flagged as low.`}
         actions={
-          <Button
-            variant="outline"
-            onClick={() => notify("Stock count started", "info", "A physical count sheet would be generated here.")}
-          >
-            Start stock count
-          </Button>
+          <>
+            <Button variant="ghost" onClick={discard} disabled={!dirtyCells}>
+              <RotateCcw size={15} aria-hidden="true" />
+              Discard
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => notify("Stock count started", "info", "A physical count sheet would be generated here.")}
+            >
+              Start stock count
+            </Button>
+            <Button onClick={save} disabled={!dirtyCells} loading={saving}>
+              <Save size={15} aria-hidden="true" />
+              {dirtyCells ? `Save ${dirtyCells} change${dirtyCells === 1 ? "" : "s"}` : "Save changes"}
+            </Button>
+          </>
         }
       />
 
@@ -202,8 +299,10 @@ export default function InventoryPage() {
       </Card>
 
       <p className="a-muted" style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 8, fontSize: "0.72rem" }}>
-        <Badge tone="quiet">Tip</Badge>
-        Setting a size to zero also marks it sold out on the storefront size picker.
+        <Badge tone="quiet">{dirtyCells ? "Unsaved" : "Tip"}</Badge>
+        {dirtyCells
+          ? `${dirtyCells} size${dirtyCells === 1 ? "" : "s"} edited but not saved yet — the storefront still shows the old counts.`
+          : "Edits are staged until you save. Setting a size to zero marks it sold out on the storefront size picker."}
       </p>
     </motion.div>
   );

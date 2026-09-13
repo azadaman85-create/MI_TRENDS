@@ -22,6 +22,8 @@ import { ProductVisual } from "@/components/ProductVisual";
 import { ProductCard } from "@/components/ProductCard";
 import { useStore } from "@/components/StoreProvider";
 import { SizeGuide } from "@/components/SizeGuide";
+import { useStockFeed } from "@/lib/use-stock-feed";
+import { soldOutSizes, unitsFor } from "@/lib/stock-feed";
 
 const money = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 const views = ["Front", "Back", "Fabric detail", "Styled"];
@@ -69,6 +71,13 @@ function ProductDetails({ product }: { product: (typeof products)[number] }) {
     const fallback = products.filter((item) => item.id !== product.id && !related.includes(item));
     return [...related, ...fallback].slice(0, 4);
   }, [product]);
+
+  // Stock the admin panel has saved wins over the catalogue's own availability.
+  const stockFeed = useStockFeed();
+  const soldOut = useMemo(
+    () => new Set(soldOutSizes(stockFeed, product.id, product.sizes, product.outOfStock)),
+    [stockFeed, product],
+  );
 
   const currentColor = product.colors[selectedColor] || product.colors[0];
   const saved = store.isWishlisted(product);
@@ -165,10 +174,20 @@ function ProductDetails({ product }: { product: (typeof products)[number] }) {
             </div>
             <div className="sizes" role="radiogroup" aria-label="Choose size">
               {product.sizes.map((size) => {
-                const unavailable = product.outOfStock.includes(size);
+                const unavailable = soldOut.has(size);
+                const left = unitsFor(stockFeed, product.id, size);
+                const scarce = !unavailable && left !== null && left > 0 && left <= 3;
                 return (
-                  <button key={size} type="button" disabled={unavailable} className={selectedSize === size ? "active" : ""} onClick={() => { setSelectedSize(size); setSizeError(false); }} aria-label={`${size}${unavailable ? ", out of stock" : ""}`}>
+                  <button
+                    key={size}
+                    type="button"
+                    disabled={unavailable}
+                    className={selectedSize === size ? "active" : ""}
+                    onClick={() => { setSelectedSize(size); setSizeError(false); }}
+                    aria-label={`${size}${unavailable ? ", out of stock" : scarce ? `, only ${left} left` : ""}`}
+                  >
                     {size}
+                    {scarce ? <em className="size-left" aria-hidden="true">{left}</em> : null}
                   </button>
                 );
               })}
@@ -287,6 +306,9 @@ function ProductDetails({ product }: { product: (typeof products)[number] }) {
         .sizes button { position: relative; min-width: 54px; height: 45px; padding: 0 12px; border: 1px solid #d6d2cb; border-radius: 5px; background: #fff; font-weight: 700; cursor: pointer; }
         .sizes button.active { border-color: #171717; background: #171717; color: #fff; }
         .sizes button:disabled { color: #aaa69f; background: linear-gradient(to bottom right, transparent 48%, #d4d0ca 49%, #d4d0ca 51%, transparent 52%); cursor: not-allowed; }
+        /* Count badge when the admin panel has saved a low number for this size. */
+        .size-left { position: absolute; top: -6px; right: -6px; display: grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px; background: #b4451f; color: #fff; font-size: 0.58rem; font-style: normal; font-weight: 800; line-height: 1; }
+        .sizes button.active .size-left { background: #fff; color: #171717; }
         .size-error { margin: 9px 0 0; color: #c83825; font-size: 12px; font-weight: 700; }
         .fit-note { display: flex; align-items: center; gap: 6px; margin: 11px 0 0; color: #67625c; font-size: 11px; }
         .buy-row { display: grid; grid-template-columns: 106px 1fr .82fr; gap: 9px; margin-top: 27px; }

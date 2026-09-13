@@ -1961,3 +1961,36 @@
 
   .a-scrim { display: none !important; }
 }
+
+/* Inline stock editor on the inventory screen: a number input that reads as plain
+   text until focused, so a row of sizes still scans as a row of counts. */
+.a-stock-input {
+  width: 34px;
+  min-width: 0;
+  padding: 2px 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.74rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.a-stock-input::-webkit-outer-spin-button,
+.a-stock-input::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.a-stock-input:hover { border-color: var(--line); }
+
+.a-stock-input:focus {
+  border-color: var(--ink);
+  background: var(--white);
+  outline: 0;
+}

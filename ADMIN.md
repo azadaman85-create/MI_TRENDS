@@ -41,7 +41,7 @@ exists; the route guard in `app/admin/(panel)/layout.tsx` stays the same.
 | `/admin/products/new`, `/admin/products/[id]` | Product editor — information, images, pricing, variants & inventory, SEO, publishing rail, storefront preview |
 | `/admin/categories` | Category tree with visibility toggles and a create/edit modal |
 | `/admin/collections` | The eight drops with palette, product count and revenue |
-| `/admin/inventory` | Per-size stock adjustment, low/out-of-stock views, stock value |
+| `/admin/inventory` | Per-size stock adjustment (staged, then **Save**), low/out-of-stock views, stock value |
 | `/admin/orders`, `/admin/orders/[id]` | Order list with status tabs and bulk actions; detail with fulfilment timeline, items, payment, customer and address |
 | `/admin/customers`, `/admin/customers/[id]` | Customer list by tier; profile with order history and lifetime value |
 | `/admin/reviews` | Moderation queue — approve or reject, in bulk or per row |
@@ -78,3 +78,16 @@ products, 184 orders, 96 customers, 64 reviews, coupons and banners, seeded so s
 renders always agree. Edits you make in the panel are saved to `localStorage` on that device
 (`lib/admin/store.tsx`) so it behaves like a real back office; **Settings → Demo data → Reset**
 restores the generated set.
+
+### Stock reaching the storefront
+
+Inventory edits are staged in the page rather than written on each keystroke, so a count can
+be typed in full and reviewed first. **Save** then does two things: it commits the counts to
+the panel's own store, and publishes the whole catalogue's stock to `mitrends-stock-v1` for
+the storefront to read (`lib/stock-feed.ts`, the mirror of `lib/order-inbox.ts`).
+
+The product page reads that key through `useStockFeed()` and prefers it over the catalogue's
+static `outOfStock` list: a size at zero is disabled as sold out, and three or fewer shows an
+"only N left" badge. A product the panel has never published keeps whatever the catalogue
+said, so saving one product never marks the rest in stock. The hook listens for both the
+same-tab event and cross-tab `storage`, so a shop tab left open updates on save.
