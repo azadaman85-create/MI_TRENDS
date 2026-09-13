@@ -1,0 +1,6 @@
+{
+  "name": "MI TRENDS",
+  "description": "Original streetwear, graphic essentials and everyday statement pieces designed in India.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
