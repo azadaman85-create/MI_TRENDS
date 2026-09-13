@@ -1745,8 +1745,11 @@
   .a-modal { width: calc(100vw - 20px); }
 }
 
-/* Below this width tables become stacked cards — set up in AdminTable. */
-@media (max-width: 700px) {
+/* Below this width tables become stacked cards — set up in AdminTable.
+   Matches the 1024px sidebar-drawer breakpoint: once the rail collapses there
+   is not enough room for a full-width data table, and the desktop layout would
+   otherwise shrink to a cramped horizontal scroller on tablets. */
+@media (max-width: 1024px) {
   .a-table--cards thead { display: none; }
   .a-table--cards tbody tr {
     display: grid;
@@ -1769,6 +1772,17 @@
   .a-table--cards tbody td:empty { display: none; }
   .a-table--cards .a-row-action { opacity: 1; }
   .a-table--cards .a-cell-product { min-width: 0; }
+}
+
+/* On tablets a single stacked card per row leaves the fields marooned at
+   opposite edges, so pack two cards across and let each one stay compact. */
+@media (min-width: 701px) and (max-width: 1024px) {
+  .a-table--cards tbody {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .a-table--cards tbody tr { margin-bottom: 0; align-content: start; }
 }
 
 @media (prefers-reduced-motion: reduce) {
