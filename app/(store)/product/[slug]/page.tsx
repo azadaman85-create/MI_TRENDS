@@ -217,7 +217,7 @@ function ProductDetails({ product }: { product: (typeof products)[number] }) {
 
           <div className="assurances">
             <span><Truck size={18} /><b>Free shipping</b> over ₹999</span>
-            <span><RotateCcw size={18} /><b>30-day returns</b> easy exchange</span>
+            <Link href="/info/returns"><RotateCcw size={18} /><b>30-day returns</b> easy exchange</Link>
             <span><ShieldCheck size={18} /><b>Secure checkout</b> 100% protected</span>
           </div>
 
@@ -229,7 +229,7 @@ function ProductDetails({ product }: { product: (typeof products)[number] }) {
 
           <div className="accordions">
             <details open><summary>Product details <ChevronDown size={17} /></summary><div><p>{product.art} artwork from our {product.collection} studio story, made for repeat wear.</p><dl><div><dt>Fit</dt><dd>{product.fit}</dd></div><div><dt>Fabric</dt><dd>{product.fabric}</dd></div><div><dt>Care</dt><dd>Cold wash inside out. Dry in shade. Do not iron the print.</dd></div><div><dt>Origin</dt><dd>Designed and made in India</dd></div><div><dt>SKU</dt><dd>{product.sku}</dd></div></dl></div></details>
-            <details><summary>Shipping & returns <ChevronDown size={17} /></summary><div><p>Dispatches in 1–2 working days. Returns and exchanges are accepted within 30 days when unworn and tagged.</p></div></details>
+            <details><summary>Shipping & returns <ChevronDown size={17} /></summary><div><p>Dispatches in 1–2 working days. Returns and exchanges are accepted within 30 days when unworn and tagged. Read the full <Link href="/info/shipping">Shipping Policy</Link> and <Link href="/info/returns">Return &amp; Refund Policy</Link>.</p></div></details>
             <details><summary>Ratings & reviews <span>{product.rating} / 5</span><ChevronDown size={17} /></summary><div><p>Customers love the substantial feel, clean finish and true-to-size shape. Verified-buyer reviews are shown after delivery.</p></div></details>
           </div>
         </section>
@@ -329,8 +329,9 @@ function ProductDetails({ product }: { product: (typeof products)[number] }) {
         .pin-success, .pin-error { margin: 10px 0 0; font-size: 11px; font-weight: 700; }
         .pin-success { color: #16703f; } .pin-error { color: #c83825; }
         .assurances { display: grid; grid-template-columns: repeat(3,1fr); margin-top: 20px; border: 1px solid #e1ddd7; border-radius: 8px; }
-        .assurances span { min-width: 0; display: grid; justify-items: center; gap: 5px; padding: 14px 8px; text-align: center; color: #78726b; font-size: 9px; }
-        .assurances span + span { border-left: 1px solid #e1ddd7; }
+        .assurances span, .assurances :global(a) { min-width: 0; display: grid; justify-items: center; gap: 5px; padding: 14px 8px; text-align: center; color: #78726b; font-size: 9px; text-decoration: none; }
+        .assurances span + span, .assurances span + :global(a) { border-left: 1px solid #e1ddd7; }
+        .assurances :global(a:hover) { color: #171717; }
         .assurances b { display: block; color: #272421; font-size: 10px; }
         .offers { margin-top: 32px; }
         .section-kicker { color: #e5482b; font-size: 10px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
@@ -376,8 +377,8 @@ function ProductDetails({ product }: { product: (typeof products)[number] }) {
           .buy-row { grid-template-columns: 96px 1fr; }
           .buy-row .buy { display: none; }
           .assurances { grid-template-columns: 1fr; }
-          .assurances span { grid-template-columns: 24px auto; justify-items: start; text-align: left; align-items: center; }
-          .assurances span + span { border-left: 0; border-top: 1px solid #e1ddd7; }
+          .assurances span, .assurances :global(a) { grid-template-columns: 24px auto; justify-items: start; text-align: left; align-items: center; }
+          .assurances span + span, .assurances span + :global(a) { border-left: 0; border-top: 1px solid #e1ddd7; }
           .assurances b { display: inline; margin-right: 3px; }
           .related-grid { display: flex; gap: 9px; overflow-x: auto; scroll-snap-type: x mandatory; margin-right: -12px; scrollbar-width: none; }
           .related-grid > :global(*) { flex: 0 0 72%; scroll-snap-align: start; }

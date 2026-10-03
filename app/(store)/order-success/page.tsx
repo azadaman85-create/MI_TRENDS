@@ -121,6 +121,13 @@ function OrderSuccessContent() {
         <Link href="/info/track-order" className="button button--ghost">Track this order</Link>
       </div>
 
+      <p className="policy-links">
+        <Link href="/info/returns">Return &amp; Refund Policy</Link>
+        <Link href="/info/shipping">Shipping Policy</Link>
+        <Link href="/info/terms">Terms &amp; Conditions</Link>
+        <Link href="/info/privacy">Privacy Policy</Link>
+      </p>
+
       <style jsx>{`
         .success-page { width: min(760px, calc(100% - 48px)); margin: 0 auto; padding: 24px 0 100px; color: #171717; }
         .checkout-progress { display: flex; align-items: center; justify-content: center; gap: 10px; padding-bottom: 19px; margin-bottom: 40px; border-bottom: 1px solid #ddd9d2; color: #938d86; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; }
@@ -155,6 +162,9 @@ function OrderSuccessContent() {
         .button { display: inline-flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 26px; border-radius: 6px; text-decoration: none; font-size: 11px; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
         .button--ink { background: #171717; color: #fff; }
         .button--ghost { border: 1px solid #d7d2cb; color: #171717; }
+        .policy-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; margin: 24px 0 0; }
+        .policy-links a { color: #938d86; font-size: 10px; font-weight: 700; letter-spacing: .03em; text-decoration: underline; text-underline-offset: 2px; }
+        .policy-links a:hover { color: #171717; }
         @media (max-width: 560px) {
           .order-grid { grid-template-columns: 1fr; }
           .checkout-progress { gap: 6px; font-size: 8px; }

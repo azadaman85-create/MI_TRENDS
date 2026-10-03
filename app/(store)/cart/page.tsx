@@ -129,6 +129,11 @@ export default function CartPage() {
             <p className="total-saving">You save {money.format(productDiscount + couponDiscount)} on this order</p>
             <Link className="checkout" href={customer ? "/checkout" : "/account/signup?next=/checkout"}>{customer ? "Secure checkout" : "Sign up to check out"} <span>{money.format(total)}</span></Link>
             <div className="secure"><ShieldCheck size={16} /><span><strong>Safe & secure payments</strong>Your information stays protected.</span></div>
+            <p className="policy-links">
+              <Link href="/info/returns">Return &amp; Refund Policy</Link>
+              <Link href="/info/terms">Terms &amp; Conditions</Link>
+              <Link href="/info/privacy">Privacy Policy</Link>
+            </p>
           </div>
         </aside>
       </div>
@@ -191,6 +196,9 @@ export default function CartPage() {
         .checkout span { font-size: 13px; }
         .secure { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 15px; color: #77716a; font-size: 9px; }
         .secure span { display: grid; gap: 2px; }.secure strong { color: #4b4742; }
+        .policy-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 12px; margin: 13px 0 0; }
+        .policy-links a { color: #8a847d; font-size: 9px; font-weight: 700; letter-spacing: .03em; text-decoration: underline; text-underline-offset: 2px; }
+        .policy-links a:hover { color: #171717; }
         .suggestions { margin-top: 100px; padding-top: 46px; border-top: 1px solid #dedad4; }
         .suggestions h2 { margin: 6px 0 23px; font-size: clamp(30px,4vw,48px); line-height: .95; letter-spacing: -.05em; text-transform: uppercase; }
         .suggestion-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; }
