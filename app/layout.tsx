@@ -27,11 +27,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       {/*
         Browser extensions (Grammarly, password managers, translators) add attributes to
-        <body> before React hydrates, which reads as a mismatch. Suppressing here covers
-        this element's own attributes only — real mismatches inside the tree still warn.
+        <html>/<body> before React hydrates, which reads as a mismatch. Suppressing here covers
+        these elements' own attributes only — real mismatches inside the tree still warn.
       */}
       <body suppressHydrationWarning>{children}</body>
     </html>

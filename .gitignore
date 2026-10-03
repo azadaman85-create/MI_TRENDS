@@ -8,3 +8,8 @@ out/
 # local env
 .env
 .env*.local
+
+# local tooling (Claude Code skills/config, not app code)
+.agents/
+.claude/
+skills-lock.json
