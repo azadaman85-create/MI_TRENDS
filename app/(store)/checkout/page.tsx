@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Banknote, Check, ChevronDown, LockKeyhole, MapPin, ShieldCheck, Smartphone, Truck } from "lucide-react";
 import { ProductVisual } from "@/components/ProductVisual";
@@ -10,6 +11,36 @@ import { useCustomer } from "@/lib/account/auth";
 import { pushOrderToAdmin } from "@/lib/order-inbox";
 import { codPlanFor, DEFAULT_STORE_SETTINGS, readStoreSettings, type StoreSettings } from "@/lib/store-settings";
 import type { Order, PaymentMode } from "@/lib/admin/types";
+
+type RazorpaySuccessResponse = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+type RazorpayOptions = {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  prefill: { name: string; email: string; contact: string };
+  theme: { color: string };
+  handler: (response: RazorpaySuccessResponse) => void;
+  modal: { ondismiss: () => void };
+};
+
+type RazorpayCheckout = {
+  open: () => void;
+  on: (event: "payment.failed", handler: (response: { error: { description: string } }) => void) => void;
+};
+
+declare global {
+  interface Window {
+    Razorpay: new (options: RazorpayOptions) => RazorpayCheckout;
+  }
+}
 
 const money = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 /** One clock read per order: the reference and the timestamp come from the same instant. */
@@ -40,6 +71,7 @@ export default function CheckoutPage() {
   }, [ready, customer, router]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
   const subtotal = store.cartLines.reduce((sum, line) => sum + line.product.price * line.quantity, 0);
   const couponDiscount = store.couponDiscount || store.coupon?.discount || 0;
   const shipping = subtotal >= settings.freeShippingThreshold ? 0 : settings.standardShipping;
@@ -80,7 +112,16 @@ export default function CheckoutPage() {
     return next;
   };
 
-  const placeOrder = (event: FormEvent<HTMLFormElement>) => {
+  // Runs once the Razorpay payment (full amount or COD advance) is verified server-side.
+  const finalizeOrder = (placed: Order, query: URLSearchParams) => {
+    pushOrderToAdmin(placed);
+    window.setTimeout(() => {
+      store.clearCart();
+      router.push(`/order-success?${query.toString()}`);
+    }, 500);
+  };
+
+  const placeOrder = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!store.cartLines.length) return;
     const form = event.currentTarget;
@@ -99,6 +140,7 @@ export default function CheckoutPage() {
       return;
     }
 
+    setPaymentError("");
     setSubmitting(true);
     const { id: order, placedAt } = newOrderReference();
     const paymentLabel = { upi: "UPI", cod: "Cash on delivery" }[payment];
@@ -111,7 +153,6 @@ export default function CheckoutPage() {
       ...(payment === "cod" ? { advance: String(dueNow), balance: String(dueOnDelivery) } : {}),
     });
 
-    // Hand the order to the admin panel so it shows up under Orders.
     const value = (name: string) => String(data.get(name) || "").trim();
     const adminPayment: PaymentMode = payment;
     const placed: Order = {
@@ -123,7 +164,7 @@ export default function CheckoutPage() {
       placedAt,
       status: "pending",
       payment: adminPayment,
-      paid: adminPayment !== "cod",
+      paid: true,
       advancePaid: payment === "cod" ? dueNow : undefined,
       lines: store.cartLines.map((line) => ({
         productId: line.product.id,
@@ -153,12 +194,56 @@ export default function CheckoutPage() {
         done: index === 0,
       })),
     };
-    pushOrderToAdmin(placed);
 
-    window.setTimeout(() => {
-      store.clearCart();
-      router.push(`/order-success?${query.toString()}`);
-    }, 500);
+    try {
+      const createRes = await fetch("/api/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: Math.round(dueNow * 100), currency: "INR", receipt: order }),
+      });
+      const createData = await createRes.json();
+      if (!createRes.ok) throw new Error(createData.error || "Could not start the payment.");
+
+      const razorpay = new window.Razorpay({
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? "",
+        amount: createData.amount,
+        currency: createData.currency,
+        name: "MI TRENDS",
+        description: payment === "cod" ? "Cash on delivery advance" : "Order payment",
+        order_id: createData.order_id,
+        prefill: { name: value("name"), email: value("email"), contact: value("mobile") },
+        theme: { color: "#e5482b" },
+        handler: async (response) => {
+          try {
+            const verifyRes = await fetch("/api/verify-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(response),
+            });
+            const verifyData = await verifyRes.json();
+            if (!verifyRes.ok || !verifyData.success) throw new Error(verifyData.error || "Payment verification failed.");
+            finalizeOrder(placed, query);
+          } catch (error) {
+            setSubmitting(false);
+            setPaymentError(error instanceof Error ? error.message : "Payment verification failed.");
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setSubmitting(false);
+            setPaymentError("Payment cancelled.");
+          },
+        },
+      });
+      razorpay.on("payment.failed", (response) => {
+        setSubmitting(false);
+        setPaymentError(response.error?.description || "Payment failed. Please try again.");
+      });
+      razorpay.open();
+    } catch (error) {
+      setSubmitting(false);
+      setPaymentError(error instanceof Error ? error.message : "Could not start the payment.");
+    }
   };
 
   if (!ready || !customer) {
@@ -192,6 +277,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="checkout-page">
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
       <div className="checkout-top">
         <Link href="/cart"><ArrowLeft size={15} />Back to bag</Link>
         <div className="checkout-progress"><span className="done"><Check size={12} />Bag</span><i /><span className="active">2 Checkout</span><i /><span>3 Done</span></div>
@@ -271,6 +357,7 @@ export default function CheckoutPage() {
               </div>
               <div className="eta"><MapPin size={16} /><span><small>Estimated delivery</small><strong>By {eta}</strong></span></div>
               <dl><div><dt>Subtotal</dt><dd>{money.format(subtotal)}</dd></div>{couponDiscount > 0 && <div className="saving"><dt>Coupon</dt><dd>− {money.format(couponDiscount)}</dd></div>}<div><dt>Shipping</dt><dd>{shipping ? money.format(shipping) : <span>Free</span>}</dd></div>{codFee > 0 && <div><dt>COD fee</dt><dd>{money.format(codFee)}</dd></div>}<div className="total"><dt>Order total</dt><dd>{money.format(payable)}</dd></div>{payment === "cod" && <><div><dt>Pay now by UPI</dt><dd>{money.format(dueNow)}</dd></div><div><dt>On delivery</dt><dd>{money.format(dueOnDelivery)}</dd></div></>}</dl>
+              {paymentError && <p className="payment-error">{paymentError}</p>}
               <button type="submit" disabled={submitting}>{submitting ? "Placing your order…" : <>Pay {money.format(dueNow)}{payment === "cod" ? " advance" : ""} <LockKeyhole size={15} /></>}</button>
               <div className="trust"><ShieldCheck size={16} /><span><strong>Payments are encrypted</strong>We never store your full card or UPI details.</span></div>
             </div>
@@ -279,7 +366,7 @@ export default function CheckoutPage() {
       </form>
 
       <style jsx>{`
-        .checkout-page{width:min(1240px,calc(100% - 48px));margin:0 auto;padding:24px 0 100px;color:#171717}.checkout-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding-bottom:19px;border-bottom:1px solid #ddd9d2}.checkout-top>a,.checkout-top>span{display:flex;align-items:center;gap:6px;color:#66615b;font-size:10px;font-weight:800;text-decoration:none;text-transform:uppercase;letter-spacing:.05em}.checkout-top>span{justify-self:end}.checkout-progress{display:flex;align-items:center;gap:10px;color:#938d86;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.07em}.checkout-progress span{display:flex;align-items:center;gap:4px}.checkout-progress i{width:38px;height:1px;background:#d8d4ce}.checkout-progress .done{color:#27734a}.checkout-progress .active{color:#171717}header{margin:55px 0 36px}header>span,.summary-kicker,.panel-title div>span{color:#e5482b;font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}h1{margin:7px 0 8px;font-size:clamp(46px,6vw,76px);line-height:.92;letter-spacing:-.06em;text-transform:uppercase}header p{margin:0;color:#716b64;font-size:13px}.checkout-layout{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:clamp(35px,6vw,75px);align-items:start}.panels{display:grid;gap:16px}.panel{padding:28px;border:1px solid #ddd9d2;border-radius:10px;background:#fff}.panel-title{display:flex;align-items:flex-start;gap:16px;margin-bottom:25px}.panel-title>b{width:35px;height:35px;display:grid;place-items:center;border-radius:50%;background:#171717;color:#fff;font-size:10px}.panel-title div>span{display:block;margin:1px 0 3px}.panel-title h2{margin:0;font-size:26px;line-height:1;letter-spacing:-.035em;text-transform:uppercase}.fields{display:grid;gap:18px}.two-col{grid-template-columns:1fr 1fr}.full{grid-column:1/-1}.fields label,.payment-detail>label{display:grid;gap:7px;align-content:start}.fields label>span,.payment-detail label>span{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}.fields input,.fields select,.payment-detail input,.payment-detail select{width:100%;min-width:0;height:48px;border:1px solid #d7d2cb;border-radius:5px;padding:0 13px;background:#fff;color:#171717;font:inherit;font-size:12px}.fields input[aria-invalid=true],.fields select[aria-invalid=true],.payment-detail input[aria-invalid=true],.payment-detail select[aria-invalid=true]{border-color:#c83d28;background:#fff9f7}.fields label>small,.payment-detail label>small{color:#8a847d;font-size:9px}.field-error{color:#bd3a25!important;font-size:9px!important;font-weight:700!important;letter-spacing:0!important;text-transform:none!important}.phone{display:flex}.phone i{height:48px;display:flex;align-items:center;padding:0 12px;border:1px solid #d7d2cb;border-right:0;border-radius:5px 0 0 5px;background:#f5f3ef;color:#625d57;font-size:11px;font-style:normal}.phone input{border-radius:0 5px 5px 0}.select-wrap{position:relative}.select-wrap select{appearance:none;padding-right:42px}.select-wrap :global(svg){position:absolute;right:14px;top:17px;pointer-events:none}.type-choice{display:flex!important;flex-wrap:wrap;gap:8px!important;border:0;padding:0;margin:2px 0 0}.type-choice legend{width:100%;margin-bottom:2px;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}.type-choice label{display:block;position:relative}.type-choice input{position:absolute;opacity:0}.type-choice label span{min-width:76px;height:38px;display:grid;place-items:center;padding:0 13px;border:1px solid #d7d2cb;border-radius:5px;font-size:10px;font-weight:700}.type-choice input:checked+span{border-color:#171717;background:#171717;color:#fff}.payment-methods{display:grid;grid-template-columns:1fr 1fr;gap:8px}.payment-methods>label{display:grid;grid-template-columns:auto auto 1fr;align-items:center;gap:9px;min-height:68px;padding:10px 12px;border:1px solid #d8d4cd;border-radius:6px;cursor:pointer}.payment-methods>label.active{border-color:#171717;background:#f5f3ef;box-shadow:inset 0 0 0 1px #171717}.payment-methods>label.disabled{opacity:.55;cursor:not-allowed;background:#faf8f5}.payment-methods input{accent-color:#171717}.payment-methods label>span{display:grid;gap:3px}.payment-methods strong{font-size:11px}.payment-methods small{color:#77716a;font-size:8px;line-height:1.3}.payment-detail{margin-top:16px;padding:18px;border-radius:7px;background:#f5f3ef}.card-fields{gap:13px}.cod-note{display:flex;gap:10px}.cod-note strong{font-size:12px}.cod-note p{margin:4px 0 0;color:#716b64;font-size:10px;line-height:1.5}aside{position:sticky;top:116px}.summary{padding:27px;border-radius:10px;background:#171717;color:#fff}.summary h2{margin:5px 0 20px;font-size:30px;line-height:1;text-transform:uppercase;letter-spacing:-.04em}.summary-items{display:grid;gap:13px;max-height:310px;overflow:auto;padding-right:4px}.summary-items article{display:grid;grid-template-columns:58px minmax(0,1fr) auto;align-items:center;gap:10px}.summary-image{position:relative;aspect-ratio:3/4;overflow:hidden;border-radius:4px;background:#eee9e2}.summary-image :global(svg){width:100%;height:100%}.summary-image b{position:absolute;right:3px;top:3px;min-width:18px;height:18px;display:grid;place-items:center;border-radius:50%;background:#fff;color:#171717;font-size:8px}.summary-items article>div:nth-child(2){display:grid;gap:4px;min-width:0}.summary-items article strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;text-transform:uppercase}.summary-items article span{color:#a9a49d;font-size:8px}.summary-items em{font-size:10px;font-style:normal;font-weight:800}.eta{display:flex;gap:9px;align-items:center;margin:22px 0;padding:13px;border:1px solid #393939;border-radius:6px;background:#222}.eta span{display:grid;gap:3px}.eta small{color:#aaa59e;font-size:8px;text-transform:uppercase;letter-spacing:.07em}.eta strong{font-size:10px}.summary dl{display:grid;gap:12px;margin:0}.summary dl>div{display:flex;justify-content:space-between;gap:15px;color:#c8c3bc;font-size:10px}.summary dt,.summary dd{margin:0}.summary dd{color:#fff;font-weight:700}.summary .saving,.summary .saving dd,.summary dd>span{color:#74c995}.summary dl .total{margin-top:4px;padding-top:16px;border-top:1px solid #393939;color:#fff;font-size:15px;font-weight:900}.summary>button{width:100%;min-height:54px;margin-top:20px;display:flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:5px;background:#e5482b;color:#fff;font-size:11px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;cursor:pointer}.summary>button:disabled{opacity:.7;cursor:wait}.trust{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:15px;color:#aaa59e;font-size:8px}.trust span{display:grid;gap:2px}.trust strong{color:#ddd9d2}input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid #f2a078;outline-offset:2px}@media(max-width:900px){.checkout-layout{grid-template-columns:1fr}.checkout-top{grid-template-columns:1fr 1fr}.checkout-progress{display:none}aside{position:static}.summary{max-width:none}}@media(max-width:620px){.checkout-page{width:calc(100% - 24px);padding-top:17px}.checkout-top>span{font-size:0}.checkout-top>span :global(svg){width:18px;height:18px}header{margin:38px 0 25px}.panel{padding:21px 16px}.two-col,.payment-methods{grid-template-columns:1fr}.full{grid-column:auto}.type-choice{grid-column:auto!important}.panel-title{gap:12px}.payment-methods>label{min-height:62px}.summary{padding:22px 17px}}
+        .checkout-page{width:min(1240px,calc(100% - 48px));margin:0 auto;padding:24px 0 100px;color:#171717}.checkout-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding-bottom:19px;border-bottom:1px solid #ddd9d2}.checkout-top>a,.checkout-top>span{display:flex;align-items:center;gap:6px;color:#66615b;font-size:10px;font-weight:800;text-decoration:none;text-transform:uppercase;letter-spacing:.05em}.checkout-top>span{justify-self:end}.checkout-progress{display:flex;align-items:center;gap:10px;color:#938d86;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.07em}.checkout-progress span{display:flex;align-items:center;gap:4px}.checkout-progress i{width:38px;height:1px;background:#d8d4ce}.checkout-progress .done{color:#27734a}.checkout-progress .active{color:#171717}header{margin:55px 0 36px}header>span,.summary-kicker,.panel-title div>span{color:#e5482b;font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}h1{margin:7px 0 8px;font-size:clamp(46px,6vw,76px);line-height:.92;letter-spacing:-.06em;text-transform:uppercase}header p{margin:0;color:#716b64;font-size:13px}.checkout-layout{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:clamp(35px,6vw,75px);align-items:start}.panels{display:grid;gap:16px}.panel{padding:28px;border:1px solid #ddd9d2;border-radius:10px;background:#fff}.panel-title{display:flex;align-items:flex-start;gap:16px;margin-bottom:25px}.panel-title>b{width:35px;height:35px;display:grid;place-items:center;border-radius:50%;background:#171717;color:#fff;font-size:10px}.panel-title div>span{display:block;margin:1px 0 3px}.panel-title h2{margin:0;font-size:26px;line-height:1;letter-spacing:-.035em;text-transform:uppercase}.fields{display:grid;gap:18px}.two-col{grid-template-columns:1fr 1fr}.full{grid-column:1/-1}.fields label,.payment-detail>label{display:grid;gap:7px;align-content:start}.fields label>span,.payment-detail label>span{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}.fields input,.fields select,.payment-detail input,.payment-detail select{width:100%;min-width:0;height:48px;border:1px solid #d7d2cb;border-radius:5px;padding:0 13px;background:#fff;color:#171717;font:inherit;font-size:12px}.fields input[aria-invalid=true],.fields select[aria-invalid=true],.payment-detail input[aria-invalid=true],.payment-detail select[aria-invalid=true]{border-color:#c83d28;background:#fff9f7}.fields label>small,.payment-detail label>small{color:#8a847d;font-size:9px}.field-error{color:#bd3a25!important;font-size:9px!important;font-weight:700!important;letter-spacing:0!important;text-transform:none!important}.phone{display:flex}.phone i{height:48px;display:flex;align-items:center;padding:0 12px;border:1px solid #d7d2cb;border-right:0;border-radius:5px 0 0 5px;background:#f5f3ef;color:#625d57;font-size:11px;font-style:normal}.phone input{border-radius:0 5px 5px 0}.select-wrap{position:relative}.select-wrap select{appearance:none;padding-right:42px}.select-wrap :global(svg){position:absolute;right:14px;top:17px;pointer-events:none}.type-choice{display:flex!important;flex-wrap:wrap;gap:8px!important;border:0;padding:0;margin:2px 0 0}.type-choice legend{width:100%;margin-bottom:2px;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}.type-choice label{display:block;position:relative}.type-choice input{position:absolute;opacity:0}.type-choice label span{min-width:76px;height:38px;display:grid;place-items:center;padding:0 13px;border:1px solid #d7d2cb;border-radius:5px;font-size:10px;font-weight:700}.type-choice input:checked+span{border-color:#171717;background:#171717;color:#fff}.payment-methods{display:grid;grid-template-columns:1fr 1fr;gap:8px}.payment-methods>label{display:grid;grid-template-columns:auto auto 1fr;align-items:center;gap:9px;min-height:68px;padding:10px 12px;border:1px solid #d8d4cd;border-radius:6px;cursor:pointer}.payment-methods>label.active{border-color:#171717;background:#f5f3ef;box-shadow:inset 0 0 0 1px #171717}.payment-methods>label.disabled{opacity:.55;cursor:not-allowed;background:#faf8f5}.payment-methods input{accent-color:#171717}.payment-methods label>span{display:grid;gap:3px}.payment-methods strong{font-size:11px}.payment-methods small{color:#77716a;font-size:8px;line-height:1.3}.payment-detail{margin-top:16px;padding:18px;border-radius:7px;background:#f5f3ef}.card-fields{gap:13px}.cod-note{display:flex;gap:10px}.cod-note strong{font-size:12px}.cod-note p{margin:4px 0 0;color:#716b64;font-size:10px;line-height:1.5}aside{position:sticky;top:116px}.summary{padding:27px;border-radius:10px;background:#171717;color:#fff}.summary h2{margin:5px 0 20px;font-size:30px;line-height:1;text-transform:uppercase;letter-spacing:-.04em}.summary-items{display:grid;gap:13px;max-height:310px;overflow:auto;padding-right:4px}.summary-items article{display:grid;grid-template-columns:58px minmax(0,1fr) auto;align-items:center;gap:10px}.summary-image{position:relative;aspect-ratio:3/4;overflow:hidden;border-radius:4px;background:#eee9e2}.summary-image :global(svg){width:100%;height:100%}.summary-image b{position:absolute;right:3px;top:3px;min-width:18px;height:18px;display:grid;place-items:center;border-radius:50%;background:#fff;color:#171717;font-size:8px}.summary-items article>div:nth-child(2){display:grid;gap:4px;min-width:0}.summary-items article strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;text-transform:uppercase}.summary-items article span{color:#a9a49d;font-size:8px}.summary-items em{font-size:10px;font-style:normal;font-weight:800}.eta{display:flex;gap:9px;align-items:center;margin:22px 0;padding:13px;border:1px solid #393939;border-radius:6px;background:#222}.eta span{display:grid;gap:3px}.eta small{color:#aaa59e;font-size:8px;text-transform:uppercase;letter-spacing:.07em}.eta strong{font-size:10px}.summary dl{display:grid;gap:12px;margin:0}.summary dl>div{display:flex;justify-content:space-between;gap:15px;color:#c8c3bc;font-size:10px}.summary dt,.summary dd{margin:0}.summary dd{color:#fff;font-weight:700}.summary .saving,.summary .saving dd,.summary dd>span{color:#74c995}.summary dl .total{margin-top:4px;padding-top:16px;border-top:1px solid #393939;color:#fff;font-size:15px;font-weight:900}.payment-error{margin:16px 0 0;padding:10px 12px;border-radius:5px;background:#3a1512;color:#f5a393;font-size:10px;font-weight:700}.summary>button{width:100%;min-height:54px;margin-top:20px;display:flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:5px;background:#e5482b;color:#fff;font-size:11px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;cursor:pointer}.summary>button:disabled{opacity:.7;cursor:wait}.trust{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:15px;color:#aaa59e;font-size:8px}.trust span{display:grid;gap:2px}.trust strong{color:#ddd9d2}input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid #f2a078;outline-offset:2px}@media(max-width:900px){.checkout-layout{grid-template-columns:1fr}.checkout-top{grid-template-columns:1fr 1fr}.checkout-progress{display:none}aside{position:static}.summary{max-width:none}}@media(max-width:620px){.checkout-page{width:calc(100% - 24px);padding-top:17px}.checkout-top>span{font-size:0}.checkout-top>span :global(svg){width:18px;height:18px}header{margin:38px 0 25px}.panel{padding:21px 16px}.two-col,.payment-methods{grid-template-columns:1fr}.full{grid-column:auto}.type-choice{grid-column:auto!important}.panel-title{gap:12px}.payment-methods>label{min-height:62px}.summary{padding:22px 17px}}
       `}</style>
     </div>
   );
