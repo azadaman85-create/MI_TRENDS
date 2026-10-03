@@ -10,7 +10,6 @@ import {
   Clock,
   Mail,
   Package,
-  Phone,
   Ruler,
   Search,
   ShieldCheck,
@@ -291,8 +290,7 @@ function ContactBody() {
       </form>
 
       <aside className="contact-info">
-        <div><Mail size={17} /><span><strong>Email</strong><small>support@mitrends.in</small></span></div>
-        <div><Phone size={17} /><span><strong>Call / WhatsApp</strong><small>+91 98765 43210</small></span></div>
+        <div><Mail size={17} /><span><strong>Email</strong><small>mitrends2452@gmail.com</small></span></div>
         <div><Clock size={17} /><span><strong>Hours</strong><small>Mon–Sat, 10am–7pm IST</small></span></div>
         <div className="contact-links"><Link href="/info/faqs">Read our FAQs</Link><Link href="/info/track-order">Track an order</Link></div>
       </aside>
