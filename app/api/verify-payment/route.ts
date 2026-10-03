@@ -1,7 +1,20 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
+import { clientIpFrom, consumeRateLimit } from "@/lib/security/rate-limit";
+
+const VERIFY_ATTEMPT_LIMIT = 20;
+const VERIFY_WINDOW_MS = 60 * 1000; // 1 minute
 
 export async function POST(request: Request) {
+  const ip = clientIpFrom(request);
+  const { ok: withinLimit, retryAfterMs } = consumeRateLimit(`verify-payment:${ip}`, VERIFY_ATTEMPT_LIMIT, VERIFY_WINDOW_MS);
+  if (!withinLimit) {
+    return NextResponse.json(
+      { error: "Too many attempts. Try again shortly." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil(retryAfterMs / 1000)) } },
+    );
+  }
+
   let body: { razorpay_order_id?: unknown; razorpay_payment_id?: unknown; razorpay_signature?: unknown };
   try {
     body = await request.json();

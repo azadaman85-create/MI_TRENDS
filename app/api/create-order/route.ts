@@ -1,9 +1,21 @@
 import { NextResponse } from "next/server";
 import { razorpayClient } from "@/lib/razorpay";
+import { clientIpFrom, consumeRateLimit } from "@/lib/security/rate-limit";
 
 const MIN_AMOUNT_PAISE = 100;
+const ORDER_ATTEMPT_LIMIT = 20;
+const ORDER_WINDOW_MS = 60 * 1000; // 1 minute
 
 export async function POST(request: Request) {
+  const ip = clientIpFrom(request);
+  const { ok: withinLimit, retryAfterMs } = consumeRateLimit(`create-order:${ip}`, ORDER_ATTEMPT_LIMIT, ORDER_WINDOW_MS);
+  if (!withinLimit) {
+    return NextResponse.json(
+      { error: "Too many order attempts. Try again shortly." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil(retryAfterMs / 1000)) } },
+    );
+  }
+
   let body: { amount?: unknown; currency?: unknown; receipt?: unknown };
   try {
     body = await request.json();
