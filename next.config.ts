@@ -14,7 +14,7 @@ const isDev = process.env.NODE_ENV !== "production";
 
 const CSP_DIRECTIVES = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://checkout.razorpay.com https://accounts.google.com`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://checkout.razorpay.com https://accounts.google.com https://va.vercel-scripts.com`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https://*.googleusercontent.com https://*.razorpay.com",
   "font-src 'self' data:",

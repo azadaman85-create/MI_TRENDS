@@ -1,3 +1,4 @@
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata, Viewport } from "next";
 import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
@@ -33,7 +34,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <html>/<body> before React hydrates, which reads as a mismatch. Suppressing here covers
         these elements' own attributes only — real mismatches inside the tree still warn.
       */}
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        {children}
+        <SpeedInsights />
+      </body>
     </html>
   );
 }
