@@ -18,8 +18,23 @@ import {
 import { products } from "@/lib/catalog";
 import { ProductCard } from "@/components/ProductCard";
 import { useStore } from "@/components/StoreProvider";
+import { activeBanners } from "@/lib/banner-feed";
+import { useBannerFeed } from "@/lib/use-banner-feed";
+import type { Banner } from "@/lib/admin/types";
 
-const heroSlides = [
+type HeroSlide = {
+  kicker: string;
+  title: string;
+  copy: string;
+  cta: string;
+  href: string;
+  palette: string[];
+  word: string;
+  image: string;
+};
+
+/** Shown until the admin panel has published at least one live "Homepage hero" banner. */
+const defaultHeroSlides: HeroSlide[] = [
   {
     kicker: "EVERYDAY ICONS",
     title: "THE TEE YOU\nREACH FOR FIRST.",
@@ -50,7 +65,21 @@ const heroSlides = [
     word: "SH",
     image: "/images/products/shirt-01-a.jpg",
   },
-] as const;
+];
+
+/** Admin banners have no CTA label, palette or badge word — fill in sensible defaults. */
+function bannerToSlide(banner: Banner, index: number): HeroSlide {
+  return {
+    kicker: (banner.subtitle || "Featured").toUpperCase(),
+    title: banner.title.toUpperCase(),
+    copy: "",
+    cta: "Shop now",
+    href: banner.link || "/shop",
+    palette: ["#171717", "#e5482b", "#ffffff"],
+    word: String(index + 1).padStart(2, "0"),
+    image: banner.imageUrl,
+  };
+}
 
 const homeCategories = [
   { label: "T-shirts", symbol: "TEE", href: "/shop?type=t-shirt", tone: "blue", image: "/images/products/tee-03-a.jpg" },
@@ -98,7 +127,7 @@ const collectionTiles = [
   ["The Women's Edit", "Every women's piece in one place.", "/shop?category=women", "collection-tile--lime"],
 ] as const;
 
-function HeroArtwork({ slide }: { slide: (typeof heroSlides)[number] }) {
+function HeroArtwork({ slide }: { slide: HeroSlide }) {
   return (
     <div className="hero-art-media">
       <div className="hero-art-frame">
@@ -144,6 +173,12 @@ export default function HomePage() {
   const [copiedCoupon, setCopiedCoupon] = useState(false);
   const touchStart = useRef<number | null>(null);
 
+  const bannerFeed = useBannerFeed();
+  const heroSlides = useMemo(() => {
+    const liveHeroBanners = activeBanners(bannerFeed, "hero");
+    return liveHeroBanners.length > 0 ? liveHeroBanners.map(bannerToSlide) : defaultHeroSlides;
+  }, [bannerFeed]);
+
   const trending = useMemo(() => [...products].sort((a, b) => b.popularity - a.popularity).slice(0, 9), []);
   const newDrops = useMemo(() => products.filter((product) => product.tags.includes("new")).slice(0, 8), []);
   const deals = useMemo(() => {
@@ -166,11 +201,14 @@ export default function HomePage() {
     }
   }, [activeFeedTab, newDrops, deals, shirts, trending]);
 
+  // heroSlides.length can change when the admin publishes a different number of
+  // banners, so the interval must be recreated whenever it does (not just on pause).
   useEffect(() => {
+    setActiveSlide((current) => (current >= heroSlides.length ? 0 : current));
     if (paused) return;
     const timer = window.setInterval(() => setActiveSlide((current) => (current + 1) % heroSlides.length), 5500);
     return () => window.clearInterval(timer);
-  }, [paused]);
+  }, [paused, heroSlides.length]);
 
   const moveSlide = (direction: number) => {
     setActiveSlide((current) => (current + direction + heroSlides.length) % heroSlides.length);
@@ -222,14 +260,14 @@ export default function HomePage() {
           {heroSlides.map((slide, index) => (
             <article
               className="hero-slide"
-              key={slide.title}
+              key={index}
               aria-hidden={activeSlide !== index}
               style={{ "--hero-main": slide.palette[0], "--hero-accent": slide.palette[1], "--hero-ink": slide.palette[2] } as React.CSSProperties}
             >
               <div className="hero-copy">
                 <p className="hero-kicker"><Sparkles size={15} aria-hidden="true" /> {slide.kicker}</p>
-                <h1>{slide.title.split("\n").map((line) => <span key={line}>{line}</span>)}</h1>
-                <p>{slide.copy}</p>
+                <h1>{slide.title.split("\n").map((line, lineIndex) => <span key={lineIndex}>{line}</span>)}</h1>
+                {slide.copy ? <p>{slide.copy}</p> : null}
                 <Link href={slide.href} className="button button--ink" tabIndex={activeSlide === index ? 0 : -1}>
                   {slide.cta} <ArrowRight size={18} aria-hidden="true" />
                 </Link>
@@ -242,7 +280,7 @@ export default function HomePage() {
         <button type="button" className="hero-arrow hero-arrow--next" onClick={() => moveSlide(1)} aria-label="Next hero slide"><ChevronRight /></button>
         <div className="hero-dots" role="tablist" aria-label="Choose a hero slide">
           {heroSlides.map((slide, index) => (
-            <button key={slide.kicker} type="button" role="tab" aria-selected={activeSlide === index} aria-label={`Show slide ${index + 1}`} onClick={() => setActiveSlide(index)}>
+            <button key={index} type="button" role="tab" aria-selected={activeSlide === index} aria-label={`Show slide ${index + 1}`} onClick={() => setActiveSlide(index)}>
               <span style={{ transform: activeSlide === index && !paused ? "scaleX(1)" : "scaleX(0)" }} />
             </button>
           ))}

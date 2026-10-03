@@ -19,6 +19,7 @@ import {
   orders as seedOrders,
   reviews as seedReviews,
 } from "@/lib/admin/data";
+import { publishBannerFeed } from "@/lib/banner-feed";
 import { mergeOrders, readOrderInbox } from "@/lib/order-inbox";
 import {
   DEFAULT_STORE_SETTINGS,
@@ -139,6 +140,13 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       // Out of quota or private mode — edits stay in memory for this session.
     }
   }, [state, hydrated]);
+
+  // Banners get their own narrow hand-off to the storefront — see lib/banner-feed.ts —
+  // rather than the storefront reading this whole admin blob (orders, customers, etc).
+  useEffect(() => {
+    if (!hydrated) return;
+    publishBannerFeed(state.banners);
+  }, [state.banners, hydrated]);
 
   const notify = useCallback(
     (message: string, tone: AdminToast["tone"] = "success", description?: string) => {
