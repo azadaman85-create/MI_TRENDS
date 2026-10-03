@@ -1748,6 +1748,27 @@
   .a-kpi { padding: 15px 15px 14px; }
   .a-toast-stack { right: 12px; left: 12px; bottom: 12px; width: auto; }
   .a-modal { width: calc(100vw - 20px); }
+  .a-chip-row { gap: 5px; }
+
+  /* The banners list is a hand-built drag list, not a DataTable, so it doesn't
+     get the .a-table--cards stacking below — it needs its own mobile layout. */
+  .a-banner-row {
+    grid-template-columns: 28px 1fr;
+    grid-template-areas: "handle thumb" "info info" "actions actions";
+    row-gap: 10px;
+  }
+  .a-banner-row__handle { grid-area: handle; }
+  .a-banner-row__thumb { grid-area: thumb; }
+  .a-banner-row__info { grid-area: info; }
+  .a-banner-row__actions { grid-area: actions; justify-content: flex-end; }
+}
+
+.a-banner-row {
+  display: grid;
+  grid-template-columns: 28px 172px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px;
 }
 
 /* Below this width tables become stacked cards — set up in AdminTable.

@@ -62,7 +62,7 @@ export default function ReviewsPage() {
       header: "Review",
       sortValue: (review) => review.title,
       render: (review) => (
-        <span style={{ display: "grid", gap: 5, minWidth: 220, maxWidth: 380 }}>
+        <span style={{ display: "grid", gap: 5, minWidth: "min(220px, 100%)", maxWidth: 380 }}>
           <span className="a-row" style={{ gap: 8 }}>
             <Stars rating={review.rating} />
             <strong style={{ fontSize: "0.82rem" }}>{review.title}</strong>

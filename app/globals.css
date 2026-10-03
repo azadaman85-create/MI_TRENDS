@@ -1707,6 +1707,9 @@ p {
     max-width: 100%;
     box-sizing: border-box;
   }
+  .search-suggestion-list {
+    grid-template-columns: 1fr;
+  }
   /* Hide desktop-only sections on mobile */
   .desktop-only-section {
     display: none !important;

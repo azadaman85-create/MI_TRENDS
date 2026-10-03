@@ -49,7 +49,7 @@ export default function CollectionsPage() {
       <motion.div
         className="a-grid"
         variants={listVariants}
-        style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}
+        style={{ gridTemplateColumns: "repeat(auto-fill, minmax(min(300px, 100%), 1fr))" }}
       >
         {rows.map((collection) => (
           <motion.article key={collection.slug} className="a-card" variants={riseVariants} whileHover={{ y: -3 }}>

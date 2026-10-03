@@ -183,7 +183,7 @@ export default function ProductsPage() {
             <>
               <select
                 className="a-select"
-                style={{ width: "auto", minWidth: 150 }}
+                style={{ flex: "1 1 140px", minWidth: 0 }}
                 value={category}
                 aria-label="Filter by category"
                 onChange={(event) => setCategory(event.target.value)}
@@ -195,7 +195,7 @@ export default function ProductsPage() {
               </select>
               <select
                 className="a-select"
-                style={{ width: "auto", minWidth: 170 }}
+                style={{ flex: "1 1 160px", minWidth: 0 }}
                 value={collection}
                 aria-label="Filter by collection"
                 onChange={(event) => setCollection(event.target.value)}

@@ -79,16 +79,17 @@ export default function BannersPage() {
           <AnimatePresence initial={false}>
             {order.map((banner) => (
               <Reorder.Item key={banner.id} value={banner} as="div" whileDrag={{ scale: 1.01, zIndex: 3 }}>
-                <motion.article
-                  className="a-card"
-                  variants={riseVariants}
-                  style={{ display: "grid", gridTemplateColumns: "28px 172px minmax(0, 1fr) auto", alignItems: "center", gap: 16, padding: 14 }}
-                >
-                  <span className="a-muted" style={{ display: "grid", placeItems: "center", cursor: "grab" }} aria-hidden="true">
+                <motion.article className="a-card a-banner-row" variants={riseVariants}>
+                  <span
+                    className="a-banner-row__handle a-muted"
+                    style={{ display: "grid", placeItems: "center", cursor: "grab" }}
+                    aria-hidden="true"
+                  >
                     <GripVertical size={17} />
                   </span>
 
                   <span
+                    className="a-banner-row__thumb"
                     style={{
                       aspectRatio: "16 / 9",
                       overflow: "hidden",
@@ -111,7 +112,7 @@ export default function BannersPage() {
                     )}
                   </span>
 
-                  <span style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                  <span className="a-banner-row__info" style={{ display: "grid", gap: 6, minWidth: 0 }}>
                     <span className="a-row" style={{ gap: 8, flexWrap: "wrap" }}>
                       <strong style={{ fontSize: "0.9rem" }}>{banner.title || "Untitled banner"}</strong>
                       <Badge tone={statusTone[banner.status]} dot>
@@ -127,7 +128,7 @@ export default function BannersPage() {
                     </span>
                   </span>
 
-                  <span className="a-row" style={{ gap: 4 }}>
+                  <span className="a-banner-row__actions a-row" style={{ gap: 4 }}>
                     <button
                       className="a-row-action"
                       type="button"
