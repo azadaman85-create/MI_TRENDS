@@ -1,0 +1,79 @@
+{
+  "_source": "Generated from mi-trends/lib/admin/data.ts (coupons) and StoreProvider.tsx rules.",
+  "coupons": [
+    {
+      "code": "MI10",
+      "usage_limit": 5000,
+      "minimum_amount": 0,
+      "status": "active",
+      "individual_use": true,
+      "discount_type": "percent",
+      "amount": 10,
+      "publish": true
+    },
+    {
+      "code": "FIRST15",
+      "usage_limit": 2000,
+      "minimum_amount": 999,
+      "status": "active",
+      "individual_use": true,
+      "discount_type": "fixed_cart",
+      "amount": 400,
+      "capped_percent": 15,
+      "publish": true
+    },
+    {
+      "code": "FLAT200",
+      "usage_limit": 1000,
+      "minimum_amount": 1499,
+      "status": "active",
+      "individual_use": true,
+      "discount_type": "fixed_cart",
+      "amount": 200,
+      "publish": true,
+      "expires": null
+    },
+    {
+      "code": "FREESHIP",
+      "usage_limit": 9999,
+      "minimum_amount": 699,
+      "status": "active",
+      "individual_use": true,
+      "discount_type": "fixed_cart",
+      "amount": 0,
+      "free_shipping": true,
+      "publish": true
+    },
+    {
+      "code": "DROP01",
+      "usage_limit": 750,
+      "minimum_amount": 1999,
+      "status": "scheduled",
+      "individual_use": true,
+      "discount_type": "percent",
+      "amount": 20,
+      "publish": false
+    },
+    {
+      "code": "MONSOON",
+      "usage_limit": 600,
+      "minimum_amount": 2499,
+      "status": "expired",
+      "individual_use": true,
+      "discount_type": "fixed_cart",
+      "amount": 300,
+      "publish": false,
+      "expires": "2026-08-13"
+    },
+    {
+      "code": "VIP25",
+      "usage_limit": 300,
+      "minimum_amount": 3499,
+      "status": "paused",
+      "individual_use": true,
+      "discount_type": "percent",
+      "amount": 25,
+      "publish": false
+    }
+  ]
+}

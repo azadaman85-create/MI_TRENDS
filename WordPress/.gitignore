@@ -1,0 +1,3 @@
+# Built zips — recreate with: bash tools/package.sh (and tools/build-studio-backup.sh)
+dist/
+.DS_Store

@@ -1,0 +1,10 @@
+{
+  "preferredVersions": { "php": "8.3", "wp": "latest" },
+  "features": { "networking": true },
+  "steps": [
+    { "step": "installPlugin", "pluginData": { "resource": "wordpress.org/plugins", "slug": "woocommerce" }, "options": { "activate": true } },
+    { "step": "installPlugin", "pluginData": { "resource": "bundled", "path": "/mi-trends-core.zip" }, "options": { "activate": true } },
+    { "step": "installTheme", "themeData": { "resource": "bundled", "path": "/mi-trends.zip" }, "options": { "activate": true } },
+    { "step": "runPHP", "code": "<?php require '/wordpress/wp-load.php'; update_option('blogname','MI TRENDS'); update_option('blogdescription','Made to be noticed'); update_option('timezone_string','Asia/Kolkata'); update_option('woocommerce_coming_soon','no'); update_option('woocommerce_store_pages_only','no'); update_option('woocommerce_onboarding_profile', array('skipped'=>true)); update_option('woocommerce_task_list_hidden','yes'); foreach (array(1,2,3) as $id) { $p = get_post($id); if ($p && in_array($p->post_name, array('hello-world','sample-page','privacy-policy'), true) && 'privacy-policy' !== $p->post_name) { wp_delete_post($id, true); } } $log = MI_Core_Seeder::setup(); update_option('mi_core_setup_done', time()); $log = array_merge($log, MI_Core_Seeder::import(true)); $home = get_page_by_path('home'); if (!$home) { $hid = wp_insert_post(array('post_type'=>'page','post_status'=>'publish','post_title'=>'Home','post_name'=>'home')); } else { $hid = $home->ID; } update_option('show_on_front','page'); update_option('page_on_front',$hid); $priv = get_page_by_path('info/privacy'); if ($priv) { update_option('wp_page_for_privacy_policy', $priv->ID); } flush_rewrite_rules(); $log[] = 'theme=' . get_stylesheet() . ' products=' . count(wc_get_products(array('limit'=>-1,'return'=>'ids'))); file_put_contents('/wordpress/wp-content/uploads/mi-setup-log.txt', implode(\"\\n\", $log));" }
+  ]
+}

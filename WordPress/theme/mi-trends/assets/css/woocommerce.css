@@ -1,0 +1,206 @@
+/* =========================================================================
+   MI TRENDS — WordPress / WooCommerce bridge
+   storefront-globals.css is the original design system, unchanged. This file
+   only covers markup that exists in WordPress but not in the Next.js app:
+   WooCommerce notices, account screens, reviews, block content, and a few
+   attribute states the React version expressed by unmounting elements.
+   Every value comes from the storefront tokens (--ink, --paper, --line …).
+   ========================================================================= */
+
+/* React removed hidden elements from the DOM; here they stay and carry [hidden].
+   Several storefront rules set display (e.g. .count-badge, .back-to-top), so the
+   attribute has to win. */
+[hidden] { display: none !important; }
+
+/* The overlay sources are never shown in place; the script moves them into a layer. */
+.mi-overlay-source { display: none !important; }
+
+/* The filter bar's "×" and "Clear" are links here (they work without JavaScript). */
+a.fb-remove { text-decoration: none; }
+a.fb-clear { display: inline-flex; align-items: center; text-decoration: none; }
+
+/* ---------- WooCommerce notices (no-JavaScript fallbacks) ---------- */
+.mi-notices { margin: 0 0 22px; }
+.woocommerce-message,
+.woocommerce-info,
+.woocommerce-error,
+.woocommerce-notice {
+  display: block;
+  margin: 0 0 12px;
+  padding: 13px 16px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--green);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 600;
+  list-style: none;
+}
+.woocommerce-info { border-left-color: #2b63d9; }
+.woocommerce-error { border-left-color: var(--red); }
+.woocommerce-error li { margin: 0; }
+.woocommerce-message .button,
+.woocommerce-info .button { float: right; margin-left: 12px; min-height: 0; padding: 0; border: 0; background: none; color: var(--ink); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-decoration: underline; text-transform: uppercase; }
+.woocommerce-NoticeGroup-checkout { grid-column: 1 / -1; }
+
+/* Account sign-in alert holds an icon and text. */
+.acct__alert > span { min-width: 0; }
+
+/* ---------- Generic WooCommerce buttons, inputs and tables (account screens) ---------- */
+.mi-account-content .button,
+.mi-account-content button[type="submit"],
+.woocommerce-Button,
+.woocommerce-form-login__submit,
+#reviews .submit {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 20px;
+  border: 1px solid var(--ink);
+  border-radius: 5px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.mi-account-content .button:hover,
+.woocommerce-Button:hover { background: #000; }
+
+.mi-account-content input.input-text,
+.mi-account-content input[type="text"],
+.mi-account-content input[type="email"],
+.mi-account-content input[type="password"],
+.mi-account-content input[type="tel"],
+.mi-account-content select,
+.mi-account-content textarea,
+#reviews input[type="text"],
+#reviews input[type="email"],
+#reviews textarea,
+.woocommerce-ResetPassword input.input-text {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 13px;
+  border: 1px solid #d7d2cb;
+  border-radius: 5px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 0.8rem;
+}
+.mi-account-content textarea, #reviews textarea { padding-block: 12px; }
+
+.mi-account-content .form-row,
+.woocommerce-ResetPassword .form-row,
+#reviews .comment-form p { display: grid; gap: 7px; margin: 0 0 16px; }
+.mi-account-content .form-row label,
+.woocommerce-ResetPassword label,
+#reviews label { font-size: 0.64rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+.mi-account-content .required { color: var(--red); text-decoration: none; border: 0; }
+.mi-account-content fieldset { margin: 22px 0; padding: 18px; border: 1px solid var(--line); border-radius: var(--radius); }
+.mi-account-content legend { padding: 0 6px; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+
+.mi-account-content table.shop_table,
+.mi-account-content table.woocommerce-table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 0.8rem;
+}
+.mi-account-content table th,
+.mi-account-content table td { padding: 13px 15px; border-bottom: 1px solid #ece8e2; text-align: left; }
+.mi-account-content table thead th { background: #f6f4f0; color: #64605a; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.mi-account-content table tr:last-child td { border-bottom: 0; }
+.mi-account-content .woocommerce-orders-table__cell-order-actions .button { min-height: 34px; padding: 0 12px; }
+.mi-account-content .woocommerce-pagination { display: flex; gap: 8px; margin-top: 18px; }
+.mi-account-content mark { background: none; color: inherit; font-weight: 800; }
+.mi-account-content .woocommerce-Addresses { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.mi-account-content .woocommerce-Address { padding: 22px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.mi-account-content .woocommerce-Address-title { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.mi-account-content .woocommerce-Address-title h2 { margin: 0 0 10px; font-size: 1rem; text-transform: uppercase; }
+.mi-account-content address { font-style: normal; line-height: 1.6; color: #55514c; }
+.mi-account-content .woocommerce-order-details,
+.mi-account-content .woocommerce-customer-details { margin-top: 28px; }
+.mi-account-content h2 { font-size: 1.2rem; text-transform: uppercase; letter-spacing: -0.02em; }
+@media (max-width: 620px) {
+  .mi-account-content table.shop_table_responsive thead { display: none; }
+  .mi-account-content table.shop_table_responsive tr { display: block; padding: 10px 0; border-bottom: 1px solid #ece8e2; }
+  .mi-account-content table.shop_table_responsive td { display: flex; justify-content: space-between; gap: 12px; border: 0; padding: 6px 15px; }
+  .mi-account-content table.shop_table_responsive td::before { content: attr(data-title); font-weight: 800; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em; color: #64605a; }
+}
+
+/* ---------- Product reviews inside the "Ratings & reviews" accordion ---------- */
+#reviews { margin-top: 18px; }
+#reviews .woocommerce-Reviews-title { margin: 0 0 12px; font-size: 0.75rem; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: #272421; }
+#reviews ol.commentlist { display: grid; gap: 12px; margin: 0 0 18px; padding: 0; list-style: none; }
+#reviews .comment_container { display: grid; grid-template-columns: 36px 1fr; gap: 10px; padding: 14px; border: 1px solid #e1ddd7; border-radius: 8px; background: #fff; }
+#reviews .avatar { width: 36px; height: 36px; border-radius: 50%; }
+#reviews .star-rating { color: #18663b; font-size: 0.7rem; font-weight: 800; }
+#reviews .meta { margin: 2px 0 6px; color: #77716b; font-size: 0.7rem; }
+#reviews .description p { margin: 0; color: #68635c; }
+#reviews .comment-reply-title { display: block; margin: 8px 0 12px; font-size: 0.75rem; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: #272421; }
+#reviews p.stars a { margin-right: 4px; color: #b6b0a8; font-size: 0.85rem; }
+#reviews p.stars a::before { content: "★"; }
+#reviews p.stars { display: flex; }
+#reviews p.stars a { overflow: hidden; width: 1.1em; white-space: nowrap; text-indent: 1.1em; position: relative; }
+#reviews p.stars a::before { position: absolute; left: 0; top: 0; text-indent: 0; }
+#reviews p.stars:hover a::before, #reviews p.stars.selected a.active::before, #reviews p.stars.selected a:not(.active)::before { color: var(--ink); }
+#reviews p.stars.selected a.active ~ a::before, #reviews p.stars a:hover ~ a::before { color: #b6b0a8; }
+
+/* ---------- Any other WooCommerce loop (shortcodes, blocks) uses the shop grid ---------- */
+ul.products { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 34px 15px; margin: 0; padding: 0; list-style: none; }
+ul.products > li.mi-loop-item { margin: 0; min-width: 0; }
+@media (max-width: 1180px) { ul.products { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 620px) { ul.products { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 8px; } }
+
+/* ---------- FAQs page: Heading + Details blocks drawn as the original accordion ---------- */
+.mi-faq-content { display: grid; gap: 10px; }
+.mi-faq-content > h2 { margin: 24px 0 4px; font-size: 18px; text-transform: uppercase; letter-spacing: -.02em; color: #e5482b; }
+.mi-faq-content > h2:first-child { margin-top: 0; }
+.mi-faq-content details { border: 1px solid #ddd9d2; border-radius: 8px; background: #fff; overflow: hidden; }
+.mi-faq-content summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; list-style: none; font-size: 13px; font-weight: 700; color: #171717; cursor: pointer; }
+.mi-faq-content summary::-webkit-details-marker { display: none; }
+.mi-faq-content summary::after { content: ""; width: 16px; height: 16px; flex: none; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat; transition: transform .15s ease; }
+.mi-faq-content details[open] summary::after { transform: rotate(180deg); }
+.mi-faq-content details > :not(summary) { margin: 0; padding: 0 18px 18px; color: #55514c; font-size: 13px; line-height: 1.6; }
+
+/* ---------- Block editor content on info pages ---------- */
+.simple-body > p,
+.simple-body > ul,
+.simple-body > ol { margin: 0; color: #55514c; line-height: 1.65; font-size: 14px; }
+.simple-body .wp-block-group > .wp-block-group__inner-container > :last-child,
+.simple-body .wp-block-group > :last-child { margin-bottom: 0; }
+.alignleft { float: left; margin: 0 1.5em 1em 0; }
+.alignright { float: right; margin: 0 0 1em 1.5em; }
+.aligncenter { margin-inline: auto; }
+.wp-caption-text, figcaption { color: #77716a; font-size: 0.75rem; }
+
+/* ---------- Checkout extras WooCommerce injects ---------- */
+.checkout-page .woocommerce-form-coupon-toggle,
+.checkout-page .woocommerce-form-login-toggle { display: none; }
+.checkout-page .woocommerce-shipping-fields h3 { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+.checkout-page #payment .place-order { margin: 0; padding: 0; }
+.checkout-page .payment-detail .payment_box > p:first-child { margin-top: 0; }
+.checkout-page .payment-detail .payment_box p { margin: 0 0 8px; color: #716b64; font-size: 0.7rem; }
+
+/* Pagination for blog/search lists */
+.navigation.pagination .nav-links,
+.mi-pagination { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 40px; }
+.navigation.pagination .page-numbers { min-width: 44px; height: 44px; display: inline-grid; place-items: center; padding: 0 12px; border: 1px solid #d8d4cd; border-radius: 6px; background: #fff; font-size: 12px; font-weight: 800; }
+.navigation.pagination .page-numbers.current { border-color: #171717; background: #171717; color: #fff; }
+
+/* Social-login buttons dropped into the sign-in card */
+.acct__card .mi-social-login { display: grid; gap: 8px; }
+
+/* WooCommerce prints its notice wrapper before the cart/checkout/account templates;
+   keep it inside the page width like the rest of the layout. */
+.woocommerce-notices-wrapper:not(:empty) { width: min(1320px, calc(100% - 48px)); margin: 20px auto 0; }
+.woocommerce-notices-wrapper:empty { display: none; }
+@media (max-width: 620px) { .woocommerce-notices-wrapper:not(:empty) { width: calc(100% - 24px); } }

@@ -1,0 +1,27 @@
+/*
+Theme Name: MI TRENDS
+Theme URI: https://mitrends.in/
+Author: MI TRENDS
+Description: The MI TRENDS storefront — original streetwear, graphic essentials and everyday statement pieces designed in India. A WooCommerce theme that reproduces the MI TRENDS Next.js storefront: same tokens, type, layout, components and responsive behaviour. Business logic (colour selection, COD with UPI advance, wishlist, order statuses, inventory log, reports) lives in the companion "MI Trends Core" plugin.
+Version: 1.0.0
+Requires at least: 6.4
+Tested up to: 6.8
+Requires PHP: 7.4
+WC requires at least: 8.5
+WC tested up to: 9.8
+License: GNU General Public License v2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: mi-trends
+Tags: e-commerce, woocommerce, custom-menu, featured-images, translation-ready
+*/
+
+/*
+ * The real stylesheets are in assets/css and are enqueued from inc/assets.php:
+ *   fonts.css               Inter, self-hosted
+ *   storefront-globals.css  app/globals.css from the Next.js project, unchanged
+ *   account.css             components/account/account.css, unchanged
+ *   filter-token-bar.css    components/ui/filter-token-bar.css, unchanged
+ *   pages.css               every page's scoped <style jsx>, prefixed by page root
+ *   woocommerce.css         bridges WooCommerce markup (notices, forms) to the MI look
+ * This file only carries the theme header WordPress reads.
+ */
