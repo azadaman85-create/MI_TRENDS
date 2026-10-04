@@ -199,7 +199,20 @@ export default function CheckoutPage() {
       const createRes = await fetch("/api/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: Math.round(dueNow * 100), currency: "INR", receipt: order }),
+        body: JSON.stringify({
+          lines: store.cartLines.map((line) => ({
+            productId: line.product.id,
+            size: line.size,
+            color: line.color.name,
+            quantity: line.quantity,
+          })),
+          couponCode: store.coupon?.code ?? store.couponCode ?? null,
+          shipping,
+          codFee,
+          paymentMode: payment,
+          advancePercent: settings.codAdvancePercent,
+          receipt: order,
+        }),
       });
       const createData = await createRes.json();
       if (!createRes.ok) throw new Error(createData.error || "Could not start the payment.");

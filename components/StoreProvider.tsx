@@ -12,6 +12,7 @@ import {
 } from "react";
 
 import { getProductById, products } from "@/lib/catalog";
+import { calculateCouponDiscount, couponMinimum, VALID_COUPON_CODES } from "@/lib/coupons";
 import type { CartLine, Product, ProductColor } from "@/lib/types";
 
 export type ToastTone = "success" | "error" | "info";
@@ -120,27 +121,6 @@ function productId(product: Product | number) {
 
 function clampQuantity(quantity: number) {
   return Math.max(1, Math.min(10, Math.floor(quantity)));
-}
-
-function couponMinimum(code: string) {
-  if (code === "FLAT200") return 1499;
-  if (code === "FIRST15") return 999;
-  return 0;
-}
-
-export function calculateCouponDiscount(code: string | null, subtotal: number) {
-  if (!code || subtotal <= 0 || subtotal < couponMinimum(code)) return 0;
-
-  switch (code) {
-    case "MI10":
-      return Math.round(subtotal * 0.1);
-    case "FLAT200":
-      return 200;
-    case "FIRST15":
-      return Math.min(400, Math.round(subtotal * 0.15));
-    default:
-      return 0;
-  }
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
@@ -377,14 +357,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const applyCoupon = useCallback(
     (rawCode: string) => {
       const code = rawCode.trim().toUpperCase();
-      const validCodes = ["MI10", "FLAT200", "FIRST15"];
 
       if (!subtotal) {
         showToast("Add an item before applying a coupon.", "error");
         return false;
       }
 
-      if (!validCodes.includes(code)) {
+      if (!(VALID_COUPON_CODES as readonly string[]).includes(code)) {
         showToast("That coupon code is not valid.", "error");
         return false;
       }
