@@ -1,6 +1,5 @@
-import { createHash, timingSafeEqual } from "crypto";
-
 import { createSessionToken, verifySessionToken } from "@/lib/security/session";
+import { verifyPassword } from "@/lib/security/password";
 
 export const ADMIN_SESSION_COOKIE = "mitrends_admin_session";
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
@@ -28,17 +27,6 @@ export type AdminUser = {
   initials: string;
 };
 
-/** Same construction as the storefront account store: SHA-256 over `salt:password`. */
-function hashPassword(password: string, salt: string) {
-  return createHash("sha256").update(`${salt}:${password}`).digest("hex");
-}
-
-function safeEqualHex(a: string, b: string) {
-  const bufA = Buffer.from(a, "hex");
-  const bufB = Buffer.from(b, "hex");
-  return bufA.length === bufB.length && bufA.length > 0 && timingSafeEqual(bufA, bufB);
-}
-
 function initialsFor(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return "AD";
@@ -49,8 +37,7 @@ function initialsFor(name: string) {
 
 export function verifyAdminCredentials(email: string, password: string): AdminUser | null {
   if (!ADMIN_CONFIGURED) return null;
-  const attempted = hashPassword(password, ADMIN_PASSWORD_SALT);
-  if (email.trim().toLowerCase() !== ADMIN_EMAIL || !safeEqualHex(attempted, ADMIN_PASSWORD_HASH)) {
+  if (email.trim().toLowerCase() !== ADMIN_EMAIL || !verifyPassword(password, ADMIN_PASSWORD_SALT, ADMIN_PASSWORD_HASH)) {
     return null;
   }
   return { name: ADMIN_NAME, email: ADMIN_EMAIL, role: "Super admin", initials: initialsFor(ADMIN_NAME) };

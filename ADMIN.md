@@ -19,14 +19,19 @@ only in `lib/admin/session.server.ts`, a server-only module, and never reach the
 | `ADMIN_EMAIL` | The sign-in address |
 | `ADMIN_NAME` | Display name, shown in the topbar and used for the avatar initials |
 | `ADMIN_PASSWORD_SALT` | Random per-install salt |
-| `ADMIN_PASSWORD_HASH` | SHA-256 of `salt:password` |
+| `ADMIN_PASSWORD_HASH` | `scrypt:` + a scrypt digest of the password (see `lib/security/password.ts`) |
 | `ADMIN_SESSION_SECRET` | Signs the session cookie — rotate it to invalidate every admin session |
 
 Generate a fresh salt+hash pair after any password change:
 
 ```bash
-node -e 'const c=require("crypto");const s=c.randomBytes(16).toString("hex");console.log("salt",s);console.log("hash",c.createHash("sha256").update(s+":"+process.argv[1]).digest("hex"))' 'YOUR_PASSWORD'
+node -e 'const c=require("crypto");const s=c.randomBytes(16).toString("hex");console.log("salt",s);console.log("hash","scrypt:"+c.scryptSync(process.argv[1],s,64).toString("hex"))' 'YOUR_PASSWORD'
 ```
+
+(Hashing moved from a single SHA-256 round to scrypt — deliberately slow/memory-hard, which is
+what actually resists offline guessing; plain SHA-256 doesn't. `verifyPassword()` still accepts
+an old unprefixed SHA-256 hash so an already-configured `.env` doesn't break instantly, but
+regenerate with the command above the next time the password changes.)
 
 **This is a real security boundary.** Credentials are checked server-side in
 `app/api/admin/login/route.ts`; the salt and hash never reach the browser. A successful login gets
