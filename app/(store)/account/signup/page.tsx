@@ -8,6 +8,7 @@ import { ArrowRight, Eye, EyeOff, Lock, Mail, Phone, TriangleAlert, UserRound } 
 import { AuthShell } from "@/components/account/AuthShell";
 import { GoogleAuthButton } from "@/components/account/GoogleAuthButton";
 import { useCustomer } from "@/lib/account/auth";
+import { sanitizeNextPath } from "@/lib/safe-redirect";
 
 function strengthOf(password: string) {
   let score = 0;
@@ -23,7 +24,7 @@ function SignupContent() {
   const searchParams = useSearchParams();
   const { signUp } = useCustomer();
 
-  const next = searchParams.get("next") || "/account";
+  const next = sanitizeNextPath(searchParams.get("next"), "/account");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");

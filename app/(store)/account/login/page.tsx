@@ -8,13 +8,14 @@ import { ArrowRight, Eye, EyeOff, Lock, Mail, TriangleAlert } from "lucide-react
 import { AuthShell } from "@/components/account/AuthShell";
 import { GoogleAuthButton } from "@/components/account/GoogleAuthButton";
 import { useCustomer } from "@/lib/account/auth";
+import { sanitizeNextPath } from "@/lib/safe-redirect";
 
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { signIn } = useCustomer();
 
-  const next = searchParams.get("next") || "/account";
+  const next = sanitizeNextPath(searchParams.get("next"), "/account");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
