@@ -166,14 +166,14 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
       const normalized = email.trim().toLowerCase();
       const account = readAccounts().find((entry) => entry.email === normalized);
 
-      if (!account || !account.salt || !account.hash) {
-        return { ok: false, message: "We couldn't find an account with those details." };
-      }
+      // Same generic message either way — not distinguishing "no such account" from
+      // "wrong password" avoids letting a failed login double as an email-existence
+      // check (OWASP A07's own named example of what not to do).
+      const mismatch = { ok: false as const, message: "That email and password don't match." };
+      if (!account || !account.salt || !account.hash) return mismatch;
 
       const hash = await hashPassword(password, account.salt);
-      if (hash !== account.hash) {
-        return { ok: false, message: "That email and password don't match." };
-      }
+      if (hash !== account.hash) return mismatch;
 
       const profile = publicProfile(account);
       startSession(profile);
