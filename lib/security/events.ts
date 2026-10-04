@@ -21,7 +21,9 @@ export type SecurityEventType =
   | "PAYMENT_REPLAY_REJECTED"
   | "ORDER_PRICE_REJECTED"
   | "CSRF_BLOCKED"
-  | "INVALID_INPUT";
+  | "INVALID_INPUT"
+  /** A privileged change made through the admin APIs (order status, etc.). */
+  | "ADMIN_ACTION";
 
 export type SecurityEvent = {
   type: SecurityEventType;

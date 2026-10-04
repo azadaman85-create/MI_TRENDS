@@ -15,12 +15,9 @@ import {
   banners as seedBanners,
   categoryTree as seedCategories,
   coupons as seedCoupons,
-  customers as seedCustomers,
-  orders as seedOrders,
   reviews as seedReviews,
 } from "@/lib/admin/data";
 import { publishBannerFeed } from "@/lib/banner-feed";
-import { mergeOrders, readOrderInbox } from "@/lib/order-inbox";
 import {
   DEFAULT_STORE_SETTINGS,
   readStoreSettings,
@@ -53,9 +50,13 @@ export type AdminToast = {
   description?: string;
 };
 
+/**
+ * What still lives in this device's localStorage. Orders and customers deliberately
+ * aren't here any more — those come from MongoDB via `/api/admin/*`, so the panel shows
+ * the same data on every device instead of whatever this browser happened to save.
+ */
 type PersistedState = {
   products: AdminProduct[];
-  orders: Order[];
   reviews: Review[];
   coupons: Coupon[];
   banners: Banner[];
@@ -63,6 +64,8 @@ type PersistedState = {
 };
 
 type AdminStoreValue = PersistedState & {
+  /** From MongoDB, refreshed on an interval — not persisted to this device. */
+  orders: Order[];
   customers: Customer[];
   /** Checkout rules the storefront reads — see lib/store-settings.ts. */
   settings: StoreSettings;
@@ -94,7 +97,6 @@ const AdminStoreContext = createContext<AdminStoreValue | undefined>(undefined);
 function seedState(): PersistedState {
   return {
     products: seedProducts,
-    orders: seedOrders,
     reviews: seedReviews,
     coupons: seedCoupons,
     banners: seedBanners,
@@ -102,8 +104,13 @@ function seedState(): PersistedState {
   };
 }
 
+/** How often the panel re-reads orders and customers from the database. */
+const LIVE_REFRESH_MS = 8000;
+
 export function AdminStoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<PersistedState>(seedState);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [settings, setSettings] = useState<StoreSettings>(DEFAULT_STORE_SETTINGS);
   const [toasts, setToasts] = useState<AdminToast[]>([]);
@@ -114,23 +121,51 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       LEGACY_STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key));
       const saved = window.localStorage.getItem(STORAGE_KEY);
       const parsed = saved ? (JSON.parse(saved) as Partial<PersistedState>) : null;
-      /* Settings, saved edits and storefront orders can only be read in the browser, so
-         they land after the first paint rather than during render. */
+      /* Settings and saved edits can only be read in the browser, so they land after the
+         first paint rather than during render. */
       /* eslint-disable react-hooks/set-state-in-effect */
       setSettings(readStoreSettings());
-      const inbox = readOrderInbox();
-      if (parsed || inbox.length) {
-        setState((current) => {
-          const merged = { ...current, ...parsed };
-          return { ...merged, orders: mergeOrders(merged.orders, inbox) };
-        });
-      }
+      if (parsed) setState((current) => ({ ...current, ...parsed }));
       /* eslint-enable react-hooks/set-state-in-effect */
     } catch {
       // A corrupt or blocked store just means we stay on the seeded data.
     }
     setHydrated(true);
   }, []);
+
+  /**
+   * Orders and customers come from MongoDB, re-read on an interval so the panel reflects
+   * new checkouts without a manual refresh. Polling rather than a socket: the app deploys
+   * to serverless functions, where a long-lived push connection isn't a good fit.
+   */
+  const refreshLiveData = useCallback(async () => {
+    try {
+      const [ordersResponse, customersResponse] = await Promise.all([
+        fetch("/api/admin/orders", { cache: "no-store" }),
+        fetch("/api/admin/customers", { cache: "no-store" }),
+      ]);
+      if (ordersResponse.ok) {
+        const data = (await ordersResponse.json()) as { orders: Order[] };
+        setOrders(data.orders ?? []);
+      }
+      if (customersResponse.ok) {
+        const data = (await customersResponse.json()) as { customers: Customer[] };
+        setCustomers(data.customers ?? []);
+      }
+    } catch {
+      // Keep whatever the panel is already showing until the next tick succeeds.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    /* The state updates happen after the fetch resolves, not during this effect — the
+       lint rule can't see through the async boundary. */
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void refreshLiveData();
+    const timer = window.setInterval(() => void refreshLiveData(), LIVE_REFRESH_MS);
+    return () => window.clearInterval(timer);
+  }, [hydrated, refreshLiveData]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -171,27 +206,9 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     const patchProducts = (updater: (products: AdminProduct[]) => AdminProduct[]) =>
       setState((current) => ({ ...current, products: updater(current.products) }));
 
-    const customers: Customer[] = seedCustomers.map((customer) => {
-      const theirs = state.orders.filter(
-        (order) => order.customerId === customer.id && order.status !== "cancelled",
-      );
-      const spend = theirs.reduce((sum, order) => sum + order.total, 0);
-      const lastOrderAt = theirs.reduce<string | null>(
-        (latest, order) => (!latest || order.placedAt > latest ? order.placedAt : latest),
-        null,
-      );
-
-      return {
-        ...customer,
-        orders: theirs.length,
-        spend,
-        lastOrderAt,
-        tier: spend > 12000 ? "vip" : theirs.length > 2 ? "regular" : "new",
-      };
-    });
-
     return {
       ...state,
+      orders,
       customers,
       settings,
       updateSettings,
@@ -257,10 +274,12 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
           ),
         ),
 
-      setOrderStatus: (id, status) =>
-        setState((current) => ({
-          ...current,
-          orders: current.orders.map((order) =>
+      // Writes through to MongoDB, then reflects it locally so the row updates instantly
+      // instead of waiting for the next poll. A failed write is surfaced and rolled back
+      // by the refresh, rather than leaving the panel showing a change that didn't save.
+      setOrderStatus: (id, status) => {
+        setOrders((current) =>
+          current.map((order) =>
             order.id === id
               ? {
                   ...order,
@@ -277,7 +296,22 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
                 }
               : order,
           ),
-        })),
+        );
+
+        void (async () => {
+          try {
+            const response = await fetch(`/api/admin/orders/${encodeURIComponent(id)}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ status }),
+            });
+            if (!response.ok) throw new Error("save failed");
+          } catch {
+            notify("Could not save that status change", "error", "The order was left as it was.");
+            void refreshLiveData();
+          }
+        })();
+      },
 
       setReviewStatus: (id, status) =>
         setState((current) => ({
@@ -330,9 +364,9 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         })),
 
       resetDemoData: () => {
-        // Orders placed on the storefront are real, not demo data — keep them.
-        const seeded = seedState();
-        setState({ ...seeded, orders: mergeOrders(seeded.orders, readOrderInbox()) });
+        // Only resets the demo catalogue/content. Orders and customers live in MongoDB
+        // and are real records — this never touches them.
+        setState(seedState());
         try {
           window.localStorage.removeItem(STORAGE_KEY);
         } catch {
@@ -340,7 +374,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         }
       },
     };
-  }, [state, hydrated, settings, updateSettings, toasts, notify, dismissToast]);
+  }, [state, orders, customers, hydrated, settings, updateSettings, toasts, notify, dismissToast, refreshLiveData]);
 
   return <AdminStoreContext.Provider value={value}>{children}</AdminStoreContext.Provider>;
 }

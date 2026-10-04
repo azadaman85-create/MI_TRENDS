@@ -25,6 +25,13 @@ export const RATE_LIMITS = {
   adminSession: { limit: 60, windowMs: 60 * 1000 } as RateLimitRule,
   createOrder: { limit: 20, windowMs: 60 * 1000 } as RateLimitRule,
   verifyPayment: { limit: 20, windowMs: 60 * 1000 } as RateLimitRule,
+
+  /** Customer-facing auth. Looser than the admin's — real shoppers mistype and retry. */
+  customerSignup: { limit: 10, windowMs: 10 * 60 * 1000 } as RateLimitRule,
+  customerLogin: { limit: 12, windowMs: 10 * 60 * 1000 } as RateLimitRule,
+  customerSession: { limit: 120, windowMs: 60 * 1000 } as RateLimitRule,
+  /** Admin panel polls these for near-real-time order/customer updates. */
+  adminData: { limit: 240, windowMs: 60 * 1000 } as RateLimitRule,
 } as const;
 
 /**
