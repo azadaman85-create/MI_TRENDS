@@ -209,31 +209,18 @@ export default function SettingsPage() {
                     onChange={(event) => updateSettings({ codMinimumOrder: Number(event.target.value) })}
                   />
                   <Input
-                    label="UPI advance"
+                    label="COD handling fee"
                     type="number"
-                    prefix="%"
-                    value={settings.codAdvancePercent}
+                    prefix="₹"
+                    value={settings.codFee}
                     disabled={!settings.codEnabled}
-                    onChange={(event) =>
-                      updateSettings({
-                        codAdvancePercent: Math.max(0, Math.min(100, Number(event.target.value))),
-                      })
-                    }
+                    onChange={(event) => updateSettings({ codFee: Number(event.target.value) })}
                   />
                 </div>
 
-                <Input
-                  label="COD handling fee"
-                  type="number"
-                  prefix="₹"
-                  value={settings.codFee}
-                  disabled={!settings.codEnabled}
-                  onChange={(event) => updateSettings({ codFee: Number(event.target.value) })}
-                />
-
                 <p className="a-muted" style={{ fontSize: "0.74rem", lineHeight: 1.6 }}>
                   {settings.codEnabled
-                    ? `Judged on product value, before delivery. On ${formatINR(settings.codMinimumOrder + 700)} of product the shopper pays about ${formatINR(Math.round(((settings.codMinimumOrder + 700 + settings.codFee) * settings.codAdvancePercent) / 100))} now by UPI and the balance to the courier.`
+                    ? `Judged on product value, before delivery. COD takes nothing up front — on ${formatINR(settings.codMinimumOrder + 700)} of product the courier collects ${formatINR(settings.codMinimumOrder + 700 + settings.codFee)} on delivery, handling fee included.`
                     : "COD is hidden at checkout. Existing COD orders are unaffected."}
                 </p>
               </div>

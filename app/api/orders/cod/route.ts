@@ -4,24 +4,31 @@ import { currentCustomerId } from "@/lib/customer/session.server";
 import { validateOrderContact } from "@/lib/customer/validation";
 import { getOrdersCollection, type OrderDoc } from "@/lib/db/models";
 import { priceOrder } from "@/lib/pricing";
-import { razorpayClient } from "@/lib/razorpay";
 import { RATE_LIMITS } from "@/lib/security/config";
-import { logSecurityEvent } from "@/lib/security/events";
-import { recordOrder } from "@/lib/security/order-ledger";
+import { describeError, logSecurityEvent } from "@/lib/security/events";
 import { clientIpFrom, consumeRateLimit } from "@/lib/security/rate-limit";
 import { requestIdFrom } from "@/lib/security/request-id";
 
-const MIN_AMOUNT_PAISE = 100;
-const ENDPOINT = "/api/create-order";
-
+const ENDPOINT = "/api/orders/cod";
 const TIMELINE_STEPS = ["Order placed", "Payment confirmed", "Packed", "Shipped", "Delivered"];
 
+/**
+ * Places a cash-on-delivery order.
+ *
+ * COD takes nothing up front, so there's no Razorpay order, no payment to verify and
+ * no gateway redirect — the order is created live and unpaid in one step. The money is
+ * collected by the courier, and the order only becomes `paid` when an admin moves it to
+ * "delivered" (see app/api/admin/orders/[id]).
+ *
+ * Prepaid orders go through /api/create-order → /api/verify-payment instead, because
+ * there the order must not exist until the payment is proven.
+ */
 export async function POST(request: Request) {
   const requestId = requestIdFrom(request);
   const ip = clientIpFrom(request);
 
   const { limit, windowMs } = RATE_LIMITS.createOrder;
-  const { ok: withinLimit, retryAfterMs } = consumeRateLimit(`create-order:${ip}`, limit, windowMs);
+  const { ok: withinLimit, retryAfterMs } = consumeRateLimit(`cod-order:${ip}`, limit, windowMs);
   if (!withinLimit) {
     logSecurityEvent({ type: "RATE_LIMIT_TRIGGERED", requestId, ip, endpoint: ENDPOINT, result: "blocked", risk: "medium" });
     return NextResponse.json(
@@ -30,34 +37,16 @@ export async function POST(request: Request) {
     );
   }
 
-  // Who the order belongs to comes from the session cookie, never from the request body —
-  // the browser can't claim to be another customer.
   const customerId = await currentCustomerId();
   if (!customerId) {
     return NextResponse.json({ error: "Please sign in before checking out." }, { status: 401, headers: { "x-request-id": requestId } });
   }
 
-  let body: {
-    lines?: unknown;
-    couponCode?: unknown;
-    shipping?: unknown;
-    codFee?: unknown;
-    paymentMode?: unknown;
-    contact?: unknown;
-  };
+  let body: { lines?: unknown; couponCode?: unknown; shipping?: unknown; codFee?: unknown; contact?: unknown };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400, headers: { "x-request-id": requestId } });
-  }
-
-  // COD never touches the payment gateway — it has its own route, which creates the
-  // order unpaid in one step. Accepting it here would charge the shopper up front.
-  if (body.paymentMode === "cod") {
-    return NextResponse.json(
-      { error: "Cash on delivery orders are placed without an online payment." },
-      { status: 400, headers: { "x-request-id": requestId } },
-    );
   }
 
   const contact = validateOrderContact(body.contact);
@@ -65,15 +54,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: contact.error }, { status: 400, headers: { "x-request-id": requestId } });
   }
 
-  // The amount charged is always recomputed here from the catalogue + coupon rules —
-  // never trusted from the client. See lib/pricing.ts for the documented exception
-  // (shipping and the COD fee, which have no server-side home yet).
   const priced = priceOrder({
     lines: body.lines,
     couponCode: body.couponCode,
     shipping: body.shipping,
     codFee: body.codFee,
-    paymentMode: body.paymentMode,
+    paymentMode: "cod",
   });
 
   if (!priced.ok) {
@@ -81,23 +67,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: priced.error }, { status: 400, headers: { "x-request-id": requestId } });
   }
 
-  const amountPaise = Math.round(priced.dueNow * 100);
-  if (!Number.isFinite(amountPaise) || amountPaise < MIN_AMOUNT_PAISE) {
-    return NextResponse.json({ error: `Amount must be at least ${MIN_AMOUNT_PAISE} paise.` }, { status: 400, headers: { "x-request-id": requestId } });
-  }
-
-  const paymentMode: OrderDoc["payment"] = body.paymentMode === "card" ? "card" : body.paymentMode === "netbanking" ? "netbanking" : "upi";
   const placedAt = new Date().toISOString();
   const orderId = `MIT${Date.now().toString().slice(-8)}`;
 
   try {
-    const razorpay = razorpayClient();
-    const order = await razorpay.orders.create({ amount: amountPaise, currency: "INR", receipt: orderId });
-    recordOrder(order.id, amountPaise);
-
-    // Written as "awaiting_payment": it exists so the finalized order can be built from
-    // server-held data once the payment verifies, but it is deliberately excluded from
-    // the admin order list until then (an abandoned checkout is not an order).
     const doc: OrderDoc = {
       _id: orderId,
       customerId,
@@ -105,9 +78,11 @@ export async function POST(request: Request) {
       email: contact.value.email,
       phone: `+91 ${contact.value.phone}`,
       placedAt,
-      status: "awaiting_payment",
-      payment: paymentMode,
+      status: "pending",
+      payment: "cod",
+      // Nothing has been collected — the courier takes the full amount on delivery.
       paid: false,
+      advancePaid: 0,
       lines: priced.lines,
       subtotal: priced.subtotal,
       discount: priced.discount,
@@ -116,8 +91,11 @@ export async function POST(request: Request) {
       total: priced.total,
       couponCode: typeof body.couponCode === "string" && body.couponCode ? body.couponCode.toUpperCase() : null,
       address: contact.value.address,
+      // "Payment confirmed" stays open for COD until the money is actually collected.
       timeline: TIMELINE_STEPS.map((label, index) => ({ label, at: placedAt, done: index === 0 })),
-      razorpayOrderId: order.id,
+      // No Razorpay order exists; this keeps the unique index satisfied and makes COD
+      // orders obvious in the database.
+      razorpayOrderId: `cod_${orderId}`,
     };
 
     const orders = await getOrdersCollection();
@@ -125,9 +103,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        order_id: order.id,
-        amount: order.amount,
-        currency: order.currency,
+        ok: true,
         reference: orderId,
         placedAt,
         breakdown: {
@@ -136,17 +112,25 @@ export async function POST(request: Request) {
           shipping: priced.shipping,
           codFee: priced.codFee,
           total: priced.total,
-          dueNow: priced.dueNow,
+          amountPaid: 0,
+          dueOnDelivery: priced.total,
         },
       },
       { headers: { "x-request-id": requestId } },
     );
   } catch (error) {
-    const statusCode = (error as { statusCode?: number })?.statusCode;
-    logSecurityEvent({ type: "SUSPICIOUS_REQUEST", requestId, ip, endpoint: ENDPOINT, result: "error", risk: "low", meta: { statusCode: statusCode ?? 0 } });
-    if (statusCode === 401) {
-      return NextResponse.json({ error: "Razorpay authentication failed." }, { status: 401, headers: { "x-request-id": requestId } });
-    }
-    return NextResponse.json({ error: "Could not start the payment. Please try again." }, { status: 500, headers: { "x-request-id": requestId } });
+    logSecurityEvent({
+      type: "SUSPICIOUS_REQUEST",
+      requestId,
+      ip,
+      endpoint: ENDPOINT,
+      result: "error",
+      risk: "low",
+      meta: { cause: describeError(error) },
+    });
+    return NextResponse.json(
+      { error: "We couldn't place your order right now. Please try again." },
+      { status: 503, headers: { "x-request-id": requestId } },
+    );
   }
 }

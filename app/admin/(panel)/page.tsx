@@ -388,7 +388,7 @@ export default function DashboardPage() {
                       codEnabled ? "Cash on delivery is on" : "Cash on delivery is off",
                       codEnabled ? "success" : "info",
                       codEnabled
-                        ? `Offered above ${formatINR(settings.codMinimumOrder)} with a ${settings.codAdvancePercent}% UPI advance.`
+                        ? `Offered above ${formatINR(settings.codMinimumOrder)}, collected in full on delivery.`
                         : "Checkout now accepts UPI only.",
                     );
                   }}
@@ -400,7 +400,7 @@ export default function DashboardPage() {
               </div>
               <p className="a-muted" style={{ fontSize: "0.73rem", lineHeight: 1.5 }}>
                 {settings.codEnabled
-                  ? `Offered on orders above ${formatINR(settings.codMinimumOrder)}. ${settings.codAdvancePercent}% is taken by UPI up front, the rest plus the ${formatINR(settings.codFee)} fee is collected on delivery.`
+                  ? `Offered on orders above ${formatINR(settings.codMinimumOrder)}. Nothing is charged up front — the courier collects the total plus the ${formatINR(settings.codFee)} fee on delivery.`
                   : "Turned off — the storefront hides COD and takes UPI only."}{" "}
                 <Link href="/admin/settings" style={{ fontWeight: 700, textDecoration: "underline" }}>
                   Edit rules

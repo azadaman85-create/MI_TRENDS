@@ -73,9 +73,10 @@ export default function CheckoutPage() {
   const codPlan = codPlanFor({ merchandise, shipping }, settings);
   const codFee = payment === "cod" ? settings.codFee : 0;
   const payable = orderValue + codFee;
-  // Paying COD still takes a UPI advance now; the courier collects the balance.
-  const dueNow = payment === "cod" ? codPlan.advance : payable;
-  const dueOnDelivery = payment === "cod" ? codPlan.balance : 0;
+  // COD collects nothing online — the courier takes the whole amount on delivery.
+  const isCod = payment === "cod";
+  const dueNow = isCod ? 0 : payable;
+  const dueOnDelivery = isCod ? payable : 0;
   const itemCount = store.cartLines.reduce((sum, line) => sum + line.quantity, 0);
 
   if (payment === "cod" && !codPlan.available) setPayment("upi");
@@ -97,17 +98,15 @@ export default function CheckoutPage() {
     if (!/^[1-9][0-9]{5}$/.test(value("pincode"))) next.pincode = "Enter a valid 6-digit pincode.";
     if (value("city").length < 2) next.city = "Enter your city.";
     if (!value("state")) next.state = "Choose your state.";
-    if (!/^[\w.-]{2,}@[\w.-]{2,}$/.test(value("upi"))) {
-      next.upi = payment === "cod"
-        ? "Enter the UPI ID you'll pay the advance from."
-        : "Enter a valid UPI ID, for example name@bank.";
+    // COD pays the courier, so there's no UPI ID to collect.
+    if (!isCod && !/^[\w.-]{2,}@[\w.-]{2,}$/.test(value("upi"))) {
+      next.upi = "Enter a valid UPI ID, for example name@bank.";
     }
     return next;
   };
 
-  // Runs once the Razorpay payment (full amount or COD advance) is verified server-side.
-  // The order record itself is created and finalized by the server — see
-  // app/api/create-order and app/api/verify-payment — so there's nothing to save here.
+  // Runs once the order exists server-side — either a verified prepaid payment or a
+  // placed COD order. The record itself is created by the server, so nothing to save here.
   const finalizeOrder = (query: URLSearchParams) => {
     window.setTimeout(() => {
       store.clearCart();
@@ -139,35 +138,64 @@ export default function CheckoutPage() {
     const paymentLabel = { upi: "UPI", cod: "Cash on delivery" }[payment];
     const value = (name: string) => String(data.get(name) || "").trim();
 
+    const orderPayload = {
+      lines: store.cartLines.map((line) => ({
+        productId: line.product.id,
+        size: line.size,
+        color: line.color.name,
+        quantity: line.quantity,
+      })),
+      couponCode: store.coupon?.code ?? store.couponCode ?? null,
+      shipping,
+      codFee,
+      contact: {
+        name: value("name"),
+        email: value("email"),
+        phone: value("mobile"),
+        address: {
+          line1: value("address"),
+          area: value("area"),
+          city: value("city"),
+          state: value("state"),
+          pincode: value("pincode"),
+        },
+      },
+    };
+
+    // Cash on delivery places the order outright — no gateway, nothing charged now.
+    if (isCod) {
+      try {
+        const response = await fetch("/api/orders/cod", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(orderPayload),
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) throw new Error(data.error || "Could not place your order.");
+
+        finalizeOrder(
+          new URLSearchParams({
+            order: data.reference,
+            amount: String(data.breakdown.total),
+            payment: paymentLabel,
+            items: String(itemCount),
+            eta,
+            advance: "0",
+            balance: String(data.breakdown.dueOnDelivery),
+          }),
+        );
+      } catch (error) {
+        setSubmitting(false);
+        setPaymentError(error instanceof Error ? error.message : "Could not place your order.");
+      }
+      return;
+    }
+
     try {
       const createRes = await fetch("/api/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lines: store.cartLines.map((line) => ({
-            productId: line.product.id,
-            size: line.size,
-            color: line.color.name,
-            quantity: line.quantity,
-          })),
-          couponCode: store.coupon?.code ?? store.couponCode ?? null,
-          shipping,
-          codFee,
-          paymentMode: payment,
-          advancePercent: settings.codAdvancePercent,
-          contact: {
-            name: value("name"),
-            email: value("email"),
-            phone: value("mobile"),
-            address: {
-              line1: value("address"),
-              area: value("area"),
-              city: value("city"),
-              state: value("state"),
-              pincode: value("pincode"),
-            },
-          },
-        }),
+        body: JSON.stringify({ ...orderPayload, paymentMode: payment }),
       });
       const createData = await createRes.json();
       if (!createRes.ok) throw new Error(createData.error || "Could not start the payment.");
@@ -179,12 +207,6 @@ export default function CheckoutPage() {
         payment: paymentLabel,
         items: String(itemCount),
         eta,
-        ...(payment === "cod"
-          ? {
-              advance: String(createData.breakdown.dueNow),
-              balance: String(createData.breakdown.total - createData.breakdown.dueNow),
-            }
-          : {}),
       });
 
       const razorpay = new window.Razorpay({
@@ -192,7 +214,7 @@ export default function CheckoutPage() {
         amount: createData.amount,
         currency: createData.currency,
         name: "MI TRENDS",
-        description: payment === "cod" ? "Cash on delivery advance" : "Order payment",
+        description: "Order payment",
         order_id: createData.order_id,
         prefill: { name: value("name"), email: value("email"), contact: value("mobile") },
         theme: { color: "#e5482b" },
@@ -304,7 +326,7 @@ export default function CheckoutPage() {
                     <strong>Cash on delivery</strong>
                     <small>
                       {codPlan.available
-                        ? `${settings.codAdvancePercent}% by UPI now, rest on delivery · ${money.format(settings.codFee)} fee`
+                        ? `Pay on delivery · ${money.format(settings.codFee)} fee`
                         : codPlan.reason === "disabled"
                           ? "Unavailable right now"
                           : `Only on orders above ${money.format(settings.codMinimumOrder)}`}
@@ -314,19 +336,20 @@ export default function CheckoutPage() {
               </div>
 
               <div className="payment-detail">
-                <label><span>UPI ID</span><input name="upi" autoComplete="off" aria-invalid={Boolean(errors.upi)} placeholder="name@bank" onChange={() => setErrors((old) => ({ ...old, upi: "" }))} />{fieldError("upi")}<small>{payment === "cod" ? `You'll approve the ${money.format(dueNow)} advance in your UPI app.` : "You’ll approve the payment in your UPI app."}</small></label>
-                {payment === "cod" && (
+                {isCod ? (
                   <div className="cod-note">
                     <Truck size={19} />
                     <div>
-                      <strong>{money.format(dueNow)} now, {money.format(dueOnDelivery)} on delivery</strong>
+                      <strong>Pay {money.format(dueOnDelivery)} on delivery</strong>
                       <p>
-                        A {settings.codAdvancePercent}% advance confirms the order. The courier collects the
-                        remaining {money.format(dueOnDelivery)} — including the {money.format(settings.codFee)} handling
-                        fee — when it arrives. Please keep the exact amount ready.
+                        Nothing to pay now. The courier collects {money.format(dueOnDelivery)} — including the{" "}
+                        {money.format(settings.codFee)} handling fee — when your order arrives. Please keep the
+                        exact amount ready.
                       </p>
                     </div>
                   </div>
+                ) : (
+                  <label><span>UPI ID</span><input name="upi" autoComplete="off" aria-invalid={Boolean(errors.upi)} placeholder="name@bank" onChange={() => setErrors((old) => ({ ...old, upi: "" }))} />{fieldError("upi")}<small>You’ll approve the payment in your UPI app.</small></label>
                 )}
               </div>
             </section>
@@ -339,13 +362,13 @@ export default function CheckoutPage() {
                 {store.cartLines.map((line) => <article key={line.key}><div className="summary-image"><ProductVisual product={line.product} /><b>{line.quantity}</b></div><div><strong>{line.product.name}</strong><span>{line.color.name} · {line.size}</span></div><em>{money.format(line.product.price * line.quantity)}</em></article>)}
               </div>
               <div className="eta"><MapPin size={16} /><span><small>Estimated delivery</small><strong>By {eta}</strong></span></div>
-              <dl><div><dt>Subtotal</dt><dd>{money.format(subtotal)}</dd></div>{couponDiscount > 0 && <div className="saving"><dt>Coupon</dt><dd>− {money.format(couponDiscount)}</dd></div>}<div><dt>Shipping</dt><dd>{shipping ? money.format(shipping) : <span>Free</span>}</dd></div>{codFee > 0 && <div><dt>COD fee</dt><dd>{money.format(codFee)}</dd></div>}<div className="total"><dt>Order total</dt><dd>{money.format(payable)}</dd></div>{payment === "cod" && <><div><dt>Pay now by UPI</dt><dd>{money.format(dueNow)}</dd></div><div><dt>On delivery</dt><dd>{money.format(dueOnDelivery)}</dd></div></>}</dl>
+              <dl><div><dt>Subtotal</dt><dd>{money.format(subtotal)}</dd></div>{couponDiscount > 0 && <div className="saving"><dt>Coupon</dt><dd>− {money.format(couponDiscount)}</dd></div>}<div><dt>Shipping</dt><dd>{shipping ? money.format(shipping) : <span>Free</span>}</dd></div>{codFee > 0 && <div><dt>COD fee</dt><dd>{money.format(codFee)}</dd></div>}<div className="total"><dt>Order total</dt><dd>{money.format(payable)}</dd></div>{isCod && <><div><dt>Amount paid</dt><dd>{money.format(0)}</dd></div><div><dt>Due on delivery</dt><dd>{money.format(dueOnDelivery)}</dd></div></>}</dl>
               {paymentError && <p className="payment-error">{paymentError}</p>}
               <p className="legal-note">
                 By placing this order you agree to our <Link href="/info/terms">Terms &amp; Conditions</Link>,{" "}
                 <Link href="/info/privacy">Privacy Policy</Link> and <Link href="/info/returns">Return &amp; Refund Policy</Link>.
               </p>
-              <button type="submit" disabled={submitting}>{submitting ? "Placing your order…" : <>Pay {money.format(dueNow)}{payment === "cod" ? " advance" : ""} <LockKeyhole size={15} /></>}</button>
+              <button type="submit" disabled={submitting}>{submitting ? "Placing your order…" : isCod ? <>Place order · pay {money.format(dueOnDelivery)} on delivery <Truck size={15} /></> : <>Pay {money.format(dueNow)} <LockKeyhole size={15} /></>}</button>
               <div className="trust"><ShieldCheck size={16} /><span><strong>Payments are encrypted</strong>We never store your full card or UPI details.</span></div>
             </div>
           </aside>

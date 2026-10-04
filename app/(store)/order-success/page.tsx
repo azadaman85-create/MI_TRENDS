@@ -93,12 +93,14 @@ function OrderSuccessContent() {
           </div>
           <div>
             <ShoppingBag size={17} aria-hidden="true" />
-            <span><small>{balance > 0 ? "Advance paid" : "Amount paid"}</small><strong>{money.format(balance > 0 ? advance : amount)}</strong></span>
+            {/* COD sends advance=0 and balance=total, so this reads "₹0 paid" there. */}
+            <span><small>Amount paid</small><strong>{money.format(balance > 0 ? advance : amount)}</strong></span>
             {balance > 0 && <span><small>Due on delivery</small><strong>{money.format(balance)}</strong></span>}
           </div>
           <div>
             <Check size={17} aria-hidden="true" />
             <span><small>Payment method</small><strong>{payment}</strong></span>
+            <span><small>Payment status</small><strong>{balance > 0 ? "Pending" : "Paid"}</strong></span>
           </div>
           <div>
             <MapPin size={17} aria-hidden="true" />

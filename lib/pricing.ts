@@ -9,12 +9,12 @@
  * amount actually charged can never be less than what the cart really costs.
  *
  * Shipping and the COD handling fee are the one exception: those come from
- * `lib/store-settings.ts`, which — because this project has no backend/DB — is
- * only ever stored in the *admin's* browser localStorage, with no server-side
- * mirror the Route Handler can read. We still accept those two from the client,
- * but clamp them to a bounded range so a tampered request can only shift the
- * total by a small, capped amount rather than zero it out. A real backend
- * should persist store settings server-side and remove this clamp entirely.
+ * `lib/store-settings.ts`, which is still only stored in the *admin's* browser
+ * localStorage, with no server-side copy the Route Handler can read (customers and
+ * orders moved to MongoDB; store settings did not). We still accept those two from
+ * the client but clamp them to a bounded range, so a tampered request can only shift
+ * the total by a small, capped amount rather than zero it out. Moving settings into
+ * MongoDB too would let this clamp go away entirely.
  */
 import { getProductById } from "@/lib/catalog";
 import { calculateCouponDiscount, isValidCouponCode } from "@/lib/coupons";
@@ -36,7 +36,11 @@ export type PricingResult =
       codFee: number;
       /** Full order value — merchandise + shipping + COD fee. */
       total: number;
-      /** What Razorpay actually charges right now — the full total for UPI, a clamped share of it for COD. */
+      /**
+       * What's collected online right now: the full total for a prepaid order, and
+       * **zero** for COD — a COD shopper pays the courier on delivery and is never sent
+       * to the payment gateway.
+       */
       dueNow: number;
       /**
        * The order lines rebuilt from the catalogue — name, SKU, price and image come from
@@ -52,10 +56,6 @@ const MAX_LINES = 30;
 /** Bounds for the client-reported, admin-configurable fields (see module doc above). */
 const MAX_SHIPPING = 200;
 const MAX_COD_FEE = 200;
-/** A COD advance below 10% or above 100% of the order isn't a real admin setting. */
-const MIN_ADVANCE_PERCENT = 10;
-const MAX_ADVANCE_PERCENT = 100;
-const DEFAULT_ADVANCE_PERCENT = 20;
 
 export function priceOrder(input: {
   lines: unknown;
@@ -63,9 +63,8 @@ export function priceOrder(input: {
   shipping: unknown;
   codFee: unknown;
   paymentMode: unknown;
-  advancePercent: unknown;
 }): PricingResult {
-  const { lines, couponCode, shipping, codFee, paymentMode, advancePercent } = input;
+  const { lines, couponCode, shipping, codFee, paymentMode } = input;
 
   if (!Array.isArray(lines) || lines.length === 0) {
     return { ok: false, error: "Your bag is empty." };
@@ -122,12 +121,8 @@ export function priceOrder(input: {
 
   const total = Math.max(0, subtotal - discount) + clampedShipping + clampedCodFee;
 
-  const isCod = paymentMode === "cod";
-  const advancePercentNum = Number(advancePercent);
-  const clampedAdvancePercent = isCod
-    ? clamp(Number.isFinite(advancePercentNum) ? advancePercentNum : DEFAULT_ADVANCE_PERCENT, MIN_ADVANCE_PERCENT, MAX_ADVANCE_PERCENT)
-    : 100;
-  const dueNow = isCod ? Math.round((total * clampedAdvancePercent) / 100) : total;
+  // COD collects nothing online; everything else is charged in full.
+  const dueNow = paymentMode === "cod" ? 0 : total;
 
   return { ok: true, subtotal, discount, shipping: clampedShipping, codFee: clampedCodFee, total, dueNow, lines: pricedLines };
 }

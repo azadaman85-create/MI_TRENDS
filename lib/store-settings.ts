@@ -11,9 +11,7 @@ export type StoreSettings = {
   codEnabled: boolean;
   /** COD is offered only above this order value. */
   codMinimumOrder: number;
-  /** Share of the total collected up front by UPI when paying COD. */
-  codAdvancePercent: number;
-  /** Handling fee added to a COD order. */
+  /** Handling fee added to a COD order, collected with the balance on delivery. */
   codFee: number;
   freeShippingThreshold: number;
   standardShipping: number;
@@ -22,7 +20,6 @@ export type StoreSettings = {
 export const DEFAULT_STORE_SETTINGS: StoreSettings = {
   codEnabled: true,
   codMinimumOrder: 800,
-  codAdvancePercent: 20,
   codFee: 49,
   freeShippingThreshold: 999,
   standardShipping: 79,
@@ -55,16 +52,17 @@ export type CodPlan = {
   available: boolean;
   /** Why not, when it isn't. */
   reason: "disabled" | "below-minimum" | null;
-  /** Paid now by UPI. */
-  advance: number;
-  /** Collected by the courier on delivery. */
+  /** Collected by the courier on delivery — the whole total, since COD takes nothing up front. */
   balance: number;
 };
 
 /**
  * Eligibility is judged on the merchandise value — what the shopper actually spent on
- * product, excluding delivery — while the advance is a share of the full COD total, so
- * the advance and the balance always add up to what is owed.
+ * product, excluding delivery.
+ *
+ * COD takes **no** up-front payment: the shopper pays the courier the full amount
+ * (including the handling fee) on delivery, and the order is never marked paid until
+ * an admin moves it to "delivered".
  */
 export function codPlanFor(
   { merchandise, shipping }: { merchandise: number; shipping: number },
@@ -73,12 +71,11 @@ export function codPlanFor(
   const total = merchandise + shipping + settings.codFee;
 
   if (!settings.codEnabled) {
-    return { available: false, reason: "disabled", advance: 0, balance: total };
+    return { available: false, reason: "disabled", balance: total };
   }
   if (merchandise <= settings.codMinimumOrder) {
-    return { available: false, reason: "below-minimum", advance: 0, balance: total };
+    return { available: false, reason: "below-minimum", balance: total };
   }
 
-  const advance = Math.round((total * settings.codAdvancePercent) / 100);
-  return { available: true, reason: null, advance, balance: total - advance };
+  return { available: true, reason: null, balance: total };
 }
