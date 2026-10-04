@@ -203,8 +203,9 @@ export default function HomePage() {
 
   // heroSlides.length can change when the admin publishes a different number of
   // banners, so the interval must be recreated whenever it does (not just on pause).
+  // The modulo below self-corrects a stale out-of-range index on its own next tick,
+  // so there's no need to clamp activeSlide synchronously here.
   useEffect(() => {
-    setActiveSlide((current) => (current >= heroSlides.length ? 0 : current));
     if (paused) return;
     const timer = window.setInterval(() => setActiveSlide((current) => (current + 1) % heroSlides.length), 5500);
     return () => window.clearInterval(timer);
