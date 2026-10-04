@@ -50,19 +50,55 @@ export type OrderDoc = {
   razorpayPaymentId?: string;
 };
 
+/**
+ * Index creation is idempotent, but issuing it on every request adds a round trip per
+ * call for no benefit. These promises make it happen once per process; a failure clears
+ * the cache so the next request retries rather than silently running unindexed forever.
+ */
+let customerIndexes: Promise<void> | undefined;
+let orderIndexes: Promise<void> | undefined;
+
+function once(current: Promise<void> | undefined, work: () => Promise<unknown>, reset: () => void): Promise<void> {
+  if (!current) {
+    return work()
+      .then(() => undefined)
+      .catch((error) => {
+        reset();
+        throw error;
+      });
+  }
+  return current;
+}
+
 export async function getCustomersCollection(): Promise<Collection<CustomerDoc>> {
   const db = await getDb();
   const collection = db.collection<CustomerDoc>("customers");
-  // Safe to call on every connection — Mongo no-ops if the index already exists.
-  await collection.createIndex({ email: 1 }, { unique: true });
+  customerIndexes = once(
+    customerIndexes,
+    () => collection.createIndex({ email: 1 }, { unique: true }),
+    () => {
+      customerIndexes = undefined;
+    },
+  );
+  await customerIndexes;
   return collection;
 }
 
 export async function getOrdersCollection(): Promise<Collection<OrderDoc>> {
   const db = await getDb();
   const collection = db.collection<OrderDoc>("orders");
-  await collection.createIndex({ razorpayOrderId: 1 }, { unique: true });
-  await collection.createIndex({ customerId: 1 });
-  await collection.createIndex({ placedAt: -1 });
+  orderIndexes = once(
+    orderIndexes,
+    () =>
+      Promise.all([
+        collection.createIndex({ razorpayOrderId: 1 }, { unique: true }),
+        collection.createIndex({ customerId: 1 }),
+        collection.createIndex({ placedAt: -1 }),
+      ]),
+    () => {
+      orderIndexes = undefined;
+    },
+  );
+  await orderIndexes;
   return collection;
 }

@@ -23,7 +23,12 @@
 html {
   scroll-behavior: smooth;
   max-width: 100%;
-  overflow-x: hidden;
+  /*
+    `clip`, not `hidden`, for the same reason <body> uses it below: `hidden` makes this
+    element a scroll container, which stops `position: sticky` descendants from sticking.
+    Both still hide horizontal overflow.
+  */
+  overflow-x: clip;
   /* iOS Safari inflates text in landscape without this, which breaks the fit. */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
