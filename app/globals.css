@@ -24,6 +24,12 @@ html {
   scroll-behavior: smooth;
   max-width: 100%;
   /*
+    Also set here, not just on <body>: whatever area the canvas paints outside the
+    content box (over-scroll, a zoomed-out visual viewport, a page shorter than the
+    screen) then shows the site's paper colour rather than the browser's white.
+  */
+  background: var(--paper);
+  /*
     `clip`, not `hidden`, for the same reason <body> uses it below: `hidden` makes this
     element a scroll container, which stops `position: sticky` descendants from sticking.
     Both still hide horizontal overflow.

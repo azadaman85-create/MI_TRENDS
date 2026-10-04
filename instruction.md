@@ -1,1117 +1,743 @@
-# MI TRENDS — OWASP Top 10 Security Hardening
+# MI TRENDS — FULL WEBSITE BUG FIX & E-COMMERCE FUNCTIONALITY PROMPT
 
-You are working on my existing e-commerce project:
+You are working on my **MI TRENDS e-commerce website**. I need you to perform a complete audit, identify the root causes, and implement production-ready fixes.
 
-**Project:** MI TRENDS
-**GitHub Repository:** https://github.com/azadaman85-create/MI_TRENDS.git
-
-Your task is to perform a **complete security audit and remediation of the entire codebase according to the OWASP Top 10**, while preserving all existing functionality, UI/UX, product data, checkout flow, order management, admin dashboard, APIs, and database behavior.
-
-Do not rebuild the application unnecessarily.
-
-Do not remove existing functionality simply to make security testing pass.
+Do **not** redesign the website unnecessarily. Preserve the existing branding, UI/UX, components, content, functionality, typography, product layout, colors, and overall visual identity unless a change is required to fix a bug.
 
 ---
 
-# 1. FIRST — AUDIT THE ENTIRE CODEBASE
+## 1. FIX MOBILE, TABLET & ZOOM-RELATED LAYOUT GLITCHES
 
-Before making changes, inspect the complete project structure.
+The website currently has serious responsive-layout issues on:
 
-Identify:
+* Android mobile phones
+* iPhones
+* Tablets
+* Different browser zoom levels
+* Mobile browser zoom in / zoom out
+* Desktop browser resizing
 
-* Frontend framework
-* Backend framework
-* Database
-* ORM/query system
-* Authentication system
-* Authorization/RBAC
-* API architecture
-* Session management
-* Cookies
-* JWT/token implementation
-* Payment integration
-* Admin dashboard
-* File upload functionality
-* Environment configuration
-* External APIs
-* Third-party packages
-* Build/deployment configuration
+### Current problems
 
-Search the entire repository for:
+When I:
 
-* Hardcoded passwords
-* API keys
-* Access tokens
-* JWT secrets
-* Database credentials
-* Payment secrets
-* Private keys
-* OAuth secrets
-* SMTP credentials
-* Webhook secrets
-* Sensitive customer information
-* Debug credentials
-* Insecure URLs
-* Unsafe SQL queries
-* Dangerous HTML rendering
-* `eval`
-* Unsafe shell execution
-* Insecure redirects
-* Disabled SSL/TLS verification
-* Weak authentication
-* Weak authorization
+* Zoom out
+* Zoom in
+* Zoom out again
+* Rotate the device
+* Change browser width
+* Open the website on different mobile/tablet resolutions
 
-Create:
+the layout sometimes completely changes incorrectly.
 
-```text
-SECURITY_AUDIT.md
-```
+Examples of issues:
 
-Document all findings before and after remediation.
+* The website becomes very small instead of adapting to the viewport.
+* Content remains compressed in a small area.
+* Blank space/panels appear on the side.
+* Side panel/container becomes blank.
+* Sections do not use the available screen width.
+* Some components move outside the viewport.
+* Horizontal overflow appears.
+* Header/navigation breaks.
+* Product grids become incorrectly sized.
+* Buttons/text/images become too small.
+* Containers retain desktop dimensions on mobile.
+* After zooming in and then zooming out, the page does not return to the correct responsive layout.
+* Some sections behave differently depending on the browser zoom level.
+* Tablet layout is also inconsistent.
+
+### Required behavior
+
+The website must use the **actual viewport dimensions** and responsive breakpoints correctly.
+
+The layout must automatically adapt to:
+
+* Small mobile
+* Large mobile
+* iPhone
+* Android
+* Small tablet
+* Large tablet
+* Laptop
+* Desktop
+* Large desktop
+
+When browser zoom changes:
+
+### Zoom OUT
+
+The page should continue to use the responsive layout appropriate for the current viewport.
+
+It must NOT:
+
+* shrink into a tiny fixed-width page
+* create blank side panels
+* break containers
+* create unexpected horizontal scrolling
+* switch into an incorrect layout
+
+### Zoom IN
+
+The browser's normal zoom behavior should work naturally.
+
+The page should remain usable and responsive.
+
+### Zoom OUT again
+
+The layout must automatically return to the correct responsive state without leaving:
+
+* broken widths
+* blank areas
+* displaced content
+* incorrect grids
+* oversized containers
+* tiny content
 
 ---
 
-# 2. OWASP TOP 10 COMPLIANCE
+## 2. PERFORM A COMPLETE RESPONSIVE AUDIT
 
-Audit and address the current OWASP Top 10 categories.
+Inspect the entire website:
 
-## A01 — Broken Access Control
+### Frontend
 
-Verify that users cannot access resources belonging to other users.
+Check every page and component, including:
 
-Especially protect:
-
-* Orders
-* Customer profiles
-* Addresses
+* Home
+* Shop
+* Product listing
+* Product details
 * Cart
-* Wishlist
-* Payments
-* Refunds
-* Account settings
-* Admin APIs
-* Inventory
-* Product management
-
-Test for:
-
-* IDOR
-* Privilege escalation
-* Horizontal privilege escalation
-* Vertical privilege escalation
-* Missing authorization
-* Manipulated IDs
-* Direct API access
-
-Example:
-
-```text
-User A → /api/orders/1001
-```
-
-must not allow access if order `1001` belongs to User B.
-
-Never rely on frontend restrictions for authorization.
-
-Authorization must be enforced server-side.
-
----
-
-# 3. A02 — Cryptographic Failures
-
-Identify sensitive information and protect it appropriately.
-
-Never store passwords in plaintext.
-
-Use a strong password hashing algorithm supported by the framework, such as:
-
-* Argon2id
-* bcrypt
-* scrypt
-
-Do not use:
-
-* MD5
-* SHA-1
-* Plain SHA-256 for password storage
-
-Protect:
-
-* Passwords
-* Authentication tokens
-* Session identifiers
-* API credentials
-* Payment secrets
-* Personal information
-
-Use HTTPS/TLS in production.
-
-Set secure cookie attributes:
-
-```text
-HttpOnly
-Secure
-SameSite
-```
-
-where applicable.
-
-Do not expose sensitive information in:
-
-* URLs
-* Query parameters
-* Logs
-* Error messages
-* Browser local storage when avoidable
-* Frontend source code
-
----
-
-# 4. A03 — Injection Protection
-
-Rigorously protect the entire application against injection vulnerabilities.
-
-## SQL Injection
-
-Never construct SQL queries by concatenating user input.
-
-Bad:
-
-```text
-SELECT * FROM users WHERE email = '${email}'
-```
-
-Use:
-
-* Parameterized queries
-* Prepared statements
-* ORM-safe queries
-
-Validate database inputs using appropriate schemas.
-
-Audit every database query.
-
-Search the entire project for unsafe SQL construction.
-
-Also check for:
-
-* NoSQL injection
-* LDAP injection if applicable
-* Command injection
-* Template injection
-* Expression injection
-
----
-
-# 5. XSS PROTECTION
-
-Rigorously validate, sanitize, and escape all user-controlled content.
-
-Protect:
-
-* Product reviews
-* Customer names
-* Product descriptions
-* Search queries
-* Contact forms
-* Addresses
-* Coupon fields
-* Admin-entered content
-* Rich text
-* URL parameters
-* Query parameters
-* API request bodies
-
-Prevent:
-
-* Stored XSS
-* Reflected XSS
-* DOM-based XSS
-
-Never render untrusted HTML directly.
-
-Audit all uses of mechanisms such as:
-
-```text
-innerHTML
-dangerouslySetInnerHTML
-raw HTML rendering
-HTML injection
-```
-
-If HTML is intentionally supported, sanitize it with a strict allowlist.
-
-Escape output according to context.
-
----
-
-# 6. A04 — Insecure Design
-
-Review business logic and security architecture.
-
-Especially review:
-
-### Checkout
-
-Never trust client-side:
-
-* Product price
-* Quantity
-* Discount
-* Coupon
-* Tax
-* Shipping cost
-* Grand total
-
-Recalculate all financial values server-side.
-
-### Orders
-
-Validate:
-
-```text
-User
-Order ownership
-Product availability
-Quantity
-Price
-Discount
-Tax
-Shipping
-Payment
-Order status
-```
-
-server-side.
-
-Prevent:
-
-* Duplicate orders
-* Order manipulation
-* Coupon abuse
-* Price manipulation
-* Unauthorized cancellation
-* Unauthorized refunds
-
----
-
-# 7. A05 — Security Misconfiguration
-
-Audit configuration across the entire application.
-
-Disable:
-
-* Debug mode in production
-* Verbose error pages
-* Stack traces
-* Default credentials
-* Development endpoints
-* Test accounts
-* Unnecessary services
-
-Configure appropriate security headers:
-
-```text
-Content-Security-Policy
-Strict-Transport-Security
-X-Content-Type-Options
-Referrer-Policy
-Permissions-Policy
-X-Frame-Options
-```
-
-Do not blindly enable CSP rules that break legitimate application functionality.
-
-Document any required exceptions.
-
----
-
-# 8. A06 — Vulnerable and Outdated Components
-
-Audit:
-
-```text
-package.json
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-requirements.txt
-composer.json
-Gemfile
-Docker files
-```
-
-and any other dependency manifests actually used by the project.
-
-Identify:
-
-* Vulnerable dependencies
-* Outdated dependencies
-* Abandoned packages
-* Packages with known CVEs
-
-Upgrade dependencies where safely possible.
-
-Do not perform destructive major-version upgrades without checking compatibility.
-
-Run the appropriate security/dependency scanner for the project's technology stack.
-
-Document:
-
-```text
-Dependency
-Current version
-Vulnerability
-Severity
-Recommended version
-Status
-```
-
----
-
-# 9. A07 — Authentication Failures
-
-Harden authentication.
-
-Implement:
-
-* Strong password policy
-* Secure password hashing
-* Rate limiting
-* Brute-force protection
-* Account lockout/cooldown where appropriate
-* Secure session management
-* Session expiration
-* Session regeneration after login
-* Secure logout
-* Password reset protection
-
-Do not reveal whether an email/account exists through authentication responses.
-
-Example:
-
-Avoid:
-
-```text
-Email does not exist.
-```
-
-Use a generic response where appropriate.
-
----
-
-# 10. SECURE AUTHENTICATION TOKENS
-
-Audit the authentication token implementation.
-
-Use cryptographically secure random tokens.
-
-Never generate security tokens using:
-
-```text
-Math.random()
-timestamps
-predictable IDs
-user IDs
-incrementing values
-```
-
-Authentication tokens must have sufficient entropy.
-
-For JWT-based authentication:
-
-* Use strong signing secrets/keys
-* Validate signature
-* Validate expiration
-* Validate issuer/audience where applicable
-* Reject malformed tokens
-* Never accept `alg:none`
-* Do not put sensitive information inside JWT payloads
-* Rotate secrets/keys appropriately
-
-Never hardcode JWT secrets.
-
-Store secrets in environment variables or secure secret management.
-
----
-
-# 11. SESSION SECURITY
-
-Protect sessions against:
-
-* Session fixation
-* Session hijacking
-* Session theft
-* Session replay
-
-Use:
-
-```text
-HttpOnly
-Secure
-SameSite
-```
-
-where appropriate.
-
-Regenerate the session after authentication.
-
-Invalidate sessions when appropriate after:
-
-* Password change
-* Security-sensitive account changes
-* Logout
-
-Do not store authentication secrets in unsafe browser storage unless there is a justified architecture requirement.
-
----
-
-# 12. A08 — Software and Data Integrity Failures
-
-Audit:
-
-* Webhooks
-* Payment callbacks
-* External API responses
-* File uploads
-* Dependency installation
-* CI/CD
-* Build process
-
-Payment webhooks must verify authenticity/signatures.
-
-Never trust:
-
-```text
-payment_status=success
-```
-
-from the frontend.
-
-Implement server-side verification.
-
-Make webhook processing idempotent.
-
-Protect against replayed webhook requests.
-
----
-
-# 13. A09 — Security Logging & Monitoring
-
-Implement secure security logging.
-
-Record important events such as:
-
-```text
-LOGIN_SUCCESS
-LOGIN_FAILED
-PASSWORD_CHANGED
-ACCOUNT_LOCKED
-AUTHORIZATION_FAILED
-ORDER_ACCESS_DENIED
-ORDER_MODIFICATION_DENIED
-PAYMENT_VERIFICATION_FAILED
-WEBHOOK_REJECTED
-ADMIN_ACTION
-RATE_LIMIT_TRIGGERED
-SUSPICIOUS_REQUEST
-```
-
-Include safe metadata:
-
-```text
-timestamp
-event type
-user ID where appropriate
-request ID
-endpoint
-result
-risk level
-```
-
-Never log:
-
-* Passwords
-* OTPs
-* API keys
-* JWT secrets
-* Session tokens
-* Credit card numbers
-* CVV
-* Payment credentials
-
----
-
-# 14. A10 — SSRF PROTECTION
-
-Audit all functionality that makes server-side HTTP requests.
-
-Protect against SSRF.
-
-Do not allow users to freely provide internal URLs to the server.
-
-Block access to:
-
-```text
-localhost
-127.0.0.1
-0.0.0.0
-private IP ranges
-internal services
-cloud metadata endpoints
-```
-
-where applicable.
-
-Use URL allowlists for trusted external integrations.
-
-Validate:
-
-* Protocol
-* Host
-* Port
-* Redirects
-
-Do not blindly follow user-controlled redirects.
-
----
-
-# 15. INPUT VALIDATION
-
-Every API endpoint must validate input.
-
-Use centralized validation schemas where supported.
-
-Validate:
-
-* Type
-* Length
-* Format
-* Range
-* Required fields
-* Allowed values
-
-Examples:
-
-```text
-Email
-Phone
-Name
-Address
-Postal code
-Product ID
-Quantity
-Price
-Coupon
-Order ID
-User ID
-```
-
-Reject unexpected fields where appropriate.
-
-Never rely only on frontend validation.
-
----
-
-# 16. OUTPUT ENCODING
-
-All user-controlled data must be safely encoded before rendering.
-
-Pay particular attention to:
-
-* HTML
-* JavaScript
-* CSS
-* URLs
-* JSON
-* SQL
-* HTTP headers
-
-Use context-specific encoding.
-
----
-
-# 17. API SECURITY
-
-Audit every API endpoint.
-
-For each endpoint document:
-
-```text
-Authentication required?
-Authorization required?
-Allowed roles?
-Input schema?
-Rate limit?
-CSRF requirement?
-Sensitive response fields?
-```
-
-Protect APIs against:
-
-* Unauthorized access
-* Excessive requests
-* Enumeration
-* Mass assignment
-* Parameter pollution
-* Oversized requests
-* Malformed requests
-
-Do not expose internal implementation details.
-
----
-
-# 18. MASS ASSIGNMENT PROTECTION
-
-Never allow clients to update arbitrary database fields.
-
-For example, a customer request must NOT be able to submit:
-
-```json
-{
-  "name": "Customer",
-  "role": "ADMIN",
-  "isAdmin": true,
-  "accountBalance": 999999
-}
-```
-
-Explicitly define allowed fields for every update operation.
-
----
-
-# 19. FILE UPLOAD SECURITY
-
-If the project supports uploads, validate:
-
-* File size
-* MIME type
-* File signature
-* Extension
-* Filename
-* Image dimensions where applicable
-
-Reject:
-
-* Executable files
-* Script files
-* Dangerous file types
-
-Store uploads safely.
-
-Never execute uploaded files.
-
----
-
-# 20. CORS
-
-Review CORS configuration.
-
-Do NOT use:
-
-```text
-Access-Control-Allow-Origin: *
-```
-
-for authenticated/private APIs unless there is a legitimate reason.
-
-Allow only trusted origins.
-
-Do not allow credentials with unrestricted origins.
-
----
-
-# 21. CSRF
-
-If authentication uses cookies/sessions, implement CSRF protection for state-changing operations.
-
-Protect:
-
-```text
-POST
-PUT
-PATCH
-DELETE
-```
-
-especially:
-
-* Account changes
-* Address changes
 * Checkout
-* Order cancellation
-* Refunds
-* Admin actions
+* Login
+* Sign Up
+* Account/Profile
+* Orders
+* Order details
+* Search
+* Category pages
+* Product filters
+* Navigation
+* Header
+* Footer
+* Modals
+* Drawers
+* Sidebars
+* Forms
+* Popups
+* Admin-related frontend components where applicable
+
+### Backend/Admin UI
+
+Also check responsive behavior for:
+
+* Admin dashboard
+* Product management
+* Order management
+* Customer management
+* Reports
+* Tables
+* Forms
+* Side panels
+* Modal dialogs
+* Navigation/sidebar
 
 ---
 
-# 22. ERROR HANDLING
+## 3. IDENTIFY AND FIX ROOT CAUSES
 
-Production errors must not expose:
+Do not only patch individual pages.
 
-* Stack traces
-* SQL queries
-* File paths
-* Environment variables
-* Database details
-* API secrets
-* Internal service names
+Find the actual technical reason for the problem.
 
-Return safe generic errors.
+Audit for:
 
-Log detailed information securely on the server instead.
+* Fixed widths
+* `width: 100vw` causing overflow
+* Incorrect `min-width`
+* Incorrect `max-width`
+* Hardcoded pixel dimensions
+* Fixed desktop containers
+* Improper CSS breakpoints
+* Incorrect flexbox behavior
+* Incorrect grid definitions
+* `position: absolute`
+* `position: fixed`
+* Transform-based scaling
+* Negative margins
+* Overflow problems
+* Nested containers with conflicting widths
+* Incorrect viewport calculations
+* JavaScript viewport calculations
+* Resize event bugs
+* Zoom detection logic
+* CSS media-query conflicts
+* Component-level responsive overrides
+* Horizontal scrolling
+* Sidebar width conflicts
+* Drawer width conflicts
+* Image sizing issues
+* Tables overflowing
+* Parent containers restricting child width
+* `100vw` vs `100%` problems
+* Improper use of `vh`, `vw`, `%`, `rem`, and `clamp()`
+* Desktop styles leaking into mobile
+* Mobile styles leaking into tablet/desktop
+* Hydration/layout mismatch if React/Next.js is being used
+* SSR vs client-side viewport detection issues
+
+Where appropriate, prefer:
+
+```css
+width: 100%;
+max-width: 100%;
+min-width: 0;
+box-sizing: border-box;
+overflow-x: hidden;
+```
+
+and responsive CSS rather than hardcoded dimensions.
+
+Do not blindly add `overflow-x: hidden` everywhere. Fix the actual overflow source first.
 
 ---
 
-# 23. ENVIRONMENT VARIABLES & SECRET MANAGEMENT
+## 4. RESPONSIVE DESIGN REQUIREMENTS
 
-Search the entire repository for hardcoded secrets.
+Use a robust responsive system.
 
-Move all sensitive configuration to environment variables.
+The design should gracefully adapt instead of relying on one or two breakpoints.
 
-Examples:
+Check at minimum:
 
-```text
-DATABASE_URL
-JWT_SECRET
-SESSION_SECRET
-PAYMENT_SECRET
-PAYMENT_WEBHOOK_SECRET
-API_KEY
-SMTP_PASSWORD
-OAUTH_CLIENT_SECRET
-```
+### Mobile
 
-Create/update:
+* 320px
+* 360px
+* 375px
+* 390px
+* 414px
+* 430px
+* 480px
 
-```text
-.env.example
-```
+### Tablet
 
-with placeholder values only.
+* 600px
+* 768px
+* 820px
+* 834px
+* 1024px
+* 1180px
 
-Example:
+### Desktop
 
-```text
-JWT_SECRET=replace_with_secure_random_secret
-PAYMENT_SECRET=replace_with_provider_secret
-```
+* 1280px
+* 1366px
+* 1440px
+* 1600px
+* 1920px
 
-NEVER put real credentials in `.env.example`.
+Also test landscape orientations.
 
-Update `.gitignore` to ensure sensitive files are not committed.
+Do not create unnecessary device-specific hacks.
+
+Use reusable responsive components and breakpoints.
 
 ---
 
-# 24. GIT SECRET AUDIT
+# 5. FIX CUSTOMER SIGN-IN / SIGN-UP ERRORS
 
-Before committing, scan the entire repository and Git diff for secrets.
+There is currently an issue with the **New Customer Sign Up** flow.
+
+When a new customer attempts to register:
+
+* Error appears
+* Sign Up does not complete
+* Customer may not be created
+* Sign In does not work correctly
+
+Perform a complete audit of the authentication system.
 
 Check:
 
+* Sign Up form
+* Sign In form
+* Frontend validation
+* Backend validation
+* API requests
+* API responses
+* Authentication middleware
+* Database connection
+* MongoDB schema/model
+* Password handling
+* Session/token handling
+* Cookies
+* JWT if used
+* Error handling
+* Duplicate email handling
+* Duplicate phone handling
+* Required fields
+* Form submission
+* Loading states
+* Authentication state persistence
+
+Find the root cause and fix it.
+
+Do not hide errors just to make the UI appear successful.
+
+Return meaningful user-friendly error messages.
+
+---
+
+# 6. MONGODB CUSTOMER ACCOUNT SYSTEM
+
+Use **MongoDB** as the customer database.
+
+After successful customer registration, store the necessary customer information in MongoDB.
+
+Customer record should support fields such as:
+
 ```text
-Current files
-Git diff
-Git history where practical
-Environment files
-Configuration files
-Documentation
-Example files
+_id
+firstName
+lastName
+email
+phone
+passwordHash
+createdAt
+updatedAt
+isActive
 ```
 
-If a real secret has previously been committed, do not assume deleting it is enough.
+Add any other fields required by the existing website.
 
-Report that the credential must be rotated/revoked.
+### IMPORTANT SECURITY REQUIREMENT
 
----
+**Never store the customer's password in plain text.**
 
-# 25. DEPENDENCY SECURITY
+Do NOT store:
 
-Run the project's appropriate dependency/security audit.
+```text
+password: "MyPassword123"
+```
 
-Fix:
+Instead store a secure password hash using a modern password hashing algorithm such as:
 
-* Critical vulnerabilities
-* High vulnerabilities
+* Argon2id
+* bcrypt
 
-Address medium vulnerabilities where practical.
-
-Do not introduce unnecessary dependencies just for security.
-
-Prefer established, maintained libraries.
+The login system must verify the entered password against the stored password hash.
 
 ---
 
-# 26. SECURITY TEST SUITE
+# 7. CUSTOMER LOGIN
 
-Create automated security tests covering:
+Customers must be able to log in using their registered:
+
+* Email/Gmail
+* Password
+
+The flow should be:
+
+```text
+Customer enters email
+        ↓
+Backend finds customer in MongoDB
+        ↓
+Password is securely verified against passwordHash
+        ↓
+Authentication succeeds
+        ↓
+Secure session/JWT/cookie is created
+        ↓
+Customer is logged in
+```
+
+The authentication state must remain available when the customer navigates through:
+
+* Home
+* Shop
+* Product pages
+* Cart
+* Checkout
+* Account
+* Orders
+
+Do not rely only on frontend state for authentication.
+
+Authentication must be verified on the server.
+
+---
+
+# 8. CUSTOMER ACCOUNT & ORDER FLOW
+
+After login, the customer should be able to:
+
+* View profile
+* Update profile
+* Add products to cart
+* Proceed to checkout
+* Place an order
+* View order history
+* View order details
+* See order status
+
+Each order should be securely associated with the authenticated customer.
+
+Example:
+
+```text
+Customer
+   ↓
+MongoDB Customer ID
+   ↓
+Order
+   ↓
+Customer's order history
+```
+
+A customer must only be able to access their own account and orders.
+
+Prevent IDOR / unauthorized order access.
+
+---
+
+# 9. CASH ON DELIVERY (COD)
+
+Add/verify **Cash on Delivery** as a payment option.
+
+For COD:
+
+### Customer should NOT pay anything upfront.
+
+The checkout flow must be:
+
+```text
+Add to Cart
+      ↓
+Checkout
+      ↓
+Select Cash on Delivery
+      ↓
+Place Order
+      ↓
+Order Confirmed
+      ↓
+Payment Due = 0 upfront
+      ↓
+Customer pays when order is delivered
+```
+
+Do not redirect the customer to an online payment gateway when COD is selected.
+
+Do not charge any upfront payment for COD.
+
+The order should clearly display:
+
+```text
+Payment Method: Cash on Delivery
+Payment Status: Pending / Unpaid
+Amount Paid: ₹0
+Amount Due on Delivery: ₹X
+```
+
+The exact labels should match the existing MI TRENDS UI.
+
+The admin should be able to identify COD orders easily.
+
+---
+
+# 10. ORDER DATABASE STRUCTURE
+
+Ensure orders contain the required information, such as:
+
+```text
+orderId
+customerId
+customer details
+items
+productId
+product name
+quantity
+price
+subtotal
+shipping
+discount
+totalAmount
+paymentMethod
+paymentStatus
+orderStatus
+shippingAddress
+billingAddress
+createdAt
+updatedAt
+```
+
+For COD:
+
+```text
+paymentMethod = "COD"
+amountPaid = 0
+paymentStatus = "PENDING"
+```
+
+Do not mark COD orders as paid before delivery.
+
+---
+
+# 11. SECURITY REQUIREMENTS
+
+Implement the authentication and checkout system securely.
+
+Follow modern application-security practices.
+
+At minimum:
+
+* Validate all inputs server-side
+* Sanitize user-controlled data where appropriate
+* Prevent SQL/NoSQL injection
+* Prevent XSS
+* Prevent CSRF where applicable
+* Use secure authentication tokens/sessions
+* Use secure cookies where applicable
+* Do not expose sensitive information in API responses
+* Never return password hashes to the frontend
+* Never store plaintext passwords
+* Protect admin routes
+* Protect customer routes
+* Verify ownership before returning customer/order data
+* Rate-limit authentication endpoints where appropriate
+* Do not hardcode secrets
+* Store MongoDB URI and authentication secrets in environment variables
+* Never commit `.env` files or secrets to Git
+
+Example environment variables:
+
+```env
+MONGODB_URI=
+JWT_SECRET=
+SESSION_SECRET=
+```
+
+Use the security architecture appropriate for the existing project stack.
+
+---
+
+# 12. ERROR HANDLING
+
+Fix all current authentication errors and improve error handling.
+
+The frontend should show useful messages such as:
+
+```text
+Invalid email or password.
+Email address is already registered.
+Phone number is already registered.
+Please enter a valid email address.
+Password does not meet the required security requirements.
+Unable to create account. Please try again.
+Unable to connect to the server.
+```
+
+Do not expose:
+
+* MongoDB errors
+* stack traces
+* database details
+* secret values
+* internal server implementation details
+
+to customers.
+
+---
+
+# 13. CROSS-BROWSER TESTING
+
+Test the website across:
+
+* Chrome Android
+* Safari iPhone
+* Chrome iPhone where applicable
+* Safari iPad
+* Chrome tablet
+* Desktop Chrome
+* Desktop Safari
+* Edge
+
+Test:
+
+* Normal zoom
+* Zoom in
+* Zoom out
+* Repeated zoom changes
+* Screen rotation
+* Browser resize
+* Different viewport widths/heights
+
+---
+
+# 14. FUNCTIONAL TESTING
+
+After making changes, test at least:
+
+### Registration
+
+```text
+New customer
+→ Fill form
+→ Submit
+→ Account created
+→ Customer stored in MongoDB
+→ Password stored only as secure hash
+→ User logged in or redirected to login
+```
+
+### Login
+
+```text
+Existing customer
+→ Enter email
+→ Enter password
+→ Authenticate
+→ Login succeeds
+→ Customer account opens
+```
+
+### Invalid Login
+
+```text
+Wrong email/password
+→ Login rejected
+→ Friendly error shown
+```
+
+### COD
+
+```text
+Product
+→ Cart
+→ Checkout
+→ Cash on Delivery
+→ Place Order
+→ No upfront payment
+→ Order created
+→ Payment status = Pending
+→ Amount Paid = 0
+```
+
+### Responsive
+
+```text
+Mobile
+→ Zoom in
+→ Zoom out
+→ Zoom out again
+→ Layout remains correct
+
+Tablet
+→ Zoom in
+→ Zoom out
+→ Layout remains correct
+```
+
+---
+
+# 15. CODE QUALITY
+
+While fixing the issues:
+
+* Reuse existing components
+* Avoid duplicate code
+* Keep frontend and backend responsibilities separated
+* Keep API responses consistent
+* Add proper validation
+* Add proper loading states
+* Add proper empty states
+* Add proper error states
+* Keep the code maintainable
+* Do not introduce unnecessary dependencies
+* Do not remove existing working functionality
+
+---
+
+# 16. GIT REQUIREMENTS
+
+After completing and testing all fixes:
+
+1. Review all changed files.
+2. Remove debugging code and console logs that are no longer required.
+3. Confirm there are no secrets in the repository.
+4. Confirm `.env` is ignored by Git.
+5. Run the project's available lint/build/test commands.
+6. Fix any errors found.
+7. Review the Git diff.
+8. Commit the changes with a clear commit message.
+
+Suggested commit message:
+
+```text
+fix responsive layout authentication mongodb and cod checkout
+```
+
+Then push the final changes to the existing Git repository.
+
+Repository:
+
+```text
+https://github.com/azadaman85-create/MI
+```
+
+Do not force-push or overwrite unrelated existing work.
+
+---
+
+# 17. FINAL VERIFICATION REPORT
+
+Before finishing, provide a concise report containing:
+
+### Responsive Fix
+
+* Root cause found
+* Files/components changed
+* Mobile status
+* Tablet status
+* Desktop status
+* Zoom in/out status
 
 ### Authentication
 
-* Invalid login
-* Brute-force attempts
-* Expired token
-* Invalid token
-* Token tampering
-* Session fixation
-* Logout
-
-### Authorization
-
-* User accessing another user's order
-* Customer accessing admin endpoint
-* Unauthorized role escalation
-* IDOR
-
-### Injection
-
-* SQL injection payloads
-* XSS payloads
-* Malformed input
-* Unexpected fields
+* Sign Up fixed
+* Sign In fixed
+* MongoDB connection status
+* Customer schema/model
+* Password hashing method
+* Authentication/session method
 
 ### Orders
 
-* Price manipulation
-* Quantity manipulation
-* Coupon manipulation
-* Unauthorized cancellation
-* Unauthorized modification
+* Customer-order relationship
+* Customer order access protection
 
-### Payments
+### COD
 
-* Invalid callback
-* Invalid signature
-* Amount mismatch
-* Duplicate webhook
-* Replay attempt
+* COD enabled
+* Upfront payment = ₹0
+* Payment status behavior
+* Admin visibility
 
-### API
+### Security
 
-* Missing authentication
-* Invalid authorization
-* Rate-limit testing
-* Oversized payload
-* Invalid content type
+* Validation
+* Password security
+* Secrets/environment variables
+* Authentication protection
 
-### File uploads
+### Git
 
-* Malicious file
-* Invalid MIME
-* Oversized file
-* Executable upload
+* Commit created
+* Push completed
+* Branch used
+* Final commit hash
 
----
-
-# 27. OWASP SECURITY CHECKLIST
-
-Create:
-
-```text
-OWASP_SECURITY_CHECKLIST.md
-```
-
-Use this structure:
-
-```text
-A01 Broken Access Control        PASS / FAIL
-A02 Cryptographic Failures       PASS / FAIL
-A03 Injection                    PASS / FAIL
-A04 Insecure Design              PASS / FAIL
-A05 Security Misconfiguration    PASS / FAIL
-A06 Vulnerable Components        PASS / FAIL
-A07 Authentication Failures      PASS / FAIL
-A08 Integrity Failures           PASS / FAIL
-A09 Logging & Monitoring         PASS / FAIL
-A10 SSRF                         PASS / FAIL
-```
-
-For every FAIL, explain:
-
-* Vulnerability
-* Location
-* Severity
-* Impact
-* Fix required
-* Fix implemented/not implemented
-
-Do not falsely mark an item PASS.
-
----
-
-# 28. SECURITY DOCUMENTATION
-
-Create/update:
-
-```text
-SECURITY.md
-SECURITY_AUDIT.md
-OWASP_SECURITY_CHECKLIST.md
-SECURITY_TEST_REPORT.md
-```
-
-Document the final security architecture and remaining risks.
-
----
-
-# 29. PRESERVE MI TRENDS
-
-After security changes, verify that all existing major functionality still works:
-
-* Homepage
-* Product listing
-* Product details
-* Search
-* Categories
-* Cart
-* Wishlist
-* Checkout
-* Customer registration
-* Login
-* Account
-* Address management
-* Orders
-* Order tracking
-* Payment
-* Admin dashboard
-* Product management
-* Inventory
-* Order management
-
-Do not change the visual design unless required for security.
-
----
-
-# 30. BUILD & TEST
-
-Run the project's appropriate:
-
-```text
-Install
-Lint
-Type checking
-Unit tests
-Integration tests
-Security tests
-Production build
-```
-
-Fix all security-related errors.
-
-Fix build errors caused by your changes.
-
-Do not suppress errors just to make the build pass.
-
----
-
-# 31. FINAL CODE REVIEW
-
-Before committing, inspect:
-
-```text
-git status
-git diff
-```
-
-Review every changed file.
-
-Confirm:
-
-* No secrets
-* No debug code
-* No temporary bypasses
-* No disabled security checks
-* No test credentials
-* No hardcoded API keys
-* No insecure authentication
-* No unsafe SQL
-* No obvious XSS vulnerabilities
-
----
-
-# 32. GIT COMMIT AND PUSH
-
-Once the audit, tests, build, and security checks pass:
-
-Create a commit:
-
-```text
-security: harden application against OWASP Top 10
-```
-
-Push to:
-
-```text
-https://github.com/azadaman85-create/MI_TRENDS.git
-```
-
-Do not claim the push succeeded unless you actually verify it.
-
-If GitHub authentication is unavailable, clearly report:
-
-```text
-Implementation completed locally.
-Git commit completed.
-GitHub push could not be completed because authentication/access is unavailable.
-```
-
----
-
-# 33. FINAL SECURITY REPORT
-
-At the end, provide:
-
-## OWASP Status
-
-```text
-A01 Broken Access Control:        PASS/FAIL
-A02 Cryptographic Failures:       PASS/FAIL
-A03 Injection:                    PASS/FAIL
-A04 Insecure Design:              PASS/FAIL
-A05 Misconfiguration:             PASS/FAIL
-A06 Vulnerable Components:        PASS/FAIL
-A07 Authentication:               PASS/FAIL
-A08 Integrity Failures:           PASS/FAIL
-A09 Logging & Monitoring:         PASS/FAIL
-A10 SSRF:                         PASS/FAIL
-```
-
-## Security Improvements
-
-List the actual protections implemented.
-
-## Tests
-
-Report:
-
-* Tests run
-* Tests passed
-* Tests failed
-* Remaining vulnerabilities
-
-## Git
-
-Report:
-
-* Branch
-* Commit hash
-* Push status
-* Repository
-
-## IMPORTANT
-
-Do NOT claim that MI TRENDS is "100% secure" or "OWASP certified."
-
-OWASP compliance is a continuous security process.
-
-Clearly identify any remaining risks and any protections that require infrastructure outside the application, such as:
-
-* CDN/WAF
-* DDoS protection
-* Hosting firewall
-* Database firewall
-* Secrets manager
-* Infrastructure monitoring
-* Production penetration testing
-
-The goal is to make the **entire MI TRENDS codebase follow secure coding practices aligned with the OWASP Top 10**, while preserving the existing e-commerce functionality.
+Most importantly, **do not simply tell me that the problems are fixed. Actually inspect the existing codebase, identify the root causes, implement the fixes, run the application, test the affected flows, and then report the actual results.**

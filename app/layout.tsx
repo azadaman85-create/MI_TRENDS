@@ -9,6 +9,16 @@ import "./globals.css";
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  /*
+    Without this, browsers allow pinch-zooming out to 0.25 — the layout viewport stays
+    at device width while the visual viewport grows, so the page shrinks into a corner
+    with blank canvas filling the rest of the screen. Pinning the floor at 1 means the
+    page can never be zoomed out smaller than "fits the screen".
+
+    Zooming *in* is untouched (maximumScale stays 5), so this doesn't take away the
+    zoom that low-vision users actually rely on.
+  */
+  minimumScale: 1,
   maximumScale: 5,
   // Without `cover`, env(safe-area-inset-*) resolves to 0 on iOS, and the fixed
   // bottom bars (tab bar, product buy bar) end up under the home indicator.
