@@ -13,14 +13,14 @@ import {
 /**
  * Customer accounts for the storefront.
  *
- * This project has no backend, so accounts and sessions live in the browser. Passwords
- * are never stored in the clear — each account keeps a random salt and a SHA-256 digest —
- * but client-side hashing is not a substitute for a server: move `signUp`/`signIn` to a
- * real API (and verify the Google ID token there) before this handles live customers.
+ * These used to live entirely in the browser's localStorage. They're now backed by
+ * MongoDB through `/api/auth/*`: passwords are scrypt-hashed server-side, the session is
+ * a signed HttpOnly cookie the page's JavaScript can't read, and the Google ID token is
+ * verified with Google server-side instead of being trusted after a client-side decode.
+ *
+ * This context's shape is deliberately unchanged from the localStorage version so every
+ * page using `useCustomer()` keeps working as-is — only the internals moved.
  */
-
-const ACCOUNTS_KEY = "mitrends-customers-v1";
-const SESSION_KEY = "mitrends-customer-session-v1";
 
 export type AuthProvider = "password" | "google";
 
@@ -41,11 +41,6 @@ export type SignUpInput = {
   phone?: string;
 };
 
-type StoredAccount = Customer & {
-  salt?: string;
-  hash?: string;
-};
-
 export type AuthResult = { ok: true; customer: Customer } | { ok: false; message: string };
 
 type CustomerAuthValue = {
@@ -59,173 +54,73 @@ type CustomerAuthValue = {
 
 const CustomerAuthContext = createContext<CustomerAuthValue | undefined>(undefined);
 
-function readAccounts(): StoredAccount[] {
+const OFFLINE_MESSAGE = "We couldn't reach the server. Please try again.";
+
+/** Posts JSON and normalizes every failure into an `AuthResult`. */
+async function postAuth(path: string, payload: unknown): Promise<AuthResult> {
   try {
-    return JSON.parse(window.localStorage.getItem(ACCOUNTS_KEY) ?? "[]") as StoredAccount[];
+    const response = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = (await response.json()) as { ok?: boolean; message?: string; customer?: Customer };
+    if (!response.ok || !data.ok || !data.customer) {
+      return { ok: false, message: data.message ?? "That didn't work. Please try again." };
+    }
+    return { ok: true, customer: data.customer };
   } catch {
-    return [];
+    return { ok: false, message: OFFLINE_MESSAGE };
   }
-}
-
-function writeAccounts(accounts: StoredAccount[]) {
-  try {
-    window.localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
-  } catch {
-    // Private mode — the account only lasts for this session.
-  }
-}
-
-function randomId(bytes = 8) {
-  const buffer = new Uint8Array(bytes);
-  crypto.getRandomValues(buffer);
-  return Array.from(buffer, (b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-async function hashPassword(password: string, salt: string) {
-  const data = new TextEncoder().encode(`${salt}:${password}`);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-/** Strips the credential fields before an account is handed to the UI. */
-function publicProfile(account: StoredAccount): Customer {
-  const { id, name, email, phone, picture, provider, createdAt } = account;
-  return { id, name, email, phone, picture, provider, createdAt };
-}
-
-/** Reads the payload of a Google ID token. The signature still needs server-side checking. */
-export function decodeIdToken(credential: string) {
-  const [, payload] = credential.split(".");
-  if (!payload) throw new Error("Malformed credential");
-  const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
-  return JSON.parse(decodeURIComponent(escape(json))) as {
-    sub: string;
-    email: string;
-    name?: string;
-    given_name?: string;
-    picture?: string;
-    email_verified?: boolean;
-  };
 }
 
 export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [ready, setReady] = useState(false);
 
+  // The session cookie is HttpOnly, so the only way to learn who's signed in is to ask.
   useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(SESSION_KEY);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (saved) setCustomer(JSON.parse(saved) as Customer);
-    } catch {
-      // No readable session — the visitor stays signed out.
-    }
-    setReady(true);
-  }, []);
-
-  const startSession = useCallback((next: Customer) => {
-    setCustomer(next);
-    try {
-      window.localStorage.setItem(SESSION_KEY, JSON.stringify(next));
-    } catch {
-      // Session stays in memory only.
-    }
-  }, []);
-
-  const signUp = useCallback(
-    async ({ name, email, password, phone }: SignUpInput): Promise<AuthResult> => {
-      const normalized = email.trim().toLowerCase();
-      const accounts = readAccounts();
-
-      if (accounts.some((account) => account.email === normalized)) {
-        return { ok: false, message: "An account with that email already exists. Try signing in." };
-      }
-
-      const salt = randomId();
-      const account: StoredAccount = {
-        id: randomId(6),
-        name: name.trim(),
-        email: normalized,
-        phone: phone?.trim() || undefined,
-        provider: "password",
-        createdAt: new Date().toISOString(),
-        salt,
-        hash: await hashPassword(password, salt),
-      };
-
-      writeAccounts([...accounts, account]);
-      const profile = publicProfile(account);
-      startSession(profile);
-      return { ok: true, customer: profile };
-    },
-    [startSession],
-  );
-
-  const signIn = useCallback(
-    async (email: string, password: string): Promise<AuthResult> => {
-      const normalized = email.trim().toLowerCase();
-      const account = readAccounts().find((entry) => entry.email === normalized);
-
-      // Same generic message either way — not distinguishing "no such account" from
-      // "wrong password" avoids letting a failed login double as an email-existence
-      // check (OWASP A07's own named example of what not to do).
-      const mismatch = { ok: false as const, message: "That email and password don't match." };
-      if (!account || !account.salt || !account.hash) return mismatch;
-
-      const hash = await hashPassword(password, account.salt);
-      if (hash !== account.hash) return mismatch;
-
-      const profile = publicProfile(account);
-      startSession(profile);
-      return { ok: true, customer: profile };
-    },
-    [startSession],
-  );
-
-  const signInWithGoogle = useCallback(
-    async (credential: string): Promise<AuthResult> => {
-      let payload: ReturnType<typeof decodeIdToken>;
+    let cancelled = false;
+    (async () => {
       try {
-        payload = decodeIdToken(credential);
+        const response = await fetch("/api/auth/session", { cache: "no-store" });
+        if (cancelled) return;
+        const data = (await response.json()) as { customer: Customer | null };
+        setCustomer(data.customer ?? null);
       } catch {
-        return { ok: false, message: "Google sign-in returned something we couldn't read." };
+        if (!cancelled) setCustomer(null);
+      } finally {
+        if (!cancelled) setReady(true);
       }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-      const normalized = payload.email.trim().toLowerCase();
-      const accounts = readAccounts();
-      const existing = accounts.find((account) => account.email === normalized);
+  const signUp = useCallback(async (input: SignUpInput): Promise<AuthResult> => {
+    const result = await postAuth("/api/auth/signup", input);
+    if (result.ok) setCustomer(result.customer);
+    return result;
+  }, []);
 
-      const account: StoredAccount = existing
-        ? { ...existing, name: payload.name ?? existing.name, picture: payload.picture ?? existing.picture }
-        : {
-            id: randomId(6),
-            name: payload.name ?? payload.given_name ?? normalized.split("@")[0],
-            email: normalized,
-            picture: payload.picture,
-            provider: "google",
-            createdAt: new Date().toISOString(),
-          };
+  const signIn = useCallback(async (email: string, password: string): Promise<AuthResult> => {
+    const result = await postAuth("/api/auth/login", { email, password });
+    if (result.ok) setCustomer(result.customer);
+    return result;
+  }, []);
 
-      writeAccounts(
-        existing
-          ? accounts.map((entry) => (entry.email === normalized ? account : entry))
-          : [...accounts, account],
-      );
-
-      const profile = publicProfile(account);
-      startSession(profile);
-      return { ok: true, customer: profile };
-    },
-    [startSession],
-  );
+  const signInWithGoogle = useCallback(async (credential: string): Promise<AuthResult> => {
+    const result = await postAuth("/api/auth/google", { credential });
+    if (result.ok) setCustomer(result.customer);
+    return result;
+  }, []);
 
   const signOut = useCallback(() => {
     setCustomer(null);
-    try {
-      window.localStorage.removeItem(SESSION_KEY);
-    } catch {
-      // Already gone.
-    }
+    fetch("/api/auth/logout", { method: "POST" }).catch(() => {
+      // The cookie expires on its own even if this never lands.
+    });
   }, []);
 
   const value = useMemo(
