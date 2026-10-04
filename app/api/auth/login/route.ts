@@ -8,7 +8,7 @@ import {
 } from "@/lib/customer/session.server";
 import { getCustomersCollection } from "@/lib/db/models";
 import { RATE_LIMITS } from "@/lib/security/config";
-import { logSecurityEvent } from "@/lib/security/events";
+import { describeError, logSecurityEvent } from "@/lib/security/events";
 import { checkLockout, recordFailure, recordSuccess } from "@/lib/security/lockout";
 import { verifyPassword } from "@/lib/security/password";
 import { clientIpFrom, consumeRateLimit } from "@/lib/security/rate-limit";
@@ -82,8 +82,16 @@ export async function POST(request: Request) {
     const response = NextResponse.json({ ok: true, customer: publicCustomer(doc) }, { headers: { "x-request-id": requestId } });
     response.cookies.set(CUSTOMER_SESSION_COOKIE, issueCustomerSessionToken(doc._id), customerSessionCookieOptions);
     return response;
-  } catch {
-    logSecurityEvent({ type: "SUSPICIOUS_REQUEST", requestId, ip, endpoint: ENDPOINT, result: "error", risk: "low" });
+  } catch (error) {
+    logSecurityEvent({
+      type: "SUSPICIOUS_REQUEST",
+      requestId,
+      ip,
+      endpoint: ENDPOINT,
+      result: "error",
+      risk: "low",
+      meta: { cause: describeError(error) },
+    });
     return NextResponse.json(
       { ok: false, message: "We couldn't sign you in right now. Please try again." },
       { status: 503, headers: { "x-request-id": requestId } },

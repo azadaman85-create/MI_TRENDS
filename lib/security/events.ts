@@ -35,6 +35,22 @@ export type SecurityEvent = {
   meta?: Record<string, string | number | boolean | null>;
 };
 
+/**
+ * A log-safe description of a thrown error.
+ *
+ * Connection errors from the MongoDB driver can quote the connection string — which
+ * carries the database password — so anything that looks like credentials in a URI is
+ * redacted before this reaches a log. The caller still gets enough to tell "env var
+ * missing" apart from "can't reach the host", which is the whole point of logging it.
+ */
+export function describeError(error: unknown): string {
+  const raw = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+  return raw
+    .replace(/(mongodb(?:\+srv)?:\/\/)[^@\s]*@/gi, "$1<redacted>@")
+    .replace(/(password|secret|token|key)(["'\s:=]+)[^\s,"'}]+/gi, "$1$2<redacted>")
+    .slice(0, 300);
+}
+
 export function logSecurityEvent(event: SecurityEvent) {
   const record = {
     timestamp: new Date().toISOString(),
