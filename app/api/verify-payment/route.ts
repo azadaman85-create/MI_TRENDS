@@ -1,6 +1,8 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 
+import { getOrdersCollection } from "@/lib/db/models";
+import type { OrderStatus } from "@/lib/admin/types";
 import { RATE_LIMITS } from "@/lib/security/config";
 import { logSecurityEvent } from "@/lib/security/events";
 import { checkAndConsume } from "@/lib/security/order-ledger";
@@ -69,6 +71,60 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: "This payment has already been processed." }, { status: 409, headers: { "x-request-id": requestId } });
   }
 
-  logSecurityEvent({ type: "PAYMENT_VERIFIED", requestId, ip, endpoint: ENDPOINT, result: "allowed", risk: "low", meta: { orderId } });
-  return NextResponse.json({ success: true, orderId, paymentId }, { headers: { "x-request-id": requestId } });
+  // Payment is real and not a replay — promote the pending order to a live one. This is
+  // the only place an order becomes visible to the admin panel, so an order in the panel
+  // always corresponds to a payment this server verified itself.
+  try {
+    const orders = await getOrdersCollection();
+    const finalizedAt = new Date().toISOString();
+    const result = await orders.findOneAndUpdate(
+      { razorpayOrderId: orderId, status: "awaiting_payment" },
+      {
+        $set: {
+          status: "pending" as OrderStatus,
+          // A COD order is only part-paid now; the courier collects the balance.
+          paid: true,
+          razorpayPaymentId: paymentId,
+          "timeline.1.done": true,
+          "timeline.1.at": finalizedAt,
+        },
+      },
+      { returnDocument: "after" },
+    );
+
+    if (!result) {
+      // Signature and ledger both passed but there's no pending order to promote —
+      // nothing was double-charged, but this shouldn't happen, so it's worth a look.
+      logSecurityEvent({ type: "PAYMENT_VERIFICATION_FAILED", requestId, ip, endpoint: ENDPOINT, result: "error", risk: "high", meta: { orderId, reason: "no-pending-order" } });
+      return NextResponse.json(
+        { success: false, error: "We couldn't find that order. Please contact support." },
+        { status: 409, headers: { "x-request-id": requestId } },
+      );
+    }
+
+    logSecurityEvent({ type: "PAYMENT_VERIFIED", requestId, ip, endpoint: ENDPOINT, result: "allowed", risk: "low", meta: { orderId, reference: result._id } });
+    return NextResponse.json(
+      {
+        success: true,
+        orderId,
+        paymentId,
+        reference: result._id,
+        order: {
+          reference: result._id,
+          total: result.total,
+          advancePaid: result.advancePaid ?? null,
+          items: result.lines.reduce((sum, line) => sum + line.quantity, 0),
+          payment: result.payment,
+        },
+      },
+      { headers: { "x-request-id": requestId } },
+    );
+  } catch {
+    // The money moved but we couldn't record it — never report success for that.
+    logSecurityEvent({ type: "PAYMENT_VERIFICATION_FAILED", requestId, ip, endpoint: ENDPOINT, result: "error", risk: "high", meta: { orderId, reason: "db-write-failed" } });
+    return NextResponse.json(
+      { success: false, error: "Your payment went through but we couldn't save the order. Please contact support with your payment ID." },
+      { status: 503, headers: { "x-request-id": requestId } },
+    );
+  }
 }

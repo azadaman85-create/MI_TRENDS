@@ -8,9 +8,7 @@ import { ArrowLeft, Banknote, Check, ChevronDown, LockKeyhole, MapPin, ShieldChe
 import { ProductVisual } from "@/components/ProductVisual";
 import { useStore } from "@/components/StoreProvider";
 import { useCustomer } from "@/lib/account/auth";
-import { pushOrderToAdmin } from "@/lib/order-inbox";
 import { codPlanFor, DEFAULT_STORE_SETTINGS, readStoreSettings, type StoreSettings } from "@/lib/store-settings";
-import type { Order, PaymentMode } from "@/lib/admin/types";
 
 type RazorpaySuccessResponse = {
   razorpay_order_id: string;
@@ -43,11 +41,6 @@ declare global {
 }
 
 const money = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
-/** One clock read per order: the reference and the timestamp come from the same instant. */
-function newOrderReference() {
-  const now = new Date();
-  return { id: `MIT${now.getTime().toString().slice(-8)}`, placedAt: now.toISOString() };
-}
 
 const states = ["Andhra Pradesh", "Assam", "Bihar", "Delhi", "Goa", "Gujarat", "Haryana", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Odisha", "Punjab", "Rajasthan", "Tamil Nadu", "Telangana", "Uttar Pradesh", "Uttarakhand", "West Bengal"];
 type PaymentMethod = "upi" | "cod";
@@ -113,8 +106,9 @@ export default function CheckoutPage() {
   };
 
   // Runs once the Razorpay payment (full amount or COD advance) is verified server-side.
-  const finalizeOrder = (placed: Order, query: URLSearchParams) => {
-    pushOrderToAdmin(placed);
+  // The order record itself is created and finalized by the server — see
+  // app/api/create-order and app/api/verify-payment — so there's nothing to save here.
+  const finalizeOrder = (query: URLSearchParams) => {
     window.setTimeout(() => {
       store.clearCart();
       router.push(`/order-success?${query.toString()}`);
@@ -142,58 +136,8 @@ export default function CheckoutPage() {
 
     setPaymentError("");
     setSubmitting(true);
-    const { id: order, placedAt } = newOrderReference();
     const paymentLabel = { upi: "UPI", cod: "Cash on delivery" }[payment];
-    const query = new URLSearchParams({
-      order,
-      amount: String(payable),
-      payment: paymentLabel,
-      items: String(itemCount),
-      eta,
-      ...(payment === "cod" ? { advance: String(dueNow), balance: String(dueOnDelivery) } : {}),
-    });
-
     const value = (name: string) => String(data.get(name) || "").trim();
-    const adminPayment: PaymentMode = payment;
-    const placed: Order = {
-      id: order,
-      customerId: `WEB-${order}`,
-      customerName: value("name"),
-      email: value("email"),
-      phone: `+91 ${value("mobile")}`,
-      placedAt,
-      status: "pending",
-      payment: adminPayment,
-      paid: true,
-      advancePaid: payment === "cod" ? dueNow : undefined,
-      lines: store.cartLines.map((line) => ({
-        productId: line.product.id,
-        name: line.product.name,
-        sku: line.product.sku,
-        size: line.size,
-        color: line.color.name,
-        quantity: line.quantity,
-        price: line.product.price,
-        imageUrl: line.product.imageUrl,
-      })),
-      subtotal,
-      discount: couponDiscount,
-      shipping,
-      total: payable,
-      couponCode: store.coupon?.code ?? store.couponCode ?? null,
-      address: {
-        line1: value("address"),
-        area: value("area"),
-        city: value("city"),
-        state: value("state"),
-        pincode: value("pincode"),
-      },
-      timeline: ["Order placed", "Payment confirmed", "Packed", "Shipped", "Delivered"].map((label, index) => ({
-        label,
-        at: placedAt,
-        done: index === 0,
-      })),
-    };
 
     try {
       const createRes = await fetch("/api/create-order", {
@@ -211,11 +155,37 @@ export default function CheckoutPage() {
           codFee,
           paymentMode: payment,
           advancePercent: settings.codAdvancePercent,
-          receipt: order,
+          contact: {
+            name: value("name"),
+            email: value("email"),
+            phone: value("mobile"),
+            address: {
+              line1: value("address"),
+              area: value("area"),
+              city: value("city"),
+              state: value("state"),
+              pincode: value("pincode"),
+            },
+          },
         }),
       });
       const createData = await createRes.json();
       if (!createRes.ok) throw new Error(createData.error || "Could not start the payment.");
+
+      // The server owns the order reference and the authoritative totals.
+      const query = new URLSearchParams({
+        order: createData.reference,
+        amount: String(createData.breakdown.total),
+        payment: paymentLabel,
+        items: String(itemCount),
+        eta,
+        ...(payment === "cod"
+          ? {
+              advance: String(createData.breakdown.dueNow),
+              balance: String(createData.breakdown.total - createData.breakdown.dueNow),
+            }
+          : {}),
+      });
 
       const razorpay = new window.Razorpay({
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? "",
@@ -235,7 +205,7 @@ export default function CheckoutPage() {
             });
             const verifyData = await verifyRes.json();
             if (!verifyRes.ok || !verifyData.success) throw new Error(verifyData.error || "Payment verification failed.");
-            finalizeOrder(placed, query);
+            finalizeOrder(query);
           } catch (error) {
             setSubmitting(false);
             setPaymentError(error instanceof Error ? error.message : "Payment verification failed.");

@@ -1,9 +1,9 @@
 /**
  * Hand-off between the admin inventory screen and the storefront.
  *
- * The mirror image of `lib/order-inbox.ts`: orders travel storefront → panel, stock
- * travels panel → storefront. There is no backend, so saved stock is written to its own
- * localStorage key and the storefront reads it when rendering a product.
+ * Stock travels panel → storefront. Unlike customers and orders (which now live in
+ * MongoDB), inventory is still a localStorage hand-off: saved stock is written to its own
+ * key and the storefront reads it when rendering a product.
  *
  * Keeping it in a separate key means the storefront never imports the admin's seed data,
  * and a shopper who has never opened the panel simply falls back to the catalogue's own

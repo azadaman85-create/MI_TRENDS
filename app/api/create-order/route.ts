@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 
+import { currentCustomerId } from "@/lib/customer/session.server";
+import { validateOrderContact } from "@/lib/customer/validation";
+import { getOrdersCollection, type OrderDoc } from "@/lib/db/models";
 import { priceOrder } from "@/lib/pricing";
 import { razorpayClient } from "@/lib/razorpay";
 import { RATE_LIMITS } from "@/lib/security/config";
@@ -10,6 +13,8 @@ import { requestIdFrom } from "@/lib/security/request-id";
 
 const MIN_AMOUNT_PAISE = 100;
 const ENDPOINT = "/api/create-order";
+
+const TIMELINE_STEPS = ["Order placed", "Payment confirmed", "Packed", "Shipped", "Delivered"];
 
 export async function POST(request: Request) {
   const requestId = requestIdFrom(request);
@@ -25,6 +30,13 @@ export async function POST(request: Request) {
     );
   }
 
+  // Who the order belongs to comes from the session cookie, never from the request body —
+  // the browser can't claim to be another customer.
+  const customerId = await currentCustomerId();
+  if (!customerId) {
+    return NextResponse.json({ error: "Please sign in before checking out." }, { status: 401, headers: { "x-request-id": requestId } });
+  }
+
   let body: {
     lines?: unknown;
     couponCode?: unknown;
@@ -32,7 +44,7 @@ export async function POST(request: Request) {
     codFee?: unknown;
     paymentMode?: unknown;
     advancePercent?: unknown;
-    receipt?: unknown;
+    contact?: unknown;
   };
   try {
     body = await request.json();
@@ -40,10 +52,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400, headers: { "x-request-id": requestId } });
   }
 
+  const contact = validateOrderContact(body.contact);
+  if (!contact.ok) {
+    return NextResponse.json({ error: contact.error }, { status: 400, headers: { "x-request-id": requestId } });
+  }
+
   // The amount charged is always recomputed here from the catalogue + coupon rules —
-  // never trusted from the client — so intercepting this request and lowering the
-  // price no longer works. See lib/pricing.ts for the documented exception (shipping,
-  // COD fee and the COD advance share, which this app has no server-side home for yet).
+  // never trusted from the client. See lib/pricing.ts for the documented exception
+  // (shipping, COD fee and the COD advance share, which have no server-side home yet).
   const priced = priceOrder({
     lines: body.lines,
     couponCode: body.couponCode,
@@ -59,26 +75,63 @@ export async function POST(request: Request) {
   }
 
   const amountPaise = Math.round(priced.dueNow * 100);
-  const receipt = typeof body.receipt === "string" && body.receipt ? body.receipt : `receipt_${Date.now()}`;
-
   if (!Number.isFinite(amountPaise) || amountPaise < MIN_AMOUNT_PAISE) {
     return NextResponse.json({ error: `Amount must be at least ${MIN_AMOUNT_PAISE} paise.` }, { status: 400, headers: { "x-request-id": requestId } });
   }
 
+  const paymentMode = body.paymentMode === "cod" ? "cod" : "upi";
+  const placedAt = new Date().toISOString();
+  const orderId = `MIT${Date.now().toString().slice(-8)}`;
+
   try {
     const razorpay = razorpayClient();
-    const order = await razorpay.orders.create({
-      amount: amountPaise,
-      currency: "INR",
-      receipt,
-    });
+    const order = await razorpay.orders.create({ amount: amountPaise, currency: "INR", receipt: orderId });
     recordOrder(order.id, amountPaise);
+
+    // Written as "awaiting_payment": it exists so the finalized order can be built from
+    // server-held data once the payment verifies, but it is deliberately excluded from
+    // the admin order list until then (an abandoned checkout is not an order).
+    const doc: OrderDoc = {
+      _id: orderId,
+      customerId,
+      customerName: contact.value.name,
+      email: contact.value.email,
+      phone: `+91 ${contact.value.phone}`,
+      placedAt,
+      status: "awaiting_payment",
+      payment: paymentMode,
+      paid: false,
+      advancePaid: paymentMode === "cod" ? priced.dueNow : undefined,
+      lines: priced.lines,
+      subtotal: priced.subtotal,
+      discount: priced.discount,
+      shipping: priced.shipping,
+      codFee: priced.codFee,
+      total: priced.total,
+      couponCode: typeof body.couponCode === "string" && body.couponCode ? body.couponCode.toUpperCase() : null,
+      address: contact.value.address,
+      timeline: TIMELINE_STEPS.map((label, index) => ({ label, at: placedAt, done: index === 0 })),
+      razorpayOrderId: order.id,
+    };
+
+    const orders = await getOrdersCollection();
+    await orders.insertOne(doc);
+
     return NextResponse.json(
       {
         order_id: order.id,
         amount: order.amount,
         currency: order.currency,
-        breakdown: { subtotal: priced.subtotal, discount: priced.discount, shipping: priced.shipping, codFee: priced.codFee, total: priced.total },
+        reference: orderId,
+        placedAt,
+        breakdown: {
+          subtotal: priced.subtotal,
+          discount: priced.discount,
+          shipping: priced.shipping,
+          codFee: priced.codFee,
+          total: priced.total,
+          dueNow: priced.dueNow,
+        },
       },
       { headers: { "x-request-id": requestId } },
     );
@@ -88,6 +141,6 @@ export async function POST(request: Request) {
     if (statusCode === 401) {
       return NextResponse.json({ error: "Razorpay authentication failed." }, { status: 401, headers: { "x-request-id": requestId } });
     }
-    return NextResponse.json({ error: "Could not create the Razorpay order." }, { status: 500, headers: { "x-request-id": requestId } });
+    return NextResponse.json({ error: "Could not start the payment. Please try again." }, { status: 500, headers: { "x-request-id": requestId } });
   }
 }

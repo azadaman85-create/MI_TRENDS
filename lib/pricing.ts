@@ -18,6 +18,7 @@
  */
 import { getProductById } from "@/lib/catalog";
 import { calculateCouponDiscount, isValidCouponCode } from "@/lib/coupons";
+import type { OrderLine } from "@/lib/admin/types";
 
 export type TrustedOrderLine = {
   productId: number;
@@ -37,6 +38,12 @@ export type PricingResult =
       total: number;
       /** What Razorpay actually charges right now — the full total for UPI, a clamped share of it for COD. */
       dueNow: number;
+      /**
+       * The order lines rebuilt from the catalogue — name, SKU, price and image come from
+       * the server's own product data, so the stored order can't carry a client-invented
+       * product name or price alongside a correct total.
+       */
+      lines: OrderLine[];
     }
   | { ok: false; error: string };
 
@@ -68,6 +75,7 @@ export function priceOrder(input: {
   }
 
   let subtotal = 0;
+  const pricedLines: OrderLine[] = [];
   for (const raw of lines) {
     if (typeof raw !== "object" || raw === null) return { ok: false, error: "Invalid order line." };
     const line = raw as Partial<TrustedOrderLine>;
@@ -94,6 +102,16 @@ export function priceOrder(input: {
 
     // The catalogue's own price — never the client's — is what gets charged.
     subtotal += product.price * quantity;
+    pricedLines.push({
+      productId: product.id,
+      name: product.name,
+      sku: product.sku,
+      size,
+      color: colorName,
+      quantity,
+      price: product.price,
+      imageUrl: product.imageUrl,
+    });
   }
 
   const code = typeof couponCode === "string" ? couponCode.trim().toUpperCase() : "";
@@ -111,7 +129,7 @@ export function priceOrder(input: {
     : 100;
   const dueNow = isCod ? Math.round((total * clampedAdvancePercent) / 100) : total;
 
-  return { ok: true, subtotal, discount, shipping: clampedShipping, codFee: clampedCodFee, total, dueNow };
+  return { ok: true, subtotal, discount, shipping: clampedShipping, codFee: clampedCodFee, total, dueNow, lines: pricedLines };
 }
 
 function clamp(value: number, min: number, max: number) {
