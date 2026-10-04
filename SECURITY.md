@@ -2,7 +2,8 @@
 
 What's actually implemented, where it lives, and how to change it. Read `SECURITY_AUDIT.md`
 first if you want the "why" and the honest list of what this project's architecture (no
-backend, no database) means can't be fixed here.
+backend, no database) means can't be fixed here. `OWASP_SECURITY_CHECKLIST.md` maps all of this
+to the OWASP Top 10 categories, PASS/PARTIAL per category with the reasoning.
 
 ## Architecture
 
@@ -40,7 +41,7 @@ route file.
 
 | Endpoint | Limit |
 |---|---|
-| `POST /api/admin/login` | 5 / 10 min per IP |
+| `POST /api/admin/login` | 8 / 10 min per IP (deliberately looser than the 5-failure lockout below — see §3) |
 | `POST /api/admin/logout` | 20 / min per IP |
 | `GET /api/admin/session` | 60 / min per IP |
 | `POST /api/create-order` | 20 / min per IP |
@@ -100,21 +101,42 @@ Also set: HSTS, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cr
 popups to still talk back to the tab), `Cross-Origin-Resource-Policy: same-origin`, and a
 `Permissions-Policy` disabling camera/mic/geolocation/usb.
 
-## 6. XSS
+## 6. Password hashing
+
+`lib/security/password.ts` — scrypt (Node's built-in `crypto.scryptSync`), not SHA-256, for the
+admin password — the one password in this app that's actually checked server-side. Stored as
+`scrypt:<hex>` in `ADMIN_PASSWORD_HASH`; `verifyPassword()` also accepts a legacy bare-hex
+SHA-256 value so an already-deployed `.env` isn't instantly broken, but that path is a migration
+aid, not a second permanent format — regenerate with the command in `ADMIN.md` after any
+password change. Customer account passwords (`lib/account/auth.tsx`) stay SHA-256, deliberately:
+that hash is computed in the browser for an account that only ever lives in that browser's own
+`localStorage`, so a stronger algorithm wouldn't defend against anything real — see
+`SECURITY_AUDIT.md` §6.
+
+## 7. Open redirect protection
+
+`lib/safe-redirect.ts` — `sanitizeNextPath()` validates the `?next=` parameter login and signup
+both accept (so the flow can return a shopper to where they started). Only a same-document
+relative path is accepted; an absolute URL, a protocol-relative `//host` URL, or anything else
+falls back to a safe default. Used in `app/(store)/account/login/page.tsx` and
+`app/(store)/account/signup/page.tsx` — if a third page ever adds its own `?next=`-style
+parameter, route it through this same helper rather than reading `searchParams` directly.
+
+## 8. XSS
 
 No `dangerouslySetInnerHTML` anywhere in the codebase (checked). Every user-controlled string —
 reviews, names, addresses, search queries, coupon codes — is rendered as a React text child,
 which escapes by default. The CSP above is defense-in-depth on top of that, not the primary
 defense.
 
-## 7. Input validation
+## 9. Input validation
 
 Every Route Handler validates its own body (`typeof` checks, bounded ranges, catalogue
 look-ups) and returns a generic `400` with a safe message on anything malformed — no stack
 traces, no internal error details, ever returned to a caller. `lib/pricing.ts` is the strictest
 validator (rejects unknown products, bad sizes/colors, quantity bounds, line-count bounds).
 
-## 8. Security event log
+## 10. Security event log
 
 `lib/security/events.ts` — structured JSON written to console (which is where Vercel and most
 Node hosts collect logs from; there's no log database to write to instead). Event types:
@@ -128,7 +150,7 @@ etc.).
 **To wire this to a real sink later:** change the body of `logSecurityEvent()` — every call
 site stays the same.
 
-## 9. Admin security
+## 11. Admin security
 
 Covered above (firewall gate, rate limit, lockout). No multi-role RBAC — see
 `SECURITY_AUDIT.md` §2 for why that's not implemented (there is exactly one admin account).
@@ -136,20 +158,20 @@ Admin actions beyond login/logout (product edits, order status changes, etc.) ar
 `localStorage` writes with no server endpoint at all, so there's nothing for CSRF or an audit
 log to attach to there — flagged, not silently ignored.
 
-## 10. Environment variables reference
+## 12. Environment variables reference
 
 | Variable | Required | Notes |
 |---|---|---|
 | `ADMIN_EMAIL` | Yes | No `NEXT_PUBLIC_` prefix — server-only |
 | `ADMIN_NAME` | Yes | |
 | `ADMIN_PASSWORD_SALT` | Yes | |
-| `ADMIN_PASSWORD_HASH` | Yes | SHA-256 of `salt:password` |
+| `ADMIN_PASSWORD_HASH` | Yes | `scrypt:` + a scrypt digest of the password (§6) |
 | `ADMIN_SESSION_SECRET` | Yes | Signs the session cookie; rotate to invalidate all sessions |
 | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | For Google sign-in | Public by design (OAuth client IDs are) |
 | `NEXT_PUBLIC_RAZORPAY_KEY_ID` | Yes | Public by design |
 | `RAZORPAY_KEY_SECRET` | Yes | Server-only, no `NEXT_PUBLIC_` prefix |
 
-## 11. Incident response (what little there is to respond with)
+## 13. Incident response (what little there is to respond with)
 
 - **Suspected admin credential compromise:** rotate `ADMIN_PASSWORD_SALT`/`HASH` (command in
   `.env.local`'s own comment) *and* `ADMIN_SESSION_SECRET` (invalidates every existing session
@@ -159,14 +181,14 @@ log to attach to there — flagged, not silently ignored.
 - **Reviewing what happened:** search the deployment's console logs for `[security]` lines —
   each is a JSON object with a `requestId` you can grep across the whole incident.
 
-## 12. Running the security tests
+## 14. Running the security tests
 
 There's no automated suite (see `SECURITY_AUDIT.md` §2 for why). `SECURITY_TEST_REPORT.md`
 documents the exact `curl` commands used to verify each control against the local dev server —
 rerun them the same way after any change to `proxy.ts`, `lib/pricing.ts`, or anything under
 `lib/security/`.
 
-## 13. Updating security configuration
+## 15. Updating security configuration
 
 - Rate limits / lockout thresholds: `lib/security/config.ts` — one file, no hunting through
   route handlers.

@@ -86,6 +86,24 @@ through a full first lockout, waiting it out, and failing through a second cycle
 `lockCycles`, pick `escalatedLockMs` once `lockCycles > escalateAfterCycles`) was read and is
 straightforward enough to trust from inspection alone.
 
+## Additional tests — OWASP pass (2026-10-04)
+
+| # | Test | Expected | Observed | Result |
+|---|---|---|---|---|
+| T13 | Admin login with the real password, after switching the hash algorithm to scrypt | Still succeeds — the regenerated `.env.local` hash matches | `{"ok":true,"user":{"name":"Maidul Islam",...}}` — `200` | **PASS** |
+| T14 | Admin login with a wrong password, under the new scrypt verification path | Still rejected | `{"ok":false,"message":"Those credentials do not match an admin account."}` — `401` | **PASS** |
+| T15 | Customer login account-enumeration fix | Both "no such account" and "wrong password" paths in `lib/account/auth.tsx` return the identical message | Confirmed by reading the code — a single `mismatch` constant is returned from both branches | **PASS (code review — see note)** |
+| T16 | `npm audit` before/after | Critical RCE and the high-severity `brace-expansion` ReDoS fixed; app still builds | `npm audit` dropped from 7 (6 high, 1 critical) to 5 high — all remaining are inside the dev-only ESLint tooling chain. `npx tsc --noEmit`, `npx eslint .`, and `npm run build` all passed clean afterward. | **PASS** |
+| T17 | Full page regression after all of the above | Every route still returns `200` (or the expected `307`/`401`/`403`/`429`) | `/`, `/shop`, `/cart`, `/checkout`, `/wishlist`, `/account/login`, `/account/signup`, `/product/[slug]`, `/order-success`, `/admin/login` → `200`; `/admin` (no session) → `307` | **PASS** |
+
+**T15 note:** this is a client-side code path (`lib/account/auth.tsx` runs in the browser against
+`localStorage`, not a server endpoint), so there's no HTTP request to `curl` against — verifying
+it means reading the function, which was done. The open-redirect fix (`lib/safe-redirect.ts`) is
+the same situation: it's exercised inside a React component after `useSearchParams()`, not at an
+HTTP layer `curl` can reach, so it was verified by code review and a type-check pass rather than
+a live browser redirect test (no browser tool was available in this session — noted as a
+limitation below, same as the rest of this report).
+
 ## Known limitations of this test pass
 
 - Everything above is single-process, single-request-at-a-time manual testing. No load testing,

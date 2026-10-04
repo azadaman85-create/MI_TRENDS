@@ -109,7 +109,41 @@ none currently exist in the repo.
 No credentials were found in git history either (this repo's history is short and was reviewed
 commit-by-commit as part of this project's prior sessions — no rotation is required).
 
-## 6. Infrastructure-level gaps (out of scope for an application-level pass)
+## 6. OWASP Top 10 pass — additional findings (2026-10-04)
+
+A follow-up pass specifically against the OWASP Top 10 (2021) found three more concrete,
+fixable issues beyond what §3–4 already covered. Full category-by-category status in
+`OWASP_SECURITY_CHECKLIST.md`; summary of what changed:
+
+- **Open redirect (CWE-601), A01.** `/account/login?next=<url>` and `/account/signup?next=<url>`
+  took the `next` query parameter straight into `router.push()` with no validation — a crafted
+  link could redirect a shopper to an attacker's site immediately after they authenticate on the
+  real one. Fixed with `lib/safe-redirect.ts`, which only accepts a same-document relative path.
+- **Plain SHA-256 for a real server-side password, A02.** The admin password was hashed with a
+  single SHA-256 round — fast, GPU-brute-forceable, and exactly what OWASP guidance says not to
+  use for password storage (this one *is* checked server-side, unlike the customer-account hash
+  below, so it's a real credential worth hardening). Moved to scrypt (`lib/security/password.ts`,
+  built into Node's `crypto`, no new dependency); the live `.env.local` hash was regenerated and
+  verified with a real login test.
+- **Account-existence oracle, A07.** Customer sign-in returned a different message for "no such
+  account" versus "wrong password," letting a failed login double as an email-existence check —
+  this spec's own named example of what to avoid. Both paths now return one generic message.
+- **A critical dependency vulnerability.** `npm audit` found a critical RCE in
+  `next/og ImageResponse` (this app doesn't use that API, but the vulnerable code still shipped
+  in `node_modules`) and a high-severity ReDoS in a transitive `brace-expansion` dependency. Both
+  fixed via `npm audit fix` — Next.js bumped from 16.3.5 to 16.3.8, within the existing
+  `package.json` range, no breaking change. One remaining high-severity item
+  (`braces`/`micromatch`, inside the ESLint tooling chain only, dev-time, never shipped) requires
+  a breaking `eslint-config-next` downgrade to fix and was left as a documented, accepted,
+  low-real-world-risk exception rather than forcing it.
+
+**Customer account passwords remain SHA-256, deliberately not changed:** `lib/account/auth.tsx`
+hashes in the browser for an account that only ever lives in that browser's own `localStorage`.
+There is no server to hold a stronger hash against, and whoever can read the hash already has
+full read/write access to the same storage it's sitting in — a stronger algorithm defends against
+a threat that doesn't exist in this specific architecture. Noted, not fixed, for that reason.
+
+## 7. Infrastructure-level gaps (out of scope for an application-level pass)
 
 Per the brief's own closing instruction, these require infrastructure this project doesn't
 provision, and no application-level code change substitutes for them:
