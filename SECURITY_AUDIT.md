@@ -143,7 +143,61 @@ There is no server to hold a stronger hash against, and whoever can read the has
 full read/write access to the same storage it's sitting in — a stronger algorithm defends against
 a threat that doesn't exist in this specific architecture. Noted, not fixed, for that reason.
 
-## 7. Infrastructure-level gaps (out of scope for an application-level pass)
+## 7. MongoDB migration (2026-10-04) — §4's structural risk is now closed
+
+Sections 1–6 above describe a no-backend app. **That is no longer accurate for customers
+and orders**, and the change closes the structural risk §4 called the one thing no amount of
+hardening could fix:
+
+| Was | Now |
+|---|---|
+| Customer accounts in `localStorage`, hashed in-browser | `customers` collection in MongoDB Atlas, scrypt-hashed server-side (`/api/auth/*`) |
+| Customer "session" a readable JSON blob in `localStorage` | Signed, HttpOnly, `SameSite=Lax` cookie the page's JS can't read (`lib/customer/session.server.ts`) |
+| Google ID token decoded client-side, signature never checked | Verified with Google server-side, including an `aud` check against our own client ID (`/api/auth/google`) |
+| Order record built by the browser and pushed to `localStorage` | Created by the server at `/api/create-order`, bound to the session's real customer id, finalized **only** when `/api/verify-payment` confirms the signature |
+| Admin "Customers" screen showed 96 generated demo records | Reads the real `customers` collection (`/api/admin/customers`) |
+| Admin "Orders" screen read this browser's `localStorage` | Reads the real `orders` collection, polled every 8s (`/api/admin/orders`) |
+| Order status changes lived in one browser | `PATCH /api/admin/orders/[id]`, persisted, admin-session-gated, status-field-only |
+
+What this means for the earlier findings:
+
+- **§4 (order not bound to its payment) — fixed.** An order only becomes visible to the
+  panel inside the verify-payment handler, after the HMAC signature and the replay check
+  both pass. A browser can no longer fabricate an order: there's no client-side write path
+  left, and `customerId` comes from the session cookie, not the request body.
+- **A01 (no server-side resources to authorize) — materially improved.** There are now real
+  server-side resources, and they're authorized: `/api/admin/*` requires an admin session
+  (`lib/admin/guard.server.ts`), `/api/create-order` requires a customer session, and the
+  order-status endpoint accepts only a status value — not arbitrary fields (mass-assignment
+  protection).
+- **A02 (customer passwords were SHA-256 in-browser) — fixed.** Now scrypt, server-side,
+  and the hash never leaves the server.
+- **A03 (injection) — still PASS, but for a real reason now.** Queries go through the
+  MongoDB driver with structured filter objects (`{ email }`, `{ _id: id }`) — no string
+  concatenation, no `$where`, no user input interpolated into a query document. The one
+  aggregation is a fixed pipeline. Worth re-checking on any new query.
+
+**Still localStorage, deliberately unchanged in this pass:** products, categories, coupons,
+banners, reviews, inventory and store settings. The request was specifically customer and
+order persistence; moving the catalogue is a separate job. Practical consequence to be aware
+of: shipping/COD values in `lib/store-settings.ts` are still admin-browser-local, so the
+pricing clamp described in §3 still applies.
+
+**New operational risks introduced by this migration:**
+
+- The Atlas credentials are real production credentials in `.env.local` and must also be set
+  in the Vercel dashboard. They were pasted into a chat session, so treat them as
+  known-to-a-third-party and rotate them in Atlas if that matters to you.
+- Atlas network access must allow the app's IPs (Vercel's are dynamic — either allow
+  `0.0.0.0/0` with a strong database password, which is what this currently relies on, or
+  use Atlas's Vercel integration/VPC peering).
+- The database user should have least-privilege access to the `mitrends` database only, not
+  cluster-wide admin rights. Worth checking in Atlas.
+- No backups configured, no retention policy, and customer PII (name, email, phone, delivery
+  address) is now stored — which brings real data-protection obligations that didn't apply
+  when nothing persisted.
+
+## 8. Infrastructure-level gaps (out of scope for an application-level pass)
 
 Per the brief's own closing instruction, these require infrastructure this project doesn't
 provision, and no application-level code change substitutes for them:

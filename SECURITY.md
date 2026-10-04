@@ -12,10 +12,27 @@ Request
   → proxy.ts            (firewall: request ID, CSRF-style Origin check, admin session gate)
   → Route Handler        (per-endpoint rate limit, input validation, business logic)
   → lib/security/*        (shared: rate limiting, lockout, event log, pricing integrity, order ledger)
+  → lib/db/*              (MongoDB: customers, orders)
 ```
 
-Everything under `lib/security/` is framework-agnostic and in-process (no database, no Redis) —
-see "Known limitation" at the bottom.
+Customers and orders persist in MongoDB (`lib/db/`). Products, categories, coupons, banners,
+reviews, inventory and store settings are still browser-local — see `SECURITY_AUDIT.md` §7 for
+what moved and what didn't. The rate limiter, lockout and order ledger under `lib/security/`
+are still in-process memory, not in the database — see "Known limitation" under §2.
+
+### Sessions
+
+Two independent signed-cookie sessions, same mechanism (`lib/security/session.ts`), different
+secrets and cookies so neither can be used as the other:
+
+| | Admin | Customer |
+|---|---|---|
+| Cookie | `mitrends_admin_session` | `mitrends_customer_session` |
+| Secret | `ADMIN_SESSION_SECRET` | `CUSTOMER_SESSION_SECRET` |
+| TTL | 12 hours | 30 days |
+| Guard | `proxy.ts` for pages, `lib/admin/guard.server.ts` for `/api/admin/*` | `currentCustomerId()` in `lib/customer/session.server.ts` |
+
+Both are HttpOnly, `SameSite=Lax`, and `Secure` in production.
 
 ## 1. The firewall (`proxy.ts`)
 
@@ -170,6 +187,9 @@ log to attach to there — flagged, not silently ignored.
 | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | For Google sign-in | Public by design (OAuth client IDs are) |
 | `NEXT_PUBLIC_RAZORPAY_KEY_ID` | Yes | Public by design |
 | `RAZORPAY_KEY_SECRET` | Yes | Server-only, no `NEXT_PUBLIC_` prefix |
+| `MONGODB_URI` | Yes | Atlas connection string, server-only. Rotate in Atlas if leaked |
+| `MONGODB_DB_NAME` | No | Defaults to `mitrends` |
+| `CUSTOMER_SESSION_SECRET` | Yes | Signs customer session cookies; rotate to sign everyone out |
 
 ## 13. Incident response (what little there is to respond with)
 
@@ -178,6 +198,11 @@ log to attach to there — flagged, not silently ignored.
   immediately, including the attacker's).
 - **Suspected Razorpay key compromise:** rotate in the Razorpay dashboard, update
   `RAZORPAY_KEY_SECRET`/`NEXT_PUBLIC_RAZORPAY_KEY_ID`, redeploy.
+- **Suspected database credential compromise:** rotate the database user's password in Atlas,
+  update `MONGODB_URI` locally and in Vercel, redeploy. Check Atlas's access logs for queries
+  you don't recognise — the `customers` and `orders` collections hold customer PII.
+- **Suspected customer session theft:** rotate `CUSTOMER_SESSION_SECRET` — every outstanding
+  customer cookie stops verifying immediately (everyone has to sign in again).
 - **Reviewing what happened:** search the deployment's console logs for `[security]` lines —
   each is a JSON object with a `requestId` you can grep across the whole incident.
 
