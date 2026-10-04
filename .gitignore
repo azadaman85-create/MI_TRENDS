@@ -5,9 +5,13 @@ out/
 .DS_Store
 *.tsbuildinfo
 
-# local env
+# local env and secrets
 .env
 .env*.local
+*.pem
+*.key
+credentials*
+secrets*
 
 # local tooling (Claude Code skills/config, not app code)
 .agents/

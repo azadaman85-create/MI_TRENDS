@@ -10,27 +10,34 @@ specified in *MI TRENDS Admin Panel Design Requirements* (sections 51–71).
 | Login | http://localhost:3000/admin/login |
 | Credentials | Configured per environment — see below |
 
-The super admin identity comes from four env vars, set in `.env.local` (gitignored) and listed
-without values in `.env.example`:
+The super admin identity comes from five env vars, set in `.env.local` (gitignored) and listed
+without values in `.env.example`. None of these carry the `NEXT_PUBLIC_` prefix — they're read
+only in `lib/admin/session.server.ts`, a server-only module, and never reach the browser:
 
 | Variable | Holds |
 |---|---|
-| `NEXT_PUBLIC_ADMIN_EMAIL` | The sign-in address |
-| `NEXT_PUBLIC_ADMIN_NAME` | Display name, shown in the topbar and used for the avatar initials |
-| `NEXT_PUBLIC_ADMIN_PASSWORD_SALT` | Random per-install salt |
-| `NEXT_PUBLIC_ADMIN_PASSWORD_HASH` | SHA-256 of `salt:password` |
+| `ADMIN_EMAIL` | The sign-in address |
+| `ADMIN_NAME` | Display name, shown in the topbar and used for the avatar initials |
+| `ADMIN_PASSWORD_SALT` | Random per-install salt |
+| `ADMIN_PASSWORD_HASH` | SHA-256 of `salt:password` |
+| `ADMIN_SESSION_SECRET` | Signs the session cookie — rotate it to invalidate every admin session |
 
-Generate a fresh pair after any password change:
+Generate a fresh salt+hash pair after any password change:
 
 ```bash
 node -e 'const c=require("crypto");const s=c.randomBytes(16).toString("hex");console.log("salt",s);console.log("hash",c.createHash("sha256").update(s+":"+process.argv[1]).digest("hex"))' 'YOUR_PASSWORD'
 ```
 
-**This is not a real security boundary.** The project has no backend, so `lib/admin/auth.tsx`
-compares the digest in the browser, and anyone can edit the client bundle to walk past it. Storing
-a salted digest rather than the password only ensures the password itself is never written into the
-repository or the bundle. Swap `signIn()` for a server call the moment a real identity provider
-exists; the route guard in `app/admin/(panel)/layout.tsx` stays the same.
+**This is a real security boundary.** Credentials are checked server-side in
+`app/api/admin/login/route.ts`; the salt and hash never reach the browser. A successful login gets
+a signed, HttpOnly, `SameSite=Lax` session cookie (`lib/admin/session.server.ts`), and `proxy.ts`
+gates every `/admin/*` page server-side regardless of what the client does — the route guard in
+`app/admin/(panel)/layout.tsx` is UX only (fast redirect, no flash of protected UI), not the real
+check. Login is also rate-limited and protected by a progressive lockout (see `SECURITY.md`).
+
+This *used* to be client-side-only (comparing the digest in the browser, trivially bypassable by
+editing the bundle) — if you're reading an older copy of this doc or an old deployment, that
+version is unsafe and should be redeployed with the server-side flow described above.
 
 ## Screens
 
