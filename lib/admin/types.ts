@@ -73,6 +73,8 @@ export type Customer = {
   name: string;
   email: string;
   phone: string;
+  /** How they signed up. Google accounts have no password of their own. */
+  provider?: "password" | "google";
   city: string;
   state: string;
   joinedAt: string;

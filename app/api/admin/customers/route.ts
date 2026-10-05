@@ -59,12 +59,15 @@ export async function GET(request: Request) {
       const stat = statsById.get(doc._id);
       const orders = stat?.orders ?? 0;
       const spend = stat?.spend ?? 0;
-      // Never ships passwordSalt/passwordHash — only these fields are selected.
+      // Never ships passwordSalt/passwordHash — only these fields are selected. The
+      // credential stays on the server; there is nothing an admin can do with it, and a
+      // panel session shouldn't be able to walk off with every customer's hash.
       return {
         id: doc._id,
         name: doc.name,
         email: doc.email,
         phone: doc.phone ?? "",
+        provider: doc.provider,
         // No signup field for these — the latest order's delivery address is the best
         // signal the panel has, and an em dash reads better than an empty cell.
         city: stat?.city ?? "—",

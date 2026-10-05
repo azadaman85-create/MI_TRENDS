@@ -58,6 +58,31 @@ export default function CustomersPage() {
       ),
     },
     {
+      id: "contact",
+      header: "Phone",
+      sortValue: (customer) => customer.phone,
+      render: (customer) =>
+        customer.phone ? (
+          <a className="a-cell-product__meta" href={`tel:${customer.phone}`} style={{ whiteSpace: "nowrap" }}>
+            {customer.phone}
+          </a>
+        ) : (
+          // Google sign-ups never give us a number — there's nothing to show, and an
+          // empty cell reads as a bug.
+          <span className="a-cell-product__meta">—</span>
+        ),
+    },
+    {
+      id: "signup",
+      header: "Sign-up",
+      sortValue: (customer) => customer.provider ?? "",
+      render: (customer) => (
+        <Badge tone={customer.provider === "google" ? "quiet" : "info"}>
+          {customer.provider === "google" ? "Google" : "Email"}
+        </Badge>
+      ),
+    },
+    {
       id: "location",
       header: "Location",
       sortValue: (customer) => customer.city,

@@ -57,7 +57,15 @@ export async function GET(request: Request) {
     const ownsIt = signedInCustomerId !== null && signedInCustomerId === order.customerId;
     const emailMatches = email.length > 0 && email === order.email.toLowerCase();
 
-    if (!ownsIt && !emailMatches) {
+    /*
+      If an email was typed it has to match, even for the customer who placed the order.
+      Being signed in only lets you skip the field — it doesn't let you be wrong in it.
+      Otherwise the form reads as broken: it asks for an email, you enter the wrong one,
+      and the order shows anyway.
+    */
+    const allowed = email.length > 0 ? emailMatches : ownsIt;
+
+    if (!allowed) {
       logSecurityEvent({
         type: "SUSPICIOUS_REQUEST",
         requestId,

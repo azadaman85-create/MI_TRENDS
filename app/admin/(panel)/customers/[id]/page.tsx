@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowLeft, Crown, Mail, MapPin, Phone, ShoppingBag, Users } from "lucide-react";
+import { ArrowLeft, Crown, Mail, MapPin, Phone, ShieldCheck, ShoppingBag, Users } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useMemo } from "react";
@@ -133,14 +133,27 @@ export default function CustomerDetailPage() {
                 <Mail size={14} aria-hidden="true" />
                 {customer.email}
               </a>
-              <a className="a-row" href={`tel:${customer.phone}`} style={{ gap: 9, fontSize: "0.78rem" }}>
-                <Phone size={14} aria-hidden="true" />
-                {customer.phone}
-              </a>
+              {customer.phone ? (
+                <a className="a-row" href={`tel:${customer.phone}`} style={{ gap: 9, fontSize: "0.78rem" }}>
+                  <Phone size={14} aria-hidden="true" />
+                  {customer.phone}
+                </a>
+              ) : (
+                <span className="a-row a-muted" style={{ gap: 9, fontSize: "0.78rem" }}>
+                  <Phone size={14} aria-hidden="true" />
+                  No phone on file
+                </span>
+              )}
               <span className="a-row" style={{ gap: 9, fontSize: "0.78rem" }}>
                 <MapPin size={14} aria-hidden="true" />
                 {customer.city}, {customer.state}
               </span>
+              <span className="a-row" style={{ gap: 9, fontSize: "0.78rem" }}>
+                <ShieldCheck size={14} aria-hidden="true" />
+                {customer.provider === "google" ? "Signed up with Google" : "Signed up with email and password"}
+              </span>
+              {/* Passwords are stored as a one-way scrypt hash and are never readable —
+                  not here, not anywhere. Use a reset flow, never a lookup. */}
             </div>
           </Card>
 
