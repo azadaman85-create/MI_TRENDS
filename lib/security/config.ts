@@ -32,6 +32,8 @@ export const RATE_LIMITS = {
   customerSession: { limit: 120, windowMs: 60 * 1000 } as RateLimitRule,
   /** Admin panel polls these for near-real-time order/customer updates. */
   adminData: { limit: 240, windowMs: 60 * 1000 } as RateLimitRule,
+  /** Order lookups — tight enough that guessing order IDs in bulk isn't practical. */
+  orderTracking: { limit: 15, windowMs: 60 * 1000 } as RateLimitRule,
 } as const;
 
 /**

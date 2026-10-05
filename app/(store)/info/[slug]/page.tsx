@@ -190,12 +190,34 @@ const shoeRows = [
   ["UK 11", "28.5", "45"],
 ];
 
-const trackingStages = ["Order confirmed", "Packed", "Shipped", "Out for delivery", "Delivered"];
+type TrackedOrder = {
+  reference: string;
+  placedAt: string;
+  status: string;
+  payment: string;
+  paid: boolean;
+  total: number;
+  dueOnDelivery: number;
+  estimatedDelivery: string;
+  timeline: { label: string; at: string; done: boolean }[];
+  items: { name: string; size: string; color: string; quantity: number; imageUrl: string | null }[];
+  deliveringTo: string;
+};
 
-function stageFromOrderId(orderId: string) {
-  let hash = 0;
-  for (let i = 0; i < orderId.length; i += 1) hash = (hash * 31 + orderId.charCodeAt(i)) % 1000;
-  return hash % trackingStages.length;
+const trackMoney = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
+
+const STATUS_COPY: Record<string, string> = {
+  pending: "Order confirmed",
+  confirmed: "Order confirmed",
+  packed: "Packed and ready to ship",
+  shipped: "On its way to you",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+  returned: "Returned",
+};
+
+function trackDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
 }
 
 function NotFoundInfo() {
@@ -328,10 +350,12 @@ function FaqsBody() {
 
 function TrackOrderBody() {
   const [orderId, setOrderId] = useState("");
-  const [result, setResult] = useState<{ id: string; stage: number } | null>(null);
+  const [email, setEmail] = useState("");
+  const [result, setResult] = useState<TrackedOrder | null>(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmed = orderId.trim();
     if (trimmed.length < 4) {
@@ -339,9 +363,29 @@ function TrackOrderBody() {
       setResult(null);
       return;
     }
+
     setError("");
-    setResult({ id: trimmed, stage: stageFromOrderId(trimmed.toUpperCase()) });
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ orderId: trimmed });
+      if (email.trim()) params.set("email", email.trim());
+      const response = await fetch(`/api/orders/track?${params.toString()}`, { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) {
+        setResult(null);
+        setError(data.error ?? "We couldn't find that order.");
+      } else {
+        setResult(data.order as TrackedOrder);
+      }
+    } catch {
+      setResult(null);
+      setError("We couldn't reach the server. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const closed = result?.status === "cancelled" || result?.status === "returned";
 
   return (
     <div className="track-body">
@@ -349,22 +393,51 @@ function TrackOrderBody() {
         <label htmlFor="track-order-id"><span>Order ID</span>
           <div className="track-input"><Search size={16} aria-hidden="true" /><input id="track-order-id" placeholder="e.g. MIT12345678" value={orderId} onChange={(event) => { setOrderId(event.target.value); setError(""); }} /></div>
         </label>
-        <button type="submit">Track order</button>
+        <label htmlFor="track-email"><span>Email used for the order</span>
+          <div className="track-input"><Mail size={16} aria-hidden="true" /><input id="track-email" type="email" placeholder="you@example.com" value={email} onChange={(event) => { setEmail(event.target.value); setError(""); }} /></div>
+        </label>
+        <button type="submit" disabled={loading}>{loading ? "Looking up…" : "Track order"}</button>
       </form>
       {error && <p className="track-error">{error}</p>}
 
       {result && (
         <div className="track-result">
-          <div className="track-result-head"><strong>{result.id.toUpperCase()}</strong><span>{trackingStages[result.stage]}</span></div>
+          <div className="track-result-head">
+            <strong>{result.reference}</strong>
+            <span>{STATUS_COPY[result.status] ?? result.status}</span>
+          </div>
+
           <ol className="track-timeline">
-            {trackingStages.map((stage, index) => (
-              <li key={stage} className={index <= result.stage ? "done" : ""}>
-                <span>{index <= result.stage ? <Check size={12} /> : index + 1}</span>
-                <p>{stage}</p>
+            {result.timeline.map((step) => (
+              <li key={step.label} className={step.done ? "done" : ""}>
+                <span>{step.done ? <Check size={12} /> : ""}</span>
+                <p>{step.label}{step.done ? <em> · {trackDate(step.at)}</em> : null}</p>
               </li>
             ))}
           </ol>
-          {result.stage < trackingStages.length - 1 && <p className="track-note"><Truck size={15} /> We&apos;ll notify you by SMS and email at every step.</p>}
+
+          <div className="track-meta">
+            <div><small>Items</small><strong>{result.items.reduce((sum, item) => sum + item.quantity, 0)} piece(s)</strong></div>
+            <div><small>Order total</small><strong>{trackMoney.format(result.total)}</strong></div>
+            <div><small>Delivering to</small><strong>{result.deliveringTo}</strong></div>
+            {!closed && <div><small>Estimated delivery</small><strong>{trackDate(result.estimatedDelivery)}</strong></div>}
+          </div>
+
+          <ul className="track-items">
+            {result.items.map((item, index) => (
+              <li key={`${item.name}-${item.size}-${index}`}>
+                <span>{item.name}</span>
+                <small>{item.color} · {item.size} · Qty {item.quantity}</small>
+              </li>
+            ))}
+          </ul>
+
+          {result.dueOnDelivery > 0 && (
+            <p className="track-note"><Truck size={15} /> Cash on delivery — keep {trackMoney.format(result.dueOnDelivery)} ready for the courier.</p>
+          )}
+          {!closed && result.dueOnDelivery === 0 && (
+            <p className="track-note"><Truck size={15} /> Paid in full. We&apos;ll email you when it ships.</p>
+          )}
         </div>
       )}
 
@@ -518,6 +591,14 @@ export default function InfoPage() {
       .track-timeline li > span { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: #f0ede7; font-size: 11px; font-weight: 800; }
       .track-timeline li.done > span { background: #171717; color: #fff; }
       .track-timeline li p { margin: 0; font-size: 13px; font-weight: 700; }
+      .track-timeline li p em { color: #8a847d; font-size: 11px; font-weight: 600; font-style: normal; }
+      .track-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr)); gap: 14px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #ece8e1; }
+      .track-meta small { display: block; color: #8a847d; font-size: 9px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+      .track-meta strong { display: block; margin-top: 4px; font-size: 13px; }
+      .track-items { display: grid; gap: 10px; margin: 20px 0 0; padding: 18px 0 0; border-top: 1px solid #ece8e1; list-style: none; }
+      .track-items li { display: grid; gap: 2px; }
+      .track-items li span { font-size: 13px; font-weight: 700; }
+      .track-items li small { color: #8a847d; font-size: 11px; }
       .track-note { display: flex; align-items: center; gap: 8px; margin: 20px 0 0; padding-top: 18px; border-top: 1px solid #ece8e1; color: #716b64; font-size: 12px; }
       .track-help { margin-top: 20px; color: #716b64; font-size: 13px; }
       .track-help a { color: #171717; font-weight: 700; text-decoration: underline; }
