@@ -80,7 +80,7 @@ export async function POST(request: Request) {
     logSecurityEvent({ type: "LOGIN_SUCCESS", requestId, ip, endpoint: ENDPOINT, result: "allowed", risk: "low", meta: { email } });
 
     const response = NextResponse.json({ ok: true, customer: publicCustomer(doc) }, { headers: { "x-request-id": requestId } });
-    response.cookies.set(CUSTOMER_SESSION_COOKIE, issueCustomerSessionToken(doc._id), customerSessionCookieOptions);
+    response.cookies.set(CUSTOMER_SESSION_COOKIE, issueCustomerSessionToken(doc._id, doc.sessionVersion ?? 0), customerSessionCookieOptions);
     return response;
   } catch (error) {
     logSecurityEvent({

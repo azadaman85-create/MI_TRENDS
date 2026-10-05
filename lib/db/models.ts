@@ -17,6 +17,19 @@ export type CustomerDoc = {
   passwordSalt?: string;
   passwordHash?: string;
   createdAt: string;
+  /**
+   * Password reset. Only the SHA-256 of the emailed token is stored, so a leaked database
+   * dump can't be used to reset anyone's password — the raw token exists only in the
+   * customer's inbox. Cleared the moment it's used.
+   */
+  resetTokenHash?: string;
+  resetTokenExpiresAt?: string;
+  /**
+   * Bumped whenever the password changes. Session cookies carry the version they were
+   * issued at, so every session that predates a reset stops being accepted.
+   */
+  sessionVersion?: number;
+  passwordChangedAt?: string;
 };
 
 /**

@@ -7,6 +7,7 @@ import {
   orderConfirmationSubject,
   orderConfirmationText,
 } from "@/lib/email/order-confirmation";
+import { passwordResetHtml, passwordResetSubject, passwordResetText } from "@/lib/email/password-reset";
 
 /**
  * Transactional email over Gmail SMTP.
@@ -37,6 +38,53 @@ function getTransporter(): Transporter {
     });
   }
   return transporter;
+}
+
+/**
+ * Sends a password-reset link. Unlike the order confirmation, the caller does care
+ * whether this worked — a shopper who gets "check your inbox" and no email is stuck —
+ * but the API still answers identically either way so it can't be used to probe which
+ * addresses have accounts.
+ */
+export async function sendPasswordReset(
+  to: string,
+  name: string,
+  resetUrl: string,
+  requestId?: string,
+): Promise<boolean> {
+  if (!EMAIL_CONFIGURED) {
+    logSecurityEvent({
+      type: "SUSPICIOUS_REQUEST",
+      requestId,
+      endpoint: "email/password-reset",
+      result: "error",
+      risk: "medium",
+      meta: { cause: "SMTP_USER/SMTP_PASSWORD not configured" },
+    });
+    return false;
+  }
+
+  try {
+    await getTransporter().sendMail({
+      from: `"${MAIL_FROM_NAME}" <${SMTP_USER}>`,
+      to,
+      replyTo: SMTP_USER,
+      subject: passwordResetSubject,
+      text: passwordResetText(name, resetUrl),
+      html: passwordResetHtml(name, resetUrl, SITE_URL),
+    });
+    return true;
+  } catch (error) {
+    logSecurityEvent({
+      type: "SUSPICIOUS_REQUEST",
+      requestId,
+      endpoint: "email/password-reset",
+      result: "error",
+      risk: "medium",
+      meta: { cause: describeError(error) },
+    });
+    return false;
+  }
 }
 
 /**

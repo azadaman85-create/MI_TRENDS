@@ -11,6 +11,11 @@ export type SessionPayload = {
   role: string;
   iat: number;
   exp: number;
+  /**
+   * Account's session version at the time this token was issued. Bumped on a password
+   * change so older tokens stop being accepted — see lib/customer/session.server.ts.
+   */
+  ver?: number;
 };
 
 function base64url(input: Buffer) {

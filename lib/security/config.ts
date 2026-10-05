@@ -34,6 +34,8 @@ export const RATE_LIMITS = {
   adminData: { limit: 240, windowMs: 60 * 1000 } as RateLimitRule,
   /** Order lookups — tight enough that guessing order IDs in bulk isn't practical. */
   orderTracking: { limit: 15, windowMs: 60 * 1000 } as RateLimitRule,
+  /** Reset requests and completions. Strict: each one can send an email. */
+  passwordReset: { limit: 6, windowMs: 15 * 60 * 1000 } as RateLimitRule,
 } as const;
 
 /**

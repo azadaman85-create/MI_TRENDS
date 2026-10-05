@@ -117,7 +117,7 @@ export async function POST(request: Request) {
         { ok: true, customer: publicCustomer({ ...existing, name, picture }) },
         { headers: { "x-request-id": requestId } },
       );
-      response.cookies.set(CUSTOMER_SESSION_COOKIE, issueCustomerSessionToken(existing._id), customerSessionCookieOptions);
+      response.cookies.set(CUSTOMER_SESSION_COOKIE, issueCustomerSessionToken(existing._id, existing.sessionVersion ?? 0), customerSessionCookieOptions);
       return response;
     }
 

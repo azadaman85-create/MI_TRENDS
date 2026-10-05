@@ -34,22 +34,32 @@ export function publicCustomer(doc: CustomerDoc): PublicCustomer {
   };
 }
 
-export function issueCustomerSessionToken(customerId: string) {
+export function issueCustomerSessionToken(customerId: string, sessionVersion = 0) {
   const now = Date.now();
   return createSessionToken(
-    { sub: customerId, role: "customer", iat: now, exp: now + SESSION_TTL_MS },
+    { sub: customerId, role: "customer", iat: now, exp: now + SESSION_TTL_MS, ver: sessionVersion },
     CUSTOMER_SESSION_SECRET,
   );
 }
 
 /** The customer id this request is authenticated as, or null. */
 export async function currentCustomerId(): Promise<string | null> {
+  return (await currentCustomerSession())?.id ?? null;
+}
+
+/**
+ * The id **and** the session version the cookie was issued at. Callers that already read
+ * the customer record (like /api/auth/session) compare the version against the stored one
+ * so a session from before a password reset is rejected; callers that don't, don't pay
+ * for an extra database round trip.
+ */
+export async function currentCustomerSession(): Promise<{ id: string; version: number } | null> {
   if (!CUSTOMER_SESSIONS_CONFIGURED) return null;
   const token = (await cookies()).get(CUSTOMER_SESSION_COOKIE)?.value;
   if (!token) return null;
   const payload = verifySessionToken(token, CUSTOMER_SESSION_SECRET);
   if (!payload || payload.role !== "customer") return null;
-  return payload.sub;
+  return { id: payload.sub, version: payload.ver ?? 0 };
 }
 
 export const customerSessionCookieOptions = {

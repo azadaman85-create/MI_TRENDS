@@ -121,7 +121,7 @@ function LoginContent() {
             <input type="checkbox" name="remember" defaultChecked style={{ accentColor: "#171717", width: 16, height: 16 }} />
             Keep me signed in
           </label>
-          <a href="mailto:hello@mitrends.in?subject=Password%20reset">Forgot password?</a>
+          <Link href="/account/forgot-password">Forgot password?</Link>
         </div>
 
         <button className="acct__submit" type="submit" disabled={submitting}>
