@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { currentCustomerId } from "@/lib/customer/session.server";
 import { validateOrderContact } from "@/lib/customer/validation";
 import { getOrdersCollection, type OrderDoc } from "@/lib/db/models";
+import { sendOrderConfirmation } from "@/lib/email/mailer";
 import { priceOrder } from "@/lib/pricing";
 import { RATE_LIMITS } from "@/lib/security/config";
 import { describeError, logSecurityEvent } from "@/lib/security/events";
@@ -100,6 +101,11 @@ export async function POST(request: Request) {
 
     const orders = await getOrdersCollection();
     await orders.insertOne(doc);
+
+    // Awaited, not fire-and-forget: a serverless function can be frozen the moment it
+    // responds, which would kill an in-flight send. It can never fail the order — the
+    // helper swallows and logs its own errors.
+    await sendOrderConfirmation(doc, requestId);
 
     return NextResponse.json(
       {

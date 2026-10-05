@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 
 import { getOrdersCollection } from "@/lib/db/models";
+import { sendOrderConfirmation } from "@/lib/email/mailer";
 import type { OrderStatus } from "@/lib/admin/types";
 import { RATE_LIMITS } from "@/lib/security/config";
 import { logSecurityEvent } from "@/lib/security/events";
@@ -82,7 +83,7 @@ export async function POST(request: Request) {
       {
         $set: {
           status: "pending" as OrderStatus,
-          // A COD order is only part-paid now; the courier collects the balance.
+          // Only prepaid orders reach this route — COD is placed unpaid elsewhere.
           paid: true,
           razorpayPaymentId: paymentId,
           "timeline.1.done": true,
@@ -103,6 +104,9 @@ export async function POST(request: Request) {
     }
 
     logSecurityEvent({ type: "PAYMENT_VERIFIED", requestId, ip, endpoint: ENDPOINT, result: "allowed", risk: "low", meta: { orderId, reference: result._id } });
+
+    // Best-effort — a mail failure must never turn a paid order into an error response.
+    await sendOrderConfirmation(result, requestId);
     return NextResponse.json(
       {
         success: true,
