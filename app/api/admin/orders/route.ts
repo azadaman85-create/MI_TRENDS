@@ -54,6 +54,7 @@ export async function GET(request: Request) {
       subtotal: doc.subtotal,
       discount: doc.discount,
       shipping: doc.shipping,
+      codFee: doc.codFee,
       total: doc.total,
       couponCode: doc.couponCode,
       address: doc.address,

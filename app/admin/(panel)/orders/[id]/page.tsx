@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/admin/PageHeader";
 import { Badge, OrderStatusBadge } from "@/components/admin/ui/Badge";
@@ -23,6 +23,7 @@ import { Button } from "@/components/admin/ui/Button";
 import { Card } from "@/components/admin/ui/Card";
 import { Select } from "@/components/admin/ui/Field";
 import { Modal } from "@/components/admin/ui/Modal";
+import { Invoice } from "@/components/admin/Invoice";
 import { ShippingLabel, dispatchReference } from "@/components/admin/ShippingLabel";
 import { EmptyState } from "@/components/admin/ui/States";
 import { formatDate, formatINR } from "@/lib/admin/format";
@@ -45,6 +46,22 @@ export default function OrderDetailPage() {
   const router = useRouter();
   const { orders, customers, setOrderStatus, notify } = useAdminStore();
   const [labelOpen, setLabelOpen] = useState(false);
+  const [printingInvoice, setPrintingInvoice] = useState(false);
+
+  /*
+    The invoice is only mounted while printing: the print stylesheet keys off
+    #invoice-sheet being present to hide the rest of the panel, so leaving it in the DOM
+    would hijack the shipping-label print too. One frame is enough for it to paint before
+    the (blocking) print dialog opens.
+  */
+  useEffect(() => {
+    if (!printingInvoice) return;
+    const timer = window.setTimeout(() => {
+      window.print();
+      setPrintingInvoice(false);
+    }, 60);
+    return () => window.clearTimeout(timer);
+  }, [printingInvoice]);
 
   const order = orders.find((entry) => entry.id === params.id);
   const customer = customers.find((entry) => entry.id === order?.customerId);
@@ -75,7 +92,7 @@ export default function OrderDetailPage() {
               <ArrowLeft size={15} aria-hidden="true" />
               All orders
             </Button>
-            <Button variant="outline" onClick={() => window.print()}>
+            <Button variant="outline" onClick={() => setPrintingInvoice(true)}>
               <Printer size={15} aria-hidden="true" />
               Invoice
             </Button>
@@ -323,6 +340,14 @@ export default function OrderDetailPage() {
       >
         <ShippingLabel order={order} />
       </Modal>
+
+      {/* Mounted only while printing — see the effect above. Positioned off-screen so it
+          never affects the on-screen layout; the print stylesheet brings it into view. */}
+      {printingInvoice ? (
+        <div className="invoice-print-host" aria-hidden="true">
+          <Invoice order={order} />
+        </div>
+      ) : null}
     </motion.div>
   );
 }

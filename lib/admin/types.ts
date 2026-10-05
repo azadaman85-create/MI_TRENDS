@@ -54,6 +54,8 @@ export type Order = {
   subtotal: number;
   discount: number;
   shipping: number;
+  /** COD handling fee, collected with the balance on delivery. Absent on prepaid orders. */
+  codFee?: number;
   total: number;
   couponCode: string | null;
   address: {

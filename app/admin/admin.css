@@ -1963,7 +1963,33 @@
 .ship-label__note { margin-top: 7px !important; color: #555; font-size: 0.62rem; font-style: italic; }
 
 /* Print just the label, at its real size, with nothing else on the sheet. */
+/* Parked off-screen on screen; the print rules below bring it into view. */
+.invoice-print-host {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+}
+
+@page {
+  size: A4;
+  margin: 12mm 10mm;
+}
+
 @media print {
+  /* Invoice: print it on its own, not a screenshot of the panel around it. */
+  body:has(#invoice-sheet) * { visibility: hidden; }
+  body:has(#invoice-sheet) #invoice-sheet,
+  body:has(#invoice-sheet) #invoice-sheet * { visibility: visible; }
+  body:has(#invoice-sheet) .invoice-print-host {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  /* Keep a row's description and its amount on the same page. */
+  #invoice-sheet tr { break-inside: avoid; }
+  #invoice-sheet thead { display: table-header-group; }
+
   body:has(#shipping-label) * { visibility: hidden; }
   body:has(#shipping-label) .ship-label,
   body:has(#shipping-label) .ship-label * { visibility: visible; }
