@@ -28,6 +28,16 @@ function assertKeyMatchesEnvironment(keyId: string) {
         "and RAZORPAY_KEY_SECRET to the live (rzp_live_) pair and redeploy.",
     );
   }
+
+  // The mirror image: live keys outside production. Allowed, because the test keys have
+  // been retired and these are the only ones left — but it means a checkout on localhost
+  // moves real money and needs a real refund, so it must not happen quietly.
+  if (process.env.VERCEL_ENV !== "production" && !isTestKey(keyId)) {
+    console.warn(
+      "\n*** Razorpay LIVE keys are active outside production. ***\n" +
+        "*** Any checkout from here charges real money and must be refunded by hand. ***\n",
+    );
+  }
 }
 
 /** Server-only client. Importing this from a "use client" file would leak the key secret into the bundle. */
