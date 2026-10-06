@@ -13,6 +13,44 @@ import type { OrderDoc } from "@/lib/db/models";
 
 export const RETURN_WINDOW_DAYS = 7;
 
+/**
+ * How long inspection takes once the item is back with us, before the refund is sent.
+ * Stated as a range because couriers and bank credits both vary.
+ */
+export const REFUND_INSPECTION_DAYS_MIN = 2;
+export const REFUND_INSPECTION_DAYS_MAX = 3;
+
+/**
+ * Where the money goes back to, which depends on how it arrived.
+ *
+ * A prepaid order reverses through Razorpay to the exact UPI ID or card that paid — there
+ * is no choosing, and offering a choice would be a promise we can't keep. Cash on
+ * delivery has no such trail: the customer handed notes to a courier, so a refund has to
+ * be sent somewhere, and we have to ask where.
+ */
+export function isPrepaid(payment: string): boolean {
+  return payment !== "cod";
+}
+
+export const REFUND_INSPECTION_COPY =
+  `Once we have the item back, we check it within ${REFUND_INSPECTION_DAYS_MIN}–${REFUND_INSPECTION_DAYS_MAX} working days`;
+
+export const REFUND_POLICY_PREPAID =
+  `${REFUND_INSPECTION_COPY} and refund to the same UPI ID or card you paid with.`;
+
+export const REFUND_POLICY_COD =
+  `${REFUND_INSPECTION_COPY} and send the refund to the UPI ID you give us below — a cash-on-delivery ` +
+  `order has no card or UPI to send it back to.`;
+
+export function refundPolicyFor(payment: string): string {
+  return isPrepaid(payment) ? REFUND_POLICY_PREPAID : REFUND_POLICY_COD;
+}
+
+/** Generic wording for places that aren't about one specific order. */
+export const REFUND_POLICY_SHORT =
+  `${REFUND_INSPECTION_COPY} and refund you — prepaid orders go back to the same UPI ID or card, ` +
+  `and cash-on-delivery orders go to a UPI ID you give us.`;
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export type ReturnEligibility =
@@ -77,6 +115,34 @@ export function returnEligibility(
   const daysLeft = Math.max(1, Math.ceil((deadline.getTime() - now.getTime()) / DAY_MS));
   return { eligible: true, deadline: deadline.toISOString(), daysLeft };
 }
+
+/** The stages a return moves through, in order, as the admin works it. */
+export const RETURN_STATUSES = ["requested", "approved", "rejected", "completed"] as const;
+export type ReturnStatus = (typeof RETURN_STATUSES)[number];
+
+/** What each stage means to the customer reading their own order. */
+export function returnStatusCopy(status: ReturnStatus, payment: string): string {
+  switch (status) {
+    case "requested":
+      return `We've got your request. We'll arrange pickup and email you the details. ${refundPolicyFor(payment)}`;
+    case "approved":
+      return `Return approved — pickup is being arranged. ${refundPolicyFor(payment)}`;
+    case "rejected":
+      return "This return couldn't be accepted. Check your email for the reason, or contact us and we'll go through it with you.";
+    case "completed":
+      return isPrepaid(payment)
+        ? "Refund sent to the UPI ID or card you paid with. Banks usually show it within 3–5 working days."
+        : "Refund sent to the UPI ID you gave us. Banks usually show it within 3–5 working days.";
+  }
+}
+
+/** The same stages, labelled for the panel. */
+export const RETURN_STATUS_LABEL: Record<ReturnStatus, string> = {
+  requested: "Return requested",
+  approved: "Return approved",
+  rejected: "Return rejected",
+  completed: "Refunded",
+};
 
 export const RETURN_REASONS = [
   "Size doesn't fit",

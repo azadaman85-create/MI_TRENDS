@@ -84,9 +84,9 @@ const SIMPLE_PAGES: Record<string, PageContent> = {
     intro: "7 days from delivery, no drama — here's how returns and exchanges work.",
     sections: [
       { heading: "Return window", body: ["You have 7 days from the delivery date to return any unworn, unwashed item with its tags still attached. Start one from Your account \u2192 Returns; the option appears once the order is delivered and disappears when the 7 days are up."] },
-      { heading: "How to return", body: ["Head to Track order, enter your order ID, and choose \"Start a return\". We'll arrange a free pickup from your address."] },
-      { heading: "Refunds", body: ["Refunds are processed within 5-7 business days of us receiving the item back, to your original payment method. Cash on delivery orders are refunded to your bank account or UPI ID."] },
-      { heading: "Exchanges", body: ["Need a different size or colour instead? Choose exchange rather than refund during the return request, subject to stock availability."] },
+      { heading: "How to return", body: ["Sign in and go to Your account \u2192 Returns. Pick the order, tick the items you're sending back, choose a reason, and submit. We'll arrange a free pickup from your address and email you the details."] },
+      { heading: "Refunds", body: ["Once the item reaches us we check it within 2-3 working days, then send the refund. Prepaid orders go back automatically to the exact UPI ID or card that paid \u2014 there is nothing for you to do. Cash on delivery orders have no card or UPI on file, so we ask for a UPI ID when you raise the return and send it there. Banks usually show the money within 3-5 working days after that."] },
+      { heading: "Exchanges", body: ["Want a different size or colour? Raise a return for the item and place a fresh order for the one you want \u2014 that way your replacement isn't waiting on the pickup, and the refund lands separately."] },
       { heading: "What can't be returned", body: ["Innerwear, accessories marked final sale, and any item without its original tags can't be accepted back for hygiene and quality reasons."] },
     ],
   },

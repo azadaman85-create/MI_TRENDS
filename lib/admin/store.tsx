@@ -24,6 +24,7 @@ import {
   writeStoreSettings,
   type StoreSettings,
 } from "@/lib/store-settings";
+import type { ReturnStatus } from "@/lib/returns";
 import type {
   AdminProduct,
   Banner,
@@ -82,6 +83,7 @@ type AdminStoreValue = PersistedState & {
   setProductStatus: (ids: number[], status: AdminProduct["status"]) => void;
   setStock: (id: number, size: string, units: number) => void;
   setOrderStatus: (id: string, status: OrderStatus) => void;
+  setReturnStatus: (id: string, returnStatus: ReturnStatus) => void;
   setReviewStatus: (id: string, status: Review["status"]) => void;
   saveCoupon: (coupon: Coupon) => void;
   deleteCoupon: (id: string) => void;
@@ -308,6 +310,36 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
             if (!response.ok) throw new Error("save failed");
           } catch {
             notify("Could not save that status change", "error", "The order was left as it was.");
+            void refreshLiveData();
+          }
+        })();
+      },
+
+      // Same write-through pattern as setOrderStatus. A return moves on its own track:
+      // the order keeps its delivered status until the refund is actually sent.
+      setReturnStatus: (id, returnStatus) => {
+        setOrders((current) =>
+          current.map((order) =>
+            order.id === id && order.returnRequest
+              ? {
+                  ...order,
+                  status: returnStatus === "completed" ? "returned" : order.status,
+                  returnRequest: { ...order.returnRequest, status: returnStatus },
+                }
+              : order,
+          ),
+        );
+
+        void (async () => {
+          try {
+            const response = await fetch(`/api/admin/orders/${encodeURIComponent(id)}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ returnStatus }),
+            });
+            if (!response.ok) throw new Error("save failed");
+          } catch {
+            notify("Could not update that return", "error", "The return was left as it was.");
             void refreshLiveData();
           }
         })();

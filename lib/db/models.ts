@@ -77,6 +77,11 @@ export type ReturnRequest = {
   note?: string;
   /** Which lines are coming back, by their index in `lines`, with the quantity returned. */
   items: { lineIndex: number; quantity: number }[];
+  /**
+   * Where to send the money for a cash-on-delivery return. Prepaid orders don't carry
+   * this — those reverse through Razorpay to whatever paid, and asking would be wrong.
+   */
+  refundUpi?: string;
   status: "requested" | "approved" | "rejected" | "completed";
 };
 

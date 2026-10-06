@@ -603,3 +603,30 @@ a.acct-card:hover {
   .ret__card-head { align-items: flex-start; }
   .ret__price { display: none; }
 }
+
+.ret__policy-note {
+  margin: 10px 0 0;
+  padding: 10px 13px;
+  max-width: 56ch;
+  border-left: 3px solid var(--ink);
+  background: var(--surface);
+  color: #5f5952;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.ret__badge--bad { background: #fdecea; color: #8f2018; }
+
+.ret__input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+
+.ret__input:focus { outline: 0; box-shadow: 0 0 0 3px rgb(43 99 217 / 0.25); }
+.ret__hint { color: #7a746d; font-size: 0.73rem; line-height: 1.5; }

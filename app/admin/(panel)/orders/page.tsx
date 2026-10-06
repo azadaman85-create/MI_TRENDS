@@ -13,6 +13,7 @@ import { Button } from "@/components/admin/ui/Button";
 import { Card } from "@/components/admin/ui/Card";
 import { DataTable, type Column } from "@/components/admin/ui/DataTable";
 import { Tabs } from "@/components/admin/ui/Tabs";
+import { RETURN_STATUS_LABEL } from "@/lib/returns";
 import { downloadCsv, stamp } from "@/lib/admin/csv";
 import { formatDate, formatINR, formatNumber, formatRelative } from "@/lib/admin/format";
 import { listVariants } from "@/lib/admin/motion";
@@ -39,6 +40,11 @@ export default function OrdersPage() {
       confirmed: by("confirmed") + by("packed"),
       shipped: by("shipped"),
       delivered: by("delivered"),
+      // Returns still being worked. A refunded one has moved to "returned" and counts
+      // under Issues, so it doesn't sit in this queue forever.
+      returns: orders.filter(
+        (order) => order.returnRequest && order.returnRequest.status !== "completed",
+      ).length,
       issues: by("cancelled") + by("returned"),
     };
   }, [orders]);
@@ -47,6 +53,9 @@ export default function OrdersPage() {
     if (status === "all") return orders;
     if (status === "confirmed") return orders.filter((order) => order.status === "confirmed" || order.status === "packed");
     if (status === "issues") return orders.filter((order) => order.status === "cancelled" || order.status === "returned");
+    if (status === "returns") {
+      return orders.filter((order) => order.returnRequest && order.returnRequest.status !== "completed");
+    }
     return orders.filter((order) => order.status === status);
   }, [orders, status]);
 
@@ -102,7 +111,14 @@ export default function OrdersPage() {
       id: "status",
       header: "Status",
       sortValue: (order) => order.status,
-      render: (order) => <OrderStatusBadge status={order.status} />,
+      // A pending return outranks the fulfilment status here: an order sitting in
+      // "delivered" with a return waiting on it is the thing that needs attention.
+      render: (order) =>
+        order.returnRequest && order.returnRequest.status !== "completed" ? (
+          <Badge tone="warning">{RETURN_STATUS_LABEL[order.returnRequest.status]}</Badge>
+        ) : (
+          <OrderStatusBadge status={order.status} />
+        ),
     },
     {
       id: "total",
@@ -189,6 +205,7 @@ export default function OrdersPage() {
               { id: "confirmed", label: "In progress", count: counts.confirmed },
               { id: "shipped", label: "Shipped", count: counts.shipped },
               { id: "delivered", label: "Delivered", count: counts.delivered },
+              { id: "returns", label: "Returns", count: counts.returns },
               { id: "issues", label: "Issues", count: counts.issues },
             ]}
           />

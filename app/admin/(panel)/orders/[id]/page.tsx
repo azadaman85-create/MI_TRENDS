@@ -29,6 +29,7 @@ import { EmptyState } from "@/components/admin/ui/States";
 import { formatDate, formatINR } from "@/lib/admin/format";
 import { listVariants } from "@/lib/admin/motion";
 import { useAdminStore } from "@/lib/admin/store";
+import { isPrepaid, REFUND_INSPECTION_COPY, RETURN_STATUS_LABEL } from "@/lib/returns";
 import type { OrderStatus } from "@/lib/admin/types";
 
 const statusOptions: { value: OrderStatus; label: string }[] = [
@@ -44,7 +45,7 @@ const statusOptions: { value: OrderStatus; label: string }[] = [
 export default function OrderDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { orders, customers, setOrderStatus, notify } = useAdminStore();
+  const { orders, customers, setOrderStatus, notify, setReturnStatus } = useAdminStore();
   const [labelOpen, setLabelOpen] = useState(false);
   const [printingInvoice, setPrintingInvoice] = useState(false);
 
@@ -80,6 +81,13 @@ export default function OrderDetailPage() {
 
   const units = order.lines.reduce((sum, line) => sum + line.quantity, 0);
 
+  // What goes back to the customer: the value of the lines they're returning, not the
+  // order total. Shipping and the COD fee are services already rendered, so they stay.
+  const refundDue = (order.returnRequest?.items ?? []).reduce((sum, item) => {
+    const line = order.lines[item.lineIndex];
+    return line ? sum + line.price * item.quantity : sum;
+  }, 0);
+
   return (
     <motion.div variants={listVariants} initial="hidden" animate="visible">
       <PageHeader
@@ -106,7 +114,7 @@ export default function OrderDetailPage() {
             <Card
               title="Return requested"
               description={`Raised by the customer on ${formatDate(order.returnRequest.requestedAt)}`}
-              actions={<Badge tone="warning">{order.returnRequest.status}</Badge>}
+              actions={<Badge tone="warning">{RETURN_STATUS_LABEL[order.returnRequest.status]}</Badge>}
             >
               <div className="a-stack" style={{ gap: 12 }}>
                 <div>
@@ -131,11 +139,66 @@ export default function OrderDetailPage() {
                           {line ? `${line.name} — ${line.color}, ${line.size}` : "Unknown item"}
                           {" × "}
                           {item.quantity}
+                          {line ? ` · ${formatINR(line.price * item.quantity)}` : ""}
                         </li>
                       );
                     })}
                   </ul>
                 </div>
+
+                <div>
+                  <span className="a-label">Refund due</span>
+                  <p style={{ margin: "4px 0 0", fontSize: "1.05rem", fontWeight: 800 }}>
+                    {formatINR(refundDue)}
+                  </p>
+                  <p className="a-muted" style={{ margin: "4px 0 0", fontSize: "0.76rem", lineHeight: 1.6 }}>
+                    {REFUND_INSPECTION_COPY}.{" "}
+                    {isPrepaid(order.payment)
+                      ? "Refund this from the Razorpay dashboard — it reverses to the original payment method automatically."
+                      : "This was cash on delivery, so Razorpay has nothing to reverse. Send the refund by UPI to the ID below."}
+                  </p>
+                </div>
+
+                {order.returnRequest.refundUpi ? (
+                  <div>
+                    <span className="a-label">Send the refund to</span>
+                    <p style={{ margin: "4px 0 0", fontSize: "0.95rem", fontWeight: 700, fontFamily: "ui-monospace, monospace" }}>
+                      {order.returnRequest.refundUpi}
+                    </p>
+                  </div>
+                ) : null}
+
+                {!order.paid && order.payment === "cod" ? (
+                  <p className="a-muted" style={{ margin: 0, fontSize: "0.78rem", color: "var(--red)" }}>
+                    Heads up: this COD order is not marked paid, so no money was ever collected.
+                    Check before refunding anything.
+                  </p>
+                ) : null}
+
+                {/* The order keeps its delivered status until the refund actually goes out. */}
+                {order.returnRequest.status === "requested" ? (
+                  <div className="a-row" style={{ gap: 8, flexWrap: "wrap" }}>
+                    <Button onClick={() => setReturnStatus(order.id, "approved")}>Approve return</Button>
+                    <Button variant="outline" onClick={() => setReturnStatus(order.id, "rejected")}>
+                      Reject
+                    </Button>
+                  </div>
+                ) : order.returnRequest.status === "approved" ? (
+                  <div className="a-row" style={{ gap: 8, flexWrap: "wrap" }}>
+                    <Button onClick={() => setReturnStatus(order.id, "completed")}>
+                      Mark refunded ({formatINR(refundDue)})
+                    </Button>
+                    <Button variant="outline" onClick={() => setReturnStatus(order.id, "rejected")}>
+                      Reject
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="a-muted" style={{ margin: 0, fontSize: "0.8rem" }}>
+                    {order.returnRequest.status === "completed"
+                      ? "Refund marked as sent. The customer sees this on their returns page."
+                      : "This return was rejected. The customer sees it on their returns page."}
+                  </p>
+                )}
               </div>
             </Card>
           ) : null}

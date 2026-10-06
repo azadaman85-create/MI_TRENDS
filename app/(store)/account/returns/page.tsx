@@ -8,7 +8,16 @@ import { Clock, PackageCheck, RotateCcw, TriangleAlert } from "lucide-react";
 import "@/components/account/account.css";
 import { useCustomer } from "@/lib/account/auth";
 import { money } from "@/lib/format";
-import { RETURN_REASONS, RETURN_WINDOW_DAYS, type ReturnBlockReason } from "@/lib/returns";
+import {
+  RETURN_REASONS,
+  refundPolicyFor,
+  returnStatusCopy,
+  isPrepaid,
+  RETURN_STATUS_LABEL,
+  RETURN_WINDOW_DAYS,
+  type ReturnBlockReason,
+  type ReturnStatus,
+} from "@/lib/returns";
 
 type Line = {
   name: string;
@@ -31,7 +40,8 @@ type MyOrder = {
   status: string;
   total: number;
   lines: Line[];
-  returnRequest: { status: string; requestedAt: string; reason: string } | null;
+  payment: string;
+  returnRequest: { status: ReturnStatus; requestedAt: string; reason: string } | null;
   returns: Eligibility;
 };
 
@@ -174,7 +184,11 @@ function OrderCard({
         </div>
 
         {order.returnRequest ? (
-          <span className="ret__badge ret__badge--info">Return {order.returnRequest.status}</span>
+          <span
+            className={`ret__badge ${order.returnRequest.status === "completed" ? "ret__badge--ok" : order.returnRequest.status === "rejected" ? "ret__badge--bad" : "ret__badge--info"}`}
+          >
+            {RETURN_STATUS_LABEL[order.returnRequest.status]}
+          </span>
         ) : canReturn ? (
           <span className="ret__badge ret__badge--ok">
             <Clock size={13} aria-hidden="true" />
@@ -207,8 +221,9 @@ function OrderCard({
 
       {order.returnRequest ? (
         <p className="ret__note">
-          Requested on {dateOf(order.returnRequest.requestedAt)} — {order.returnRequest.reason}. We&rsquo;ll email
-          you the pickup details.
+          Requested on {dateOf(order.returnRequest.requestedAt)} — {order.returnRequest.reason}.
+          <br />
+          {returnStatusCopy(order.returnRequest.status, order.payment)}
         </p>
       ) : canReturn ? (
         <>
@@ -229,6 +244,7 @@ function ReturnForm({ order, onDone }: { order: MyOrder; onDone: () => void }) {
   const [picked, setPicked] = useState<Record<number, number>>({});
   const [reason, setReason] = useState<string>("");
   const [note, setNote] = useState("");
+  const [refundUpi, setRefundUpi] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -248,13 +264,17 @@ function ReturnForm({ order, onDone }: { order: MyOrder; onDone: () => void }) {
     }));
     if (items.length === 0) return setError("Choose at least one item.");
     if (!reason) return setError("Choose a reason.");
+    // Cash on delivery left no card or UPI behind, so we have to be told where to send it.
+    if (!isPrepaid(order.payment) && !/^[\w.\-]{2,}@[\w.\-]{2,}$/.test(refundUpi.trim())) {
+      return setError("Enter the UPI ID for your refund, for example name@bank.");
+    }
 
     setBusy(true);
     try {
       const res = await fetch("/api/orders/return", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ reference: order.reference, reason, note, items }),
+        body: JSON.stringify({ reference: order.reference, reason, note, items, refundUpi: refundUpi.trim() }),
       });
       const body = await res.json();
       if (!res.ok) {
@@ -308,6 +328,23 @@ function ReturnForm({ order, onDone }: { order: MyOrder; onDone: () => void }) {
         </select>
       </label>
 
+      {!isPrepaid(order.payment) ? (
+        <label className="ret__field">
+          <span>UPI ID for your refund</span>
+          <input
+            className="ret__input"
+            value={refundUpi}
+            onChange={(event) => setRefundUpi(event.target.value)}
+            placeholder="name@bank"
+            autoComplete="off"
+            inputMode="email"
+          />
+          <small className="ret__hint">
+            You paid cash on delivery, so there&rsquo;s no card or UPI for us to send it back to.
+          </small>
+        </label>
+      ) : null}
+
       <label className="ret__field">
         <span>Anything else? (optional)</span>
         <textarea
@@ -325,6 +362,8 @@ function ReturnForm({ order, onDone }: { order: MyOrder; onDone: () => void }) {
           {error}
         </p>
       ) : null}
+
+      <p className="ret__policy-note">{refundPolicyFor(order.payment)}</p>
 
       <button className="button button-primary" type="button" onClick={submit} disabled={busy}>
         {busy ? "Sending…" : "Request return"}

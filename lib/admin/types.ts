@@ -74,6 +74,7 @@ export type Order = {
     reason: string;
     note?: string;
     items: { lineIndex: number; quantity: number }[];
+    refundUpi?: string;
     status: "requested" | "approved" | "rejected" | "completed";
   } | null;
 };

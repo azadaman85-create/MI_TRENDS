@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin/guard.server";
 import type { OrderStatus } from "@/lib/admin/types";
 import { getOrdersCollection } from "@/lib/db/models";
+import { RETURN_STATUSES, type ReturnStatus } from "@/lib/returns";
 import { RATE_LIMITS } from "@/lib/security/config";
 import { logSecurityEvent } from "@/lib/security/events";
 import { clientIpFrom, consumeRateLimit } from "@/lib/security/rate-limit";
@@ -32,11 +33,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const { id } = await params;
 
-  let body: { status?: unknown };
+  let body: { status?: unknown; returnStatus?: unknown };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid request." }, { status: 400, headers: { "x-request-id": requestId } });
+  }
+
+  // Moving a return along is a separate call from moving the order along: the two have
+  // different lifecycles, and a delivered order keeps its delivered status while its
+  // return is being worked.
+  if (body.returnStatus !== undefined) {
+    return patchReturnStatus({ id, returnStatus: body.returnStatus, requestId, ip, adminEmail: admin.email });
   }
 
   // Only the fulfilment status is writable here. Totals, lines, the customer and the
@@ -88,5 +96,62 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ ok: true, status: nextStatus }, { headers: { "x-request-id": requestId } });
   } catch {
     return NextResponse.json({ error: "Could not update the order." }, { status: 503, headers: { "x-request-id": requestId } });
+  }
+}
+
+/**
+ * Moves a return through its stages.
+ *
+ * Kept apart from the fulfilment status because the two are independent: an order stays
+ * "delivered" while its return is requested, approved and finally refunded. Marking a
+ * return completed also sets the order's own status to "returned", which is the point at
+ * which the item is genuinely back and the money has gone out.
+ */
+async function patchReturnStatus({
+  id,
+  returnStatus,
+  requestId,
+  ip,
+  adminEmail,
+}: {
+  id: string;
+  returnStatus: unknown;
+  requestId: string;
+  ip: string;
+  adminEmail: string;
+}) {
+  if (typeof returnStatus !== "string" || !RETURN_STATUSES.includes(returnStatus as ReturnStatus)) {
+    return NextResponse.json({ error: "Unknown return status." }, { status: 400, headers: { "x-request-id": requestId } });
+  }
+  const next = returnStatus as ReturnStatus;
+
+  try {
+    const orders = await getOrdersCollection();
+    // Conditional on a return actually existing — an admin can't invent one.
+    const existing = await orders.findOne({ _id: id, returnRequest: { $exists: true } });
+    if (!existing?.returnRequest) {
+      return NextResponse.json({ error: "No return request on this order." }, { status: 404, headers: { "x-request-id": requestId } });
+    }
+
+    const update: Record<string, unknown> = { "returnRequest.status": next };
+    // A completed return is the only stage that changes the order itself: the goods are
+    // back and the refund has gone out, so it is no longer simply "delivered".
+    if (next === "completed") update.status = "returned" as OrderStatus;
+
+    await orders.updateOne({ _id: id }, { $set: update });
+
+    logSecurityEvent({
+      type: "ADMIN_ACTION",
+      requestId,
+      ip,
+      endpoint: ENDPOINT,
+      result: "allowed",
+      risk: "low",
+      meta: { action: "return-status", order: id, returnStatus: next, admin: adminEmail },
+    });
+
+    return NextResponse.json({ ok: true, returnStatus: next }, { headers: { "x-request-id": requestId } });
+  } catch {
+    return NextResponse.json({ error: "Could not update the return." }, { status: 503, headers: { "x-request-id": requestId } });
   }
 }

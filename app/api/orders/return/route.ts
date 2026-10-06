@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { currentCustomerId } from "@/lib/customer/session.server";
 import { getOrdersCollection, type ReturnRequest } from "@/lib/db/models";
-import { RETURN_BLOCK_COPY, RETURN_REASONS, returnEligibility } from "@/lib/returns";
+import { isPrepaid, RETURN_BLOCK_COPY, RETURN_REASONS, returnEligibility } from "@/lib/returns";
 import { RATE_LIMITS } from "@/lib/security/config";
 import { logSecurityEvent } from "@/lib/security/events";
 import { clientIpFrom, consumeRateLimit } from "@/lib/security/rate-limit";
@@ -10,6 +10,8 @@ import { requestIdFrom } from "@/lib/security/request-id";
 
 const ENDPOINT = "/api/orders/return";
 const MAX_NOTE = 500;
+/** A VPA, loosely: handle@provider. Deliberately permissive — banks keep adding handles. */
+const UPI_PATTERN = /^[\w.\-]{2,}@[\w.\-]{2,}$/;
 
 /**
  * Raises a return request against one of the caller's own orders.
@@ -40,7 +42,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Please sign in." }, { status: 401, headers: { "x-request-id": requestId } });
   }
 
-  let body: { reference?: unknown; reason?: unknown; note?: unknown; items?: unknown };
+  let body: { reference?: unknown; reason?: unknown; note?: unknown; items?: unknown; refundUpi?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -103,11 +105,26 @@ export async function POST(request: Request) {
       items.push({ lineIndex: index, quantity: qty });
     }
 
+    // A prepaid order reverses through Razorpay to whatever paid it, so there is nothing
+    // to ask. Cash on delivery has no payment instrument on file — the money came as
+    // notes handed to a courier — so a destination is required, not optional.
+    let refundUpi = "";
+    if (!isPrepaid(order.payment)) {
+      refundUpi = typeof body.refundUpi === "string" ? body.refundUpi.trim().toLowerCase() : "";
+      if (!UPI_PATTERN.test(refundUpi)) {
+        return NextResponse.json(
+          { error: "Enter the UPI ID we should send your refund to, for example name@bank." },
+          { status: 400, headers: { "x-request-id": requestId } },
+        );
+      }
+    }
+
     const returnRequest: ReturnRequest = {
       requestedAt: new Date().toISOString(),
       reason,
       ...(note ? { note } : {}),
       items,
+      ...(refundUpi ? { refundUpi } : {}),
       status: "requested",
     };
 
