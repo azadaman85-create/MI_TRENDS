@@ -107,8 +107,8 @@ limitation below, same as the rest of this report).
 ## Known limitations of this test pass
 
 - Everything above is single-process, single-request-at-a-time manual testing. No load testing,
-  no concurrency testing (e.g. two simultaneous `verify-payment` calls racing the order ledger).
-- The `order-ledger`/`rate-limit`/`lockout` stores are in-process memory and were exercised
+  no concurrency testing (e.g. two simultaneous `verify-payment` calls racing each other).
+- The `rate-limit`/`lockout` stores are in-process memory and were exercised
   within one server lifetime — a restart (which happened between some tests, intentionally, to
   get clean state) resets them, which is documented as a known limitation elsewhere, not a bug
   being hidden here.

@@ -7,7 +7,6 @@ import { priceOrder } from "@/lib/pricing";
 import { razorpayClient } from "@/lib/razorpay";
 import { RATE_LIMITS } from "@/lib/security/config";
 import { logSecurityEvent } from "@/lib/security/events";
-import { recordOrder } from "@/lib/security/order-ledger";
 import { clientIpFrom, consumeRateLimit } from "@/lib/security/rate-limit";
 import { requestIdFrom } from "@/lib/security/request-id";
 
@@ -93,7 +92,6 @@ export async function POST(request: Request) {
   try {
     const razorpay = razorpayClient();
     const order = await razorpay.orders.create({ amount: amountPaise, currency: "INR", receipt: orderId });
-    recordOrder(order.id, amountPaise);
 
     // Written as "awaiting_payment": it exists so the finalized order can be built from
     // server-held data once the payment verifies, but it is deliberately excluded from
@@ -143,7 +141,18 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     const statusCode = (error as { statusCode?: number })?.statusCode;
-    logSecurityEvent({ type: "SUSPICIOUS_REQUEST", requestId, ip, endpoint: ENDPOINT, result: "error", risk: "low", meta: { statusCode: statusCode ?? 0 } });
+    // The reason goes to the server log only — the customer gets the generic message
+    // below. Without this, a misconfiguration (missing or wrong Razorpay keys) is
+    // indistinguishable in production from Razorpay simply being down.
+    logSecurityEvent({
+      type: "SUSPICIOUS_REQUEST",
+      requestId,
+      ip,
+      endpoint: ENDPOINT,
+      result: "error",
+      risk: "low",
+      meta: { statusCode: statusCode ?? 0, reason: error instanceof Error ? error.message : "unknown" },
+    });
     if (statusCode === 401) {
       return NextResponse.json({ error: "Razorpay authentication failed." }, { status: 401, headers: { "x-request-id": requestId } });
     }

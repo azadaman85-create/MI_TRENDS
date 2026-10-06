@@ -5,9 +5,11 @@ out/
 .DS_Store
 *.tsbuildinfo
 
-# local env and secrets
-.env
-.env*.local
+# local env and secrets.
+# Deny every .env* and re-allow only the committed template, so a new variant
+# (.env.production, .env.staging, ...) can't be added to the repo by accident.
+.env*
+!.env.example
 *.pem
 *.key
 credentials*

@@ -11,13 +11,13 @@ to the OWASP Top 10 categories, PASS/PARTIAL per category with the reasoning.
 Request
   → proxy.ts            (firewall: request ID, CSRF-style Origin check, admin session gate)
   → Route Handler        (per-endpoint rate limit, input validation, business logic)
-  → lib/security/*        (shared: rate limiting, lockout, event log, pricing integrity, order ledger)
+  → lib/security/*        (shared: rate limiting, lockout, event log, pricing integrity)
   → lib/db/*              (MongoDB: customers, orders)
 ```
 
 Customers and orders persist in MongoDB (`lib/db/`). Products, categories, coupons, banners,
 reviews, inventory and store settings are still browser-local — see `SECURITY_AUDIT.md` §7 for
-what moved and what didn't. The rate limiter, lockout and order ledger under `lib/security/`
+what moved and what didn't. The rate limiter and lockout under `lib/security/`
 are still in-process memory, not in the database — see "Known limitation" under §2.
 
 ### Sessions
@@ -96,10 +96,14 @@ The core fix in this pass. Full narrative in `SECURITY_AUDIT.md` §3; mechanics 
   in this architecture.
 - `app/api/create-order/route.ts` charges the server-computed amount via Razorpay, never the
   client's. `app/(store)/checkout/page.tsx` sends cart contents, not a price.
-- `lib/security/order-ledger.ts` — an in-process record of what each Razorpay order was actually
-  priced at. `app/api/verify-payment/route.ts` checks a payment against it after the signature
-  passes, and rejects a second "verify" call for the same order (`PAYMENT_REPLAY_REJECTED`,
-  `409 Conflict`) — closing the replay/duplicate-callback gap.
+- `app/api/verify-payment/route.ts` finalizes an order with a single conditional update
+  (`razorpayOrderId` + `status: "awaiting_payment"` -> `pending`). Because the match is in
+  MongoDB and `razorpayOrderId` is uniquely indexed, only an order this server created can be
+  promoted and only the first caller can promote it. A second call carrying the *same*
+  payment is answered idempotently with the original result; one carrying a *different*
+  payment against a closed order is rejected (`PAYMENT_REPLAY_REJECTED`, `409 Conflict`).
+  This check is deliberately in the database, not in process memory: on a serverless host
+  `create-order` and `verify-payment` often run in different instances.
 - **What this does not cover:** the `Order` record the admin panel displays is still
   constructed client-side and written to `localStorage` independent of the server. See
   `SECURITY_AUDIT.md` §4 — this needs a real backend to close, not more hardening.
