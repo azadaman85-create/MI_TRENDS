@@ -55,13 +55,25 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       return NextResponse.json({ error: "Order not found." }, { status: 404, headers: { "x-request-id": requestId } });
     }
 
+    const now = new Date().toISOString();
     const reached =
       nextStatus === "cancelled" || nextStatus === "returned" ? 2 : ORDER_FLOW.indexOf(nextStatus) + 1;
-    const timeline = existing.timeline.map((step, index) => ({ ...step, done: index < reached }));
+    // Stamp the steps this update completes with the time it actually happened; steps
+    // that were already done keep their own timestamp.
+    const timeline = existing.timeline.map((step, index) => ({
+      ...step,
+      done: index < reached,
+      at: index < reached && !step.done ? now : step.at,
+    }));
     // A COD order is only fully paid once the courier has collected on delivery.
     const paid = existing.payment !== "cod" || nextStatus === "delivered";
 
-    await orders.updateOne({ _id: id }, { $set: { status: nextStatus, paid, timeline } });
+    const update: Record<string, unknown> = { status: nextStatus, paid, timeline };
+    // The return window runs from here, so record it the first time delivery is marked —
+    // re-marking an already-delivered order must not silently extend the window.
+    if (nextStatus === "delivered" && !existing.deliveredAt) update.deliveredAt = now;
+
+    await orders.updateOne({ _id: id }, { $set: update });
 
     logSecurityEvent({
       type: "ADMIN_ACTION",

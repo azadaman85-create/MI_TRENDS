@@ -81,9 +81,9 @@ const SIMPLE_PAGES: Record<string, PageContent> = {
   returns: {
     eyebrow: "Returns & exchanges",
     title: "DIDN'T WORK\nOUT? EASY FIX.",
-    intro: "30 days, no drama — here's how returns and exchanges work.",
+    intro: "7 days from delivery, no drama — here's how returns and exchanges work.",
     sections: [
-      { heading: "Return window", body: ["You have 30 days from the delivery date to return any unworn, unwashed item with its tags still attached."] },
+      { heading: "Return window", body: ["You have 7 days from the delivery date to return any unworn, unwashed item with its tags still attached. Start one from Your account \u2192 Returns; the option appears once the order is delivered and disappears when the 7 days are up."] },
       { heading: "How to return", body: ["Head to Track order, enter your order ID, and choose \"Start a return\". We'll arrange a free pickup from your address."] },
       { heading: "Refunds", body: ["Refunds are processed within 5-7 business days of us receiving the item back, to your original payment method. Cash on delivery orders are refunded to your bank account or UPI ID."] },
       { heading: "Exchanges", body: ["Need a different size or colour instead? Choose exchange rather than refund during the return request, subject to stock availability."] },
@@ -151,7 +151,7 @@ const faqCategories = [
   {
     heading: "Returns & exchanges",
     items: [
-      { q: "What's your return window?", a: "30 days from delivery, for unworn items with tags intact." },
+      { q: "What's your return window?", a: "7 days from delivery, for unworn items with tags intact." },
       { q: "How do I start a return?", a: "Go to Track order, enter your order ID, and choose \"Start a return\" — or just contact support." },
       { q: "When will I get my refund?", a: "Within 5-7 business days of us receiving the returned item." },
     ],

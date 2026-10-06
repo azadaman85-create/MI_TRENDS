@@ -61,6 +61,23 @@ export type OrderDoc = {
   timeline: { label: string; at: string; done: boolean }[];
   razorpayOrderId: string;
   razorpayPaymentId?: string;
+  /**
+   * Stamped when an admin marks the order delivered. The return window runs from here,
+   * so it is recorded separately rather than inferred from the timeline, whose steps all
+   * carry the order's own date.
+   */
+  deliveredAt?: string;
+  /** Set once the customer asks to send something back. One request per order. */
+  returnRequest?: ReturnRequest;
+};
+
+export type ReturnRequest = {
+  requestedAt: string;
+  reason: string;
+  note?: string;
+  /** Which lines are coming back, by their index in `lines`, with the quantity returned. */
+  items: { lineIndex: number; quantity: number }[];
+  status: "requested" | "approved" | "rejected" | "completed";
 };
 
 /**

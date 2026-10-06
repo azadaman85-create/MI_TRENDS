@@ -217,7 +217,7 @@ function ProductDetails({ product }: { product: (typeof products)[number] }) {
 
           <div className="assurances">
             <span><Truck size={18} /><b>Free shipping</b> over ₹999</span>
-            <Link href="/info/returns"><RotateCcw size={18} /><b>30-day returns</b> easy exchange</Link>
+            <Link href="/info/returns"><RotateCcw size={18} /><b>7-day returns</b> easy exchange</Link>
             <span><ShieldCheck size={18} /><b>Secure checkout</b> 100% protected</span>
           </div>
 
@@ -229,7 +229,7 @@ function ProductDetails({ product }: { product: (typeof products)[number] }) {
 
           <div className="accordions">
             <details open><summary>Product details <ChevronDown size={17} /></summary><div><p>{product.art} artwork from our {product.collection} studio story, made for repeat wear.</p><dl><div><dt>Fit</dt><dd>{product.fit}</dd></div><div><dt>Fabric</dt><dd>{product.fabric}</dd></div><div><dt>Care</dt><dd>Cold wash inside out. Dry in shade. Do not iron the print.</dd></div><div><dt>Origin</dt><dd>Designed and made in India</dd></div><div><dt>SKU</dt><dd>{product.sku}</dd></div></dl></div></details>
-            <details><summary>Shipping & returns <ChevronDown size={17} /></summary><div><p>Dispatches in 1–2 working days. Returns and exchanges are accepted within 30 days when unworn and tagged. Read the full <Link href="/info/shipping">Shipping Policy</Link> and <Link href="/info/returns">Return &amp; Refund Policy</Link>.</p></div></details>
+            <details><summary>Shipping & returns <ChevronDown size={17} /></summary><div><p>Dispatches in 1–2 working days. Returns and exchanges are accepted within 7 days of delivery when unworn and tagged. Read the full <Link href="/info/shipping">Shipping Policy</Link> and <Link href="/info/returns">Return &amp; Refund Policy</Link>.</p></div></details>
             <details><summary>Ratings & reviews <span>{product.rating} / 5</span><ChevronDown size={17} /></summary><div><p>Customers love the substantial feel, clean finish and true-to-size shape. Verified-buyer reviews are shown after delivery.</p></div></details>
           </div>
         </section>

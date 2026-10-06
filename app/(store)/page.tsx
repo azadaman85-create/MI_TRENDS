@@ -419,7 +419,7 @@ export default function HomePage() {
       <section className="usp-strip" aria-label="Shopping benefits">
         <div className="page-shell usp-strip__inner">
           <div><Truck aria-hidden="true" /><span><strong>Free shipping</strong><small>On orders above ₹999</small></span></div>
-          <div><RotateCcw aria-hidden="true" /><span><strong>Easy returns</strong><small>30 days, no drama</small></span></div>
+          <div><RotateCcw aria-hidden="true" /><span><strong>Easy returns</strong><small>7 days, no drama</small></span></div>
           <div><WalletCards aria-hidden="true" /><span><strong>Pay your way</strong><small>UPI, cards & COD</small></span></div>
           <div><ShieldCheck aria-hidden="true" /><span><strong>Secure checkout</strong><small>Protected every time</small></span></div>
         </div>

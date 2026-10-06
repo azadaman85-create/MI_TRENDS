@@ -59,6 +59,8 @@ export async function GET(request: Request) {
       couponCode: doc.couponCode,
       address: doc.address,
       timeline: doc.timeline,
+      deliveredAt: doc.deliveredAt ?? null,
+      returnRequest: doc.returnRequest ?? null,
     }));
     return NextResponse.json({ orders: list }, { headers: { "x-request-id": requestId, "Cache-Control": "no-store" } });
   } catch {

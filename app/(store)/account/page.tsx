@@ -23,10 +23,10 @@ const links = [
     copy: "Follow a parcel from packing to your door.",
   },
   {
-    href: "/info/returns",
+    href: "/account/returns",
     icon: ShieldCheck,
     title: "Returns & refunds",
-    copy: "30-day returns on everything, no questions.",
+    copy: "7 days from delivery to send something back.",
   },
   {
     href: "/cart",

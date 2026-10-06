@@ -23,7 +23,7 @@ const primaryLinks = [
 
 const announcementItems = [
   "Free shipping over ₹999",
-  "Easy 30-day returns",
+  "Easy 7-day returns",
   "Cash on delivery available",
   "Save 10% with MI10",
 ];

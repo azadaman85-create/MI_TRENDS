@@ -168,7 +168,7 @@ export function Footer() {
           </div>
         </div>
         <p>
-          Secure checkout <span aria-hidden="true">·</span> 30-day returns{" "}
+          Secure checkout <span aria-hidden="true">·</span> 7-day returns{" "}
           <span aria-hidden="true">·</span> Human support
         </p>
       </div>

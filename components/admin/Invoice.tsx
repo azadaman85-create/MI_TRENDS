@@ -1,6 +1,7 @@
 "use client";
 
 import { formatDate, formatINR } from "@/lib/admin/format";
+import { RETURN_WINDOW_DAYS } from "@/lib/returns";
 import { amountInWords, storeAddressLine, STORE_IDENTITY } from "@/lib/store-identity";
 import type { Order } from "@/lib/admin/types";
 
@@ -236,7 +237,7 @@ export function Invoice({ order }: { order: Order }) {
 
       {/* Footer */}
       <div style={{ marginTop: "12mm", paddingTop: "4mm", borderTop: `1px solid ${LINE}`, fontSize: "8pt", color: MUTED, lineHeight: 1.7 }}>
-        Returns and exchanges are accepted within 30 days, unworn and tagged — see{" "}
+        Returns and exchanges are accepted within {RETURN_WINDOW_DAYS} days of delivery, unworn and tagged — see{" "}
         {STORE_IDENTITY.website}/info/returns. This is a computer-generated invoice and does not
         require a signature.
         <div style={{ marginTop: "3mm", color: INK, fontWeight: 600 }}>

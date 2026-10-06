@@ -66,6 +66,16 @@ export type Order = {
     pincode: string;
   };
   timeline: { label: string; at: string; done: boolean }[];
+  /** Stamped when the order was marked delivered; the return window runs from here. */
+  deliveredAt?: string | null;
+  /** Present once the customer has asked to send something back. */
+  returnRequest?: {
+    requestedAt: string;
+    reason: string;
+    note?: string;
+    items: { lineIndex: number; quantity: number }[];
+    status: "requested" | "approved" | "rejected" | "completed";
+  } | null;
 };
 
 export type Customer = {

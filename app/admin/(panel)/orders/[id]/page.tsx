@@ -102,6 +102,44 @@ export default function OrderDetailPage() {
 
       <div className="a-split">
         <div className="a-stack">
+          {order.returnRequest ? (
+            <Card
+              title="Return requested"
+              description={`Raised by the customer on ${formatDate(order.returnRequest.requestedAt)}`}
+              actions={<Badge tone="warning">{order.returnRequest.status}</Badge>}
+            >
+              <div className="a-stack" style={{ gap: 12 }}>
+                <div>
+                  <span className="a-label">Reason</span>
+                  <p style={{ margin: "4px 0 0", fontSize: "0.88rem" }}>{order.returnRequest.reason}</p>
+                </div>
+                {order.returnRequest.note ? (
+                  <div>
+                    <span className="a-label">Customer note</span>
+                    <p style={{ margin: "4px 0 0", fontSize: "0.85rem", lineHeight: 1.6 }}>
+                      {order.returnRequest.note}
+                    </p>
+                  </div>
+                ) : null}
+                <div>
+                  <span className="a-label">Items coming back</span>
+                  <ul style={{ margin: "6px 0 0", paddingLeft: 18, fontSize: "0.85rem", lineHeight: 1.7 }}>
+                    {order.returnRequest.items.map((item) => {
+                      const line = order.lines[item.lineIndex];
+                      return (
+                        <li key={item.lineIndex}>
+                          {line ? `${line.name} — ${line.color}, ${line.size}` : "Unknown item"}
+                          {" × "}
+                          {item.quantity}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </div>
+            </Card>
+          ) : null}
+
           <Card
             title="Fulfilment"
             description="Move the order along — the customer sees each step on their tracking page."
