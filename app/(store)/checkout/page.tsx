@@ -98,10 +98,9 @@ export default function CheckoutPage() {
     if (!/^[1-9][0-9]{5}$/.test(value("pincode"))) next.pincode = "Enter a valid 6-digit pincode.";
     if (value("city").length < 2) next.city = "Enter your city.";
     if (!value("state")) next.state = "Choose your state.";
-    // COD pays the courier, so there's no UPI ID to collect.
-    if (!isCod && !/^[\w.-]{2,}@[\w.-]{2,}$/.test(value("upi"))) {
-      next.upi = "Enter a valid UPI ID, for example name@bank.";
-    }
+    // Nothing to collect for payment here. Razorpay Checkout gathers the UPI ID, the
+    // QR scan or the card itself, inside its own window — anything typed here would be
+    // thrown away, and a second VPA field only invites a typo that blocks checkout.
     return next;
   };
 
@@ -349,7 +348,14 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                 ) : (
-                  <label><span>UPI ID</span><input name="upi" autoComplete="off" aria-invalid={Boolean(errors.upi)} placeholder="name@bank" onChange={() => setErrors((old) => ({ ...old, upi: "" }))} />{fieldError("upi")}<small>You’ll approve the payment in your UPI app.</small></label>
+                  <div className="pay-note">
+                    <ShieldCheck size={16} aria-hidden="true" />
+                    <p>
+                      Tap <strong>Pay</strong> and the secure Razorpay window opens. Scan the QR with
+                      any UPI app, or pick Google&nbsp;Pay, PhonePe, Paytm or BHIM — you approve it
+                      there and land back here with the order confirmed.
+                    </p>
+                  </div>
                 )}
               </div>
             </section>
