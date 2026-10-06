@@ -8,6 +8,7 @@ import {
   orderConfirmationText,
 } from "@/lib/email/order-confirmation";
 import { passwordResetHtml, passwordResetSubject, passwordResetText } from "@/lib/email/password-reset";
+import { siteUrl } from "@/lib/site";
 
 /**
  * Transactional email over Gmail SMTP.
@@ -20,7 +21,7 @@ import { passwordResetHtml, passwordResetSubject, passwordResetText } from "@/li
 const SMTP_USER = process.env.SMTP_USER ?? "";
 const SMTP_PASSWORD = process.env.SMTP_PASSWORD ?? "";
 const MAIL_FROM_NAME = process.env.MAIL_FROM_NAME || "MI TRENDS";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://mitrends.co.in";
+
 
 export const EMAIL_CONFIGURED = Boolean(SMTP_USER && SMTP_PASSWORD);
 
@@ -71,7 +72,7 @@ export async function sendPasswordReset(
       replyTo: SMTP_USER,
       subject: passwordResetSubject,
       text: passwordResetText(name, resetUrl),
-      html: passwordResetHtml(name, resetUrl, SITE_URL),
+      html: passwordResetHtml(name, resetUrl, siteUrl()),
     });
     return true;
   } catch (error) {
@@ -111,8 +112,8 @@ export async function sendOrderConfirmation(order: OrderDoc, requestId?: string)
       // Replies go to the shop's own inbox, which is the same account here.
       replyTo: SMTP_USER,
       subject: orderConfirmationSubject(order),
-      text: orderConfirmationText(order, SITE_URL),
-      html: orderConfirmationHtml(order, SITE_URL),
+      text: orderConfirmationText(order, siteUrl()),
+      html: orderConfirmationHtml(order, siteUrl()),
     });
 
     logSecurityEvent({

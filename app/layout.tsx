@@ -1,5 +1,7 @@
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata, Viewport } from "next";
+
+import { siteUrl } from "@/lib/site";
 import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
@@ -26,14 +28,37 @@ export const viewport: Viewport = {
   themeColor: "#171716",
 };
 
+const DESCRIPTION =
+  "Original streetwear, graphic essentials and everyday statement pieces designed in India.";
+
 export const metadata: Metadata = {
+  // Lets Next resolve the relative URLs below into absolute ones. Without it, Open
+  // Graph images are emitted as paths, which no social scraper can fetch.
+  metadataBase: new URL(siteUrl()),
   title: {
     default: "MI TRENDS — Made to be noticed",
     template: "%s | MI TRENDS",
   },
-  description:
-    "Original streetwear, graphic essentials and everyday statement pieces designed in India.",
+  description: DESCRIPTION,
   referrer: "no-referrer",
+  applicationName: "MI TRENDS",
+  // Shown when the link is pasted into WhatsApp, Instagram, Slack or a search result.
+  openGraph: {
+    type: "website",
+    siteName: "MI TRENDS",
+    title: "MI TRENDS — Made to be noticed",
+    description: DESCRIPTION,
+    url: "/",
+    locale: "en_IN",
+    images: [{ url: "/images/logo-email.png", width: 1200, height: 262, alt: "MI TRENDS" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MI TRENDS — Made to be noticed",
+    description: DESCRIPTION,
+    images: ["/images/logo-email.png"],
+  },
+  alternates: { canonical: "/" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

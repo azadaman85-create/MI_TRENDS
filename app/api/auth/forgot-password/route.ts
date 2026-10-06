@@ -8,9 +8,10 @@ import { describeError, logSecurityEvent } from "@/lib/security/events";
 import { clientIpFrom, consumeRateLimit } from "@/lib/security/rate-limit";
 import { requestIdFrom } from "@/lib/security/request-id";
 import { EMAIL_PATTERN } from "@/lib/customer/validation";
+import { siteUrl } from "@/lib/site";
 
 const ENDPOINT = "/api/auth/forgot-password";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://mitrends.co.in";
+
 
 /**
  * Starts a password reset.
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
       { $set: { resetTokenHash: tokenHash, resetTokenExpiresAt: expiresAt } },
     );
 
-    const resetUrl = `${SITE_URL}/account/reset-password?token=${encodeURIComponent(token)}`;
+    const resetUrl = `${siteUrl()}/account/reset-password?token=${encodeURIComponent(token)}`;
     await sendPasswordReset(customer.email, customer.name, resetUrl, requestId);
 
     logSecurityEvent({
