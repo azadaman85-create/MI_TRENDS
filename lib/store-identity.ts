@@ -13,13 +13,36 @@ export const STORE_IDENTITY = {
   tagline: "Made to be noticed",
   website: "mitrends.co.in",
   email: "mitrends2452@gmail.com",
-  /** Registered business address — fill this in. */
-  address: "",
   /** GSTIN, if you're registered. Left off the invoice when empty. */
   gstin: "",
-  /** Phone shown on the invoice, if you want one there. */
-  phone: "",
+  /** Phone for invoices and the shipping label's return block. */
+  phone: "+91 6297 330 602",
+  /**
+   * Registered business / dispatch address. Kept as fields rather than one string
+   * because the shipping label needs the city, state and pincode separately.
+   * Everything printed from here is also where undelivered parcels come back to.
+   */
+  address: {
+    line1: "Babupur",
+    line2: "Tinpakuria, Samserganj",
+    city: "Dhulian",
+    state: "West Bengal",
+    pincode: "742202",
+  },
 } as const;
+
+/** True once there's enough of an address to print. */
+export function hasStoreAddress(): boolean {
+  const a = STORE_IDENTITY.address;
+  return Boolean(a.line1 && a.city && a.state && a.pincode);
+}
+
+/** One-line address for the invoice; empty when unset, so the line is dropped entirely. */
+export function storeAddressLine(): string {
+  if (!hasStoreAddress()) return "";
+  const a = STORE_IDENTITY.address;
+  return [a.line1, a.line2, a.city, `${a.state} ${a.pincode}`].filter(Boolean).join(", ");
+}
 
 const ONES = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
   "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];

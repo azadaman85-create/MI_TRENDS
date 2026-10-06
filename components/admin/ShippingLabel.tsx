@@ -1,17 +1,17 @@
 "use client";
 
 import { formatINR } from "@/lib/admin/format";
+import { hasStoreAddress, storeAddressLine, STORE_IDENTITY } from "@/lib/store-identity";
 import type { Order } from "@/lib/admin/types";
 
-/** Where returns go back to. Swap for the value in Settings once that page persists. */
-const RETURN_ADDRESS = {
-  name: "MI TRENDS Dispatch",
-  line1: "Unit 4, Design District",
-  city: "Mumbai",
-  state: "Maharashtra",
-  pincode: "400001",
-  phone: "+91 98200 00000",
-};
+/**
+ * Where undelivered parcels come back to. Read from lib/store-identity.ts rather than
+ * written here, so the invoice and this label can never disagree.
+ *
+ * If it isn't filled in, the label says so in plain sight instead of printing a
+ * plausible-looking address: a wrong return address sends failed deliveries to a
+ * stranger, which is worse than an obviously incomplete label.
+ */
 
 /**
  * Internal dispatch reference, derived from the order id so the same order always
@@ -121,10 +121,16 @@ export function ShippingLabel({ order }: { order: Order }) {
 
       <footer className="ship-label__foot">
         <span className="ship-label__caption">Return to</span>
-        <p>
-          {RETURN_ADDRESS.name}, {RETURN_ADDRESS.line1}, {RETURN_ADDRESS.city},{" "}
-          {RETURN_ADDRESS.state} {RETURN_ADDRESS.pincode} · {RETURN_ADDRESS.phone}
-        </p>
+        {hasStoreAddress() ? (
+          <p>
+            {STORE_IDENTITY.name}, {storeAddressLine()}
+            {STORE_IDENTITY.phone ? ` · ${STORE_IDENTITY.phone}` : ""}
+          </p>
+        ) : (
+          <p style={{ color: "#c7271d", fontWeight: 700 }}>
+            RETURN ADDRESS NOT SET — add it in lib/store-identity.ts before shipping.
+          </p>
+        )}
         <p className="ship-label__note">
           No courier barcode on this label — the AWB and its barcode are issued by the courier when
           the shipment is booked.
