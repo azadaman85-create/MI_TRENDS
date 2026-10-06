@@ -197,23 +197,9 @@ p {
   flex: none;
 }
 
-.brand-mark {
-  width: 45px;
-  height: 33px;
-  display: grid;
-  place-items: center;
-  border-radius: 3px 9px 3px 3px;
-  background: var(--ink);
-  color: var(--white);
-  font-family: "Arial Black", Inter, sans-serif;
-  font-size: 1.05rem;
-  letter-spacing: -0.08em;
-}
-
-.brand-name {
-  font-family: "Arial Black", Inter, sans-serif;
-  font-size: 1.2rem;
-  letter-spacing: -0.055em;
+/* Height comes in as --brand-logo-h from the component; see components/BrandLogo.tsx. */
+.brand-logo {
+  user-select: none;
 }
 
 .header-actions {
@@ -1555,7 +1541,6 @@ p {
 .newsletter-form input { min-width: 0; height: 50px; flex: 1; padding: 0 15px; border: 1px solid var(--ink); border-radius: 4px; background: #fffdf6; outline: 0; }
 .newsletter-form input:focus { box-shadow: 0 0 0 3px rgb(43 99 217 / 0.28); }
 .footer-main { display: grid; grid-template-columns: minmax(230px, 0.7fr) 1.5fr; gap: 90px; padding-block: 72px 55px; }
-.footer-brand .brand-mark { background: #fff; color: var(--ink); }
 .footer-brand-column > p { max-width: 330px; margin: 18px 0 23px; color: rgb(255 255 255 / 0.62); font-size: 0.78rem; }
 .social-links { display: flex; gap: 7px; }
 .social-links .icon-button { border: 1px solid rgb(255 255 255 / 0.23); color: #fff; font-size: 0.69rem; font-weight: 800; }
@@ -1825,15 +1810,10 @@ p {
     gap: 5px;
     margin: 0 auto;
   }
-  .brand-mark {
-    width: 32px;
-    height: 25px;
-    font-size: 0.85rem;
-    border-radius: 3px 6px 3px 3px;
-  }
-  .brand-name {
-    font-size: 0.98rem;
-    letter-spacing: -0.04em;
+  /* The lockup is wide (roughly 4.6:1), so it gets shorter rather than clipped
+     once the header has a menu button and the action icons to fit alongside it. */
+  .brand-lockup .brand-logo {
+    --brand-logo-h: 26px;
   }
   .count-badge {
     top: 2px;
@@ -2540,4 +2520,71 @@ p {
   .page-shell {
     width: calc(100% - 14px) !important;
   }
+}
+
+/* =========================================================================
+   Status pages (404, error boundary)
+   These render outside the (store) layout, so they carry their own framing.
+   ========================================================================= */
+
+.status-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 48px 16px 64px;
+  text-align: center;
+  background: var(--paper);
+}
+
+.status-page__code {
+  margin: 18px 0 0;
+  font-family: "Arial Black", Inter, sans-serif;
+  font-size: clamp(4rem, 18vw, 8rem);
+  line-height: 0.85;
+  letter-spacing: -0.06em;
+  color: var(--red);
+}
+
+.status-page__title {
+  margin: 0;
+  font-size: clamp(1.5rem, 5vw, 2.1rem);
+  letter-spacing: -0.03em;
+}
+
+.status-page__lede {
+  margin: 0;
+  max-width: 44ch;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.status-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.status-page__foot {
+  margin: 18px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+
+.status-page__foot a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.status-page__foot code {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--surface);
+  font-size: 0.74rem;
 }

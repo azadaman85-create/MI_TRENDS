@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { RotateCcw, Save, Store, Truck, UserRound } from "lucide-react";
 import { useState } from "react";
 
+import { BrandLogo } from "@/components/BrandLogo";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { Badge } from "@/components/admin/ui/Badge";
 import { Button } from "@/components/admin/ui/Button";
@@ -33,9 +34,9 @@ export default function SettingsPage() {
   const [store, setStore] = useState({
     name: "MI TRENDS",
     tagline: "Made to be noticed",
-    email: "hello@mitrends.in",
-    phone: "+91 98200 00000",
-    address: "Unit 4, Design District, Mumbai 400001",
+    email: "mitrends2452@gmail.com",
+    phone: "",
+    address: "",
     description:
       "Original streetwear, graphic essentials and everyday statement pieces designed in India.",
     currency: "INR",
@@ -98,14 +99,9 @@ export default function SettingsPage() {
           <Card title="Brand" className="a-sticky">
             <div className="a-stack">
               <div className="a-row" style={{ gap: 10 }}>
-                <span className="admin-brand-mark" style={{ background: "var(--ink)", color: "var(--white)" }} aria-hidden="true">
-                  MI
-                </span>
                 <span>
-                  <strong style={{ fontFamily: "var(--display)", fontSize: "1.05rem", letterSpacing: "-0.05em" }}>
-                    TRENDS
-                  </strong>
-                  <p className="a-muted" style={{ fontSize: "0.72rem" }}>
+                  <BrandLogo height={30} />
+                  <p className="a-muted" style={{ fontSize: "0.72rem", marginTop: 6 }}>
                     {store.tagline}
                   </p>
                 </span>

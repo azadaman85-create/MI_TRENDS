@@ -11,6 +11,7 @@ import {
 
 import { useStore } from "@/components/StoreProvider";
 import { initialsOf, useCustomer } from "@/lib/account/auth";
+import { BrandLogo } from "@/components/BrandLogo";
 
 const primaryLinks = [
   { label: "Men", href: "/shop?category=men" },
@@ -68,10 +69,7 @@ export function Header() {
           </button>
 
           <Link className="brand-lockup" href="/" aria-label="MI TRENDS home">
-            <span className="brand-mark" aria-hidden="true">
-              MI
-            </span>
-            <span className="brand-name">TRENDS</span>
+            <BrandLogo height={36} priority />
           </Link>
 
           <div className="header-actions">

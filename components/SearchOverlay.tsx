@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { ArrowRight, Search, TrendingUp, X } from "lucide-react";
 
 import { useStore } from "@/components/StoreProvider";
+import { BrandLogo } from "@/components/BrandLogo";
 import { products } from "@/lib/catalog";
 import { money } from "@/lib/format";
 
@@ -98,10 +99,7 @@ function SearchModal({ closeSearch }: { closeSearch: () => void }) {
           onClick={closeSearch}
           aria-label="MI TRENDS home"
         >
-          <span className="brand-mark" aria-hidden="true">
-            MI
-          </span>
-          <span className="brand-name">TRENDS</span>
+          <BrandLogo height={30} />
         </Link>
         <button
           className="icon-button search-close"

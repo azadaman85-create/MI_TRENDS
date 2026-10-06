@@ -5,6 +5,7 @@ import { ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck, TriangleAlert } from 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
+import { BrandLogo } from "@/components/BrandLogo";
 import { Button } from "@/components/admin/ui/Button";
 import { Input } from "@/components/admin/ui/Field";
 import { useAdminAuth } from "@/lib/admin/auth";
@@ -82,11 +83,8 @@ export default function AdminLoginPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...smooth, delay: 0.1 }}
         >
-          <span className="admin-brand-mark" aria-hidden="true">
-            MI
-          </span>
           <span className="admin-brand-copy">
-            <span className="admin-brand-name">TRENDS</span>
+            <BrandLogo height={30} tone="dark" priority />
             <span className="admin-brand-role">Control room</span>
           </span>
         </motion.div>
@@ -218,7 +216,7 @@ export default function AdminLoginPage() {
                 <span className="a-switch__track" aria-hidden="true" />
                 <span>Keep me signed in</span>
               </label>
-              <a className="a-micro" href="mailto:support@mitrends.in?subject=Admin%20password%20reset" style={{ color: "var(--red)" }}>
+              <a className="a-micro" href="mailto:mitrends2452@gmail.com?subject=Admin%20password%20reset" style={{ color: "var(--red)" }}>
                 Forgot password?
               </a>
             </div>
@@ -260,9 +258,7 @@ export default function AdminLoginPage() {
               transition={spring}
               style={{ display: "grid", justifyItems: "center", gap: 12 }}
             >
-              <span className="admin-brand-mark" aria-hidden="true">
-                MI
-              </span>
+              <BrandLogo height={38} tone="dark" variant="mark" />
               <span className="a-micro" style={{ color: "rgb(255 255 255 / 0.6)" }}>
                 Opening your dashboard…
               </span>

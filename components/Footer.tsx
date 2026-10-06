@@ -5,6 +5,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { ArrowRight, ArrowUp } from "lucide-react";
 
 import { useStore } from "@/components/StoreProvider";
+import { BrandLogo } from "@/components/BrandLogo";
 
 const footerColumns = [
   {
@@ -102,10 +103,8 @@ export function Footer() {
       <div className="footer-main shell">
         <div className="footer-brand-column">
           <Link className="brand-lockup footer-brand" href="/" aria-label="MI TRENDS home">
-            <span className="brand-mark" aria-hidden="true">
-              MI
-            </span>
-            <span className="brand-name">TRENDS</span>
+            {/* Dark footer, so the lockup is inverted — see components/BrandLogo.tsx. */}
+            <BrandLogo height={40} tone="dark" />
           </Link>
           <p>
             Original graphics and easygoing essentials, designed in India for

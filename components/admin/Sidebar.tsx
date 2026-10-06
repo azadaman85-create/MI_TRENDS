@@ -23,6 +23,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import { BrandLogo } from "@/components/BrandLogo";
 import { Tooltip } from "@/components/admin/ui/Tooltip";
 import { useAdminAuth } from "@/lib/admin/auth";
 import { LOW_STOCK_THRESHOLD, totalStock } from "@/lib/admin/data";
@@ -200,23 +201,21 @@ export function Sidebar({
     <aside className="admin-sidebar">
       <div className="admin-sidebar__head">
         <Link href="/admin" className="admin-login__mark" aria-label="MI TRENDS admin home">
-          <span className="admin-brand-mark" aria-hidden="true">
-            MI
-          </span>
-          <AnimatePresence initial={false}>
-            {!collapsed ? (
-              <motion.span
-                className="admin-brand-copy"
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: "auto" }}
-                exit={{ opacity: 0, width: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <span className="admin-brand-name">TRENDS</span>
-                <span className="admin-brand-role">Admin</span>
-              </motion.span>
-            ) : null}
-          </AnimatePresence>
+          {/* The rail collapses to an icon strip, where the wordmark has no room. */}
+          {collapsed ? (
+            <BrandLogo height={30} tone="dark" variant="mark" />
+          ) : (
+            <motion.span
+              className="admin-brand-copy"
+              initial={{ opacity: 0, width: 0 }}
+              animate={{ opacity: 1, width: "auto" }}
+              exit={{ opacity: 0, width: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <BrandLogo height={26} tone="dark" />
+              <span className="admin-brand-role">Admin</span>
+            </motion.span>
+          )}
         </Link>
       </div>
 

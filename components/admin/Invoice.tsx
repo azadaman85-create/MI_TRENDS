@@ -1,7 +1,7 @@
 "use client";
 
 import { formatDate, formatINR } from "@/lib/admin/format";
-import { amountInWords, STORE_IDENTITY } from "@/lib/store-identity";
+import { amountInWords, storeAddressLine, STORE_IDENTITY } from "@/lib/store-identity";
 import type { Order } from "@/lib/admin/types";
 
 /**
@@ -66,12 +66,15 @@ export function Invoice({ order }: { order: Order }) {
         <tbody>
           <tr>
             <td style={{ padding: "0 0 12px", verticalAlign: "top" }}>
-              <div style={{ fontSize: "17pt", fontWeight: 800, letterSpacing: "-0.02em" }}>
-                {STORE_IDENTITY.name}
-              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/logo.png"
+                alt={STORE_IDENTITY.name}
+                style={{ height: "14mm", width: "auto", maxWidth: "85mm", display: "block", marginBottom: "2.5mm" }}
+              />
               <div style={{ fontSize: "8pt", color: MUTED, marginTop: 2 }}>{STORE_IDENTITY.tagline}</div>
               <div style={{ fontSize: "8pt", color: MUTED, marginTop: 6, lineHeight: 1.6 }}>
-                {STORE_IDENTITY.address ? <>{STORE_IDENTITY.address}<br /></> : null}
+                {storeAddressLine() ? <>{storeAddressLine()}<br /></> : null}
                 {STORE_IDENTITY.website}
                 {STORE_IDENTITY.email ? <> · {STORE_IDENTITY.email}</> : null}
                 {STORE_IDENTITY.phone ? <> · {STORE_IDENTITY.phone}</> : null}

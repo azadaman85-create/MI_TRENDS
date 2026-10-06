@@ -165,33 +165,13 @@
   border-bottom: 1px solid var(--nav-line);
 }
 
-.admin-brand-mark {
-  width: 43px;
-  height: 32px;
-  flex: none;
-  display: grid;
-  place-items: center;
-  border-radius: 3px 9px 3px 3px;
-  background: var(--white);
-  color: var(--ink);
-  font-family: var(--display);
-  font-size: 1rem;
-  letter-spacing: -0.08em;
-}
-
 .admin-brand-copy {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   overflow: hidden;
   white-space: nowrap;
-}
-
-.admin-brand-name {
-  font-family: var(--display);
-  font-size: 1.02rem;
-  letter-spacing: -0.055em;
-  line-height: 1;
 }
 
 .admin-brand-role {

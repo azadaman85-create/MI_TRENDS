@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { BrandLogo } from "@/components/BrandLogo";
 import { Sidebar } from "@/components/admin/Sidebar";
 import { Topbar } from "@/components/admin/Topbar";
 import { useAdminAuth } from "@/lib/admin/auth";
@@ -47,9 +48,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   if (!ready || !user) {
     return (
       <div style={{ display: "grid", placeItems: "center", minHeight: "100dvh", gap: 14 }}>
-        <span className="admin-brand-mark" style={{ background: "var(--ink)", color: "var(--white)" }} aria-hidden="true">
-          MI
-        </span>
+        <BrandLogo height={40} />
         <span className="a-micro">{ready ? "Redirecting to sign in…" : "Loading your workspace…"}</span>
       </div>
     );

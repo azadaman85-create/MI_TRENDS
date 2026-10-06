@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BadgeCheck, Heart, Sparkles, Truck } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { BrandLogo } from "@/components/BrandLogo";
 import "./account.css";
 
 const perks = [
@@ -35,12 +36,8 @@ export function AuthShell({
         </div>
 
         <Link className="brand-lockup" href="/" aria-label="MI TRENDS home">
-          <span className="brand-mark" aria-hidden="true" style={{ background: "#fff", color: "#171716" }}>
-            MI
-          </span>
-          <span className="brand-name" style={{ color: "#fff" }}>
-            TRENDS
-          </span>
+          {/* Sits over the darkened hero image, so the white-ink copy. */}
+          <BrandLogo height={34} tone="dark" />
         </Link>
 
         <h2 className="acct__statement">{statement}</h2>

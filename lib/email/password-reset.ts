@@ -3,6 +3,8 @@
  * confirmation — see lib/email/order-confirmation.ts for why.
  */
 
+import { emailLogo } from "@/lib/email/brand";
+
 const INK = "#171717";
 const PAPER = "#fffdf9";
 const LINE = "#ddd9d2";
@@ -39,7 +41,7 @@ export function passwordResetHtml(name: string, resetUrl: string, siteUrl: strin
     <tr><td align="center" style="padding:28px 14px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;font-family:Arial,Helvetica,sans-serif;">
 
-        <tr><td style="padding-bottom:22px;font-size:20px;font-weight:900;letter-spacing:-0.02em;color:${INK};">MI TRENDS</td></tr>
+        <tr><td style="padding-bottom:22px;">${emailLogo(siteUrl)}</td></tr>
 
         <tr><td style="background:#ffffff;border:1px solid ${LINE};border-radius:12px;padding:30px 26px;">
           <div style="font-size:22px;font-weight:900;color:${INK};line-height:1.25;letter-spacing:-0.02em;">Reset your password</div>

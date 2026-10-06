@@ -1,4 +1,5 @@
 import type { OrderDoc } from "@/lib/db/models";
+import { emailLogo } from "@/lib/email/brand";
 
 /**
  * Order confirmation email.
@@ -178,7 +179,7 @@ export function orderConfirmationHtml(order: OrderDoc, siteUrl: string): string 
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:900;letter-spacing:-0.02em;color:${INK};">
-                    MI TRENDS
+                    ${emailLogo(siteUrl)}
                   </td>
                   <td style="text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:10px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${RED};">
                     Order confirmed

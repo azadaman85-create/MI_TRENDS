@@ -12,6 +12,7 @@ import {
 
 import { useStore } from "@/components/StoreProvider";
 import { useCustomer } from "@/lib/account/auth";
+import { BrandLogo } from "@/components/BrandLogo";
 
 const primaryLinks = [
   { label: "Men", href: "/shop?category=men" },
@@ -53,13 +54,11 @@ export function MobileNav() {
             onClick={closeMobileNav}
             aria-label="MI TRENDS home"
           >
-            <span className="brand-mark" aria-hidden="true">
-              MI
-            </span>
-            <span className="brand-name" id="mobile-nav-title">
-              TRENDS
-            </span>
+            <BrandLogo height={30} />
           </Link>
+          <h2 className="sr-only" id="mobile-nav-title">
+            MI TRENDS menu
+          </h2>
           <button
             className="icon-button drawer-close"
             type="button"
