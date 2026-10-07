@@ -1,0 +1,157 @@
+{
+  "_source": "Generated from mi-trends/app/(store)/info/[slug]/page.tsx (SIMPLE_PAGES, faqCategories and the special pages).",
+  "pages": [
+    {
+      "slug": "wishlist",
+      "title": "Wishlist",
+      "template": "page-templates/wishlist.php",
+      "content": ""
+    },
+    {
+      "slug": "info",
+      "title": "Info",
+      "template": "",
+      "eyebrow": "Help & info",
+      "display_title": "HELP &|INFO.",
+      "intro": "Shipping, returns, sizing and everything else.",
+      "content": "",
+      "children": [
+        {
+          "slug": "about",
+          "title": "Our story",
+          "template": "",
+          "eyebrow": "Our story",
+          "display_title": "MADE TO BE|NOTICED.",
+          "intro": "MI TRENDS started as a small print run for friends who wanted graphics no one else was wearing. It grew into a full wardrobe.",
+          "content": "<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Where we started</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>We design every graphic, fit and colourway in-house, then run small batches so drops stay original instead of everywhere at once.</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>No two seasons repeat a print. If a design sells out, it stays retired — that's the point of a drop, not a restock.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">How we make it</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Heavyweight cotton, proper stitching and washes that hold their shape after the twentieth wear are non-negotiable, even on our lowest-priced pieces.</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>We work with small manufacturing partners across India and keep runs tight, which also means less leftover stock going to waste.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">What's next</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>More drops, better fits, and eventually stores you can walk into. Join the newsletter at the bottom of the page and you'll hear about all of it first.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->"
+        },
+        {
+          "slug": "careers",
+          "title": "Careers",
+          "template": "",
+          "eyebrow": "Join the team",
+          "display_title": "BUILD THE|BRAND WITH US.",
+          "intro": "We're a small, fast-moving team based in India. We hire for craft over titles.",
+          "content": "<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Open roles</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Graphic Designer — Streetwear prints</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>Customer Experience Associate</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>Retail Operations Lead (upcoming stores)</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>We update this list as roles open, so check back or send a general application anytime.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">How to apply</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Email your resume and portfolio (if relevant) to careers@mitrends.in with the role in the subject line. We reply to every genuine application within two weeks.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->"
+        },
+        {
+          "slug": "press",
+          "title": "Press",
+          "template": "",
+          "eyebrow": "Press & media",
+          "display_title": "LET'S TELL|THE STORY.",
+          "intro": "For interviews, product seeding, or brand assets, reach our press desk directly.",
+          "content": "<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Media contact</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Email press@mitrends.in with your publication, deadline and what you need. We usually respond within 2 business days.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Brand assets</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Logo files, product photography and founder bios are available on request — just mention it in your email and we'll send a press kit.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->"
+        },
+        {
+          "slug": "gift-cards",
+          "title": "Gift cards",
+          "template": "page-templates/info-notify.php",
+          "eyebrow": "Coming soon",
+          "display_title": "GIFT THE|WHOLE WARDROBE.",
+          "intro": "Digital gift cards are launching soon, redeemable on any style, any size, any drop.",
+          "content": "<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">How they'll work</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Buy a gift card in any amount, delivered by email instantly. The recipient applies the code at checkout — no expiry, no fine print.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->"
+        },
+        {
+          "slug": "stores",
+          "title": "Stores",
+          "template": "page-templates/info-notify.php",
+          "eyebrow": "Offline, soon",
+          "display_title": "WE'RE ONLINE|FOR NOW.",
+          "intro": "MI TRENDS is currently a direct-to-you online store while we plan our first physical space.",
+          "content": "<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">First store</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>We're scouting locations in major Indian cities. Tell us where you'd like to see us first using the form below and we'll factor it into the plan.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->"
+        },
+        {
+          "slug": "shipping",
+          "title": "Shipping",
+          "template": "",
+          "eyebrow": "Delivery info",
+          "display_title": "GETTING IT|TO YOU.",
+          "intro": "Here's exactly what to expect after you place an order.",
+          "content": "<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Delivery timelines</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Metro cities: 3-5 business days.</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>Rest of India: 5-7 business days.</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>Remote pin codes may take a little longer — we'll flag this at checkout if it applies to you.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Shipping charges</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Free shipping on orders of ₹999 and above.</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>A flat ₹79 fee applies on smaller orders.</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>Cash on delivery orders carry an additional ₹49 handling fee.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Tracking your order</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Once your order ships, you'll get an SMS and email with tracking details. You can also check status anytime on our Track order page.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Delays</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Festive periods, extreme weather or courier disruptions can occasionally push delivery out by a couple of days. We'll always keep you posted if that happens.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->"
+        },
+        {
+          "slug": "returns",
+          "title": "Returns",
+          "template": "",
+          "eyebrow": "Returns & exchanges",
+          "display_title": "DIDN'T WORK|OUT? EASY FIX.",
+          "intro": "30 days, no drama — here's how returns and exchanges work.",
+          "content": "<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Return window</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>You have 30 days from the delivery date to return any unworn, unwashed item with its tags still attached.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">How to return</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Head to Track order, enter your order ID, and choose \"Start a return\". We'll arrange a free pickup from your address.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Refunds</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Refunds are processed within 5-7 business days of us receiving the item back, to your original payment method. Cash on delivery orders are refunded to your bank account or UPI ID.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Exchanges</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Need a different size or colour instead? Choose exchange rather than refund during the return request, subject to stock availability.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">What can't be returned</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Innerwear, accessories marked final sale, and any item without its original tags can't be accepted back for hygiene and quality reasons.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->"
+        },
+        {
+          "slug": "terms",
+          "title": "Terms of service",
+          "template": "",
+          "eyebrow": "Legal",
+          "display_title": "TERMS OF|SERVICE.",
+          "intro": "The essentials of using the MI TRENDS site and placing an order with us.",
+          "content": "<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Acceptance of terms</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>By browsing or buying from MI TRENDS, you agree to these terms. If you don't agree with any part, please don't use the site.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Orders &amp; pricing</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>All prices are listed in Indian Rupees and include applicable taxes unless stated otherwise. We reserve the right to correct pricing errors and cancel affected orders with a full refund.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Payments</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>We accept UPI, major debit/credit cards, net banking and cash on delivery. Payments are processed through encrypted, PCI-compliant partners.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Shipping &amp; returns</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Delivery timelines and our return policy are detailed on the Shipping and Returns pages, which form part of these terms.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Intellectual property</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>All designs, graphics and site content belong to MI TRENDS and may not be reproduced without written permission.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Limitation of liability</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>MI TRENDS is not liable for indirect or incidental damages arising from use of the site, to the extent permitted by Indian law.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Governing law</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>These terms are governed by the laws of India, with courts in the jurisdiction of our registered office having exclusive authority.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Questions</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Write to legal@mitrends.in for anything not covered here.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->"
+        },
+        {
+          "slug": "privacy",
+          "title": "Privacy policy",
+          "template": "",
+          "eyebrow": "Legal",
+          "display_title": "PRIVACY|POLICY.",
+          "intro": "What we collect, why we collect it, and how it's kept safe.",
+          "content": "<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Information we collect</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Your name, contact details and delivery address when you check out, plus basic browsing behaviour to improve the site.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">How we use it</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Solely to process orders, provide support, and — only if you opt in — send you updates about new drops.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Cookies</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>We use cookies to remember your bag and preferences during a session. You can disable them in your browser, though parts of the site may work less smoothly.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Sharing with third parties</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>We only share the minimum required data with payment processors and courier partners needed to fulfil your order. We never sell your data.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Data security</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Payment details are encrypted end-to-end and we never store your UPI information on our servers.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Your rights</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>You can request a copy of your data, ask us to correct it, or ask us to delete it by writing to privacy@mitrends.in.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->"
+        },
+        {
+          "slug": "accessibility",
+          "title": "Accessibility",
+          "template": "",
+          "eyebrow": "Accessibility",
+          "display_title": "BUILT FOR|EVERYONE.",
+          "intro": "We're working to make MI TRENDS usable for every visitor, regardless of ability.",
+          "content": "<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Our commitment</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>We aim to meet WCAG 2.1 Level AA guidelines across the site, and we review new features against them before launch.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">What we've built in</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Keyboard-navigable menus and carousels, descriptive alt text on product imagery, visible focus states, and colour contrast that holds up in daylight and dark mode alike.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Still working on it</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Accessibility is ongoing work, not a one-time checklist. If something doesn't work well with your screen reader, keyboard or browser settings, we want to know.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\n\n<!-- wp:group {\"className\":\"simple-section\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group simple-section\"><!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Tell us</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Email accessibility@mitrends.in with the page and issue — we treat these reports as priority fixes.</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->"
+        },
+        {
+          "slug": "contact",
+          "title": "Contact us",
+          "template": "page-templates/info-contact.php",
+          "eyebrow": "We're here",
+          "display_title": "TALK TO|A HUMAN.",
+          "intro": "Order questions, sizing help, or just feedback — send it over.",
+          "content": ""
+        },
+        {
+          "slug": "faqs",
+          "title": "FAQs",
+          "template": "page-templates/info-faqs.php",
+          "eyebrow": "Quick answers",
+          "display_title": "FREQUENTLY|ASKED.",
+          "intro": "Everything most people ask before or after ordering.",
+          "content": "<!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Orders &amp; payments</h2>\n<!-- /wp:heading -->\n\n<!-- wp:details -->\n<details class=\"wp-block-details\"><summary>Which payment methods do you accept?</summary><!-- wp:paragraph -->\n<p>UPI, credit and debit cards, net banking, and cash on delivery across India.</p>\n<!-- /wp:paragraph --></details>\n<!-- /wp:details -->\n\n<!-- wp:details -->\n<details class=\"wp-block-details\"><summary>Can I change or cancel my order after placing it?</summary><!-- wp:paragraph -->\n<p>Yes, within 2 hours of placing it — write to us with your order ID. After that, packing has usually already started.</p>\n<!-- /wp:paragraph --></details>\n<!-- /wp:details -->\n\n<!-- wp:details -->\n<details class=\"wp-block-details\"><summary>I didn't get an order confirmation. What do I do?</summary><!-- wp:paragraph -->\n<p>Check your spam or promotions folder first. Still nothing after 30 minutes? Contact us with your registered mobile number and we'll resend it.</p>\n<!-- /wp:paragraph --></details>\n<!-- /wp:details -->\n\n<!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Shipping</h2>\n<!-- /wp:heading -->\n\n<!-- wp:details -->\n<details class=\"wp-block-details\"><summary>How long does delivery take?</summary><!-- wp:paragraph -->\n<p>4-7 business days for most pin codes; metro cities are usually on the faster end.</p>\n<!-- /wp:paragraph --></details>\n<!-- /wp:details -->\n\n<!-- wp:details -->\n<details class=\"wp-block-details\"><summary>Is shipping free?</summary><!-- wp:paragraph -->\n<p>Free on orders above ₹999. Below that, a flat ₹79 fee applies, plus ₹49 for cash on delivery.</p>\n<!-- /wp:paragraph --></details>\n<!-- /wp:details -->\n\n<!-- wp:details -->\n<details class=\"wp-block-details\"><summary>Do you ship outside India?</summary><!-- wp:paragraph -->\n<p>Not yet — we're focused on serving India well before we expand.</p>\n<!-- /wp:paragraph --></details>\n<!-- /wp:details -->\n\n<!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Returns &amp; exchanges</h2>\n<!-- /wp:heading -->\n\n<!-- wp:details -->\n<details class=\"wp-block-details\"><summary>What's your return window?</summary><!-- wp:paragraph -->\n<p>30 days from delivery, for unworn items with tags intact.</p>\n<!-- /wp:paragraph --></details>\n<!-- /wp:details -->\n\n<!-- wp:details -->\n<details class=\"wp-block-details\"><summary>How do I start a return?</summary><!-- wp:paragraph -->\n<p>Go to Track order, enter your order ID, and choose \"Start a return\" — or just contact support.</p>\n<!-- /wp:paragraph --></details>\n<!-- /wp:details -->\n\n<!-- wp:details -->\n<details class=\"wp-block-details\"><summary>When will I get my refund?</summary><!-- wp:paragraph -->\n<p>Within 5-7 business days of us receiving the returned item.</p>\n<!-- /wp:paragraph --></details>\n<!-- /wp:details -->\n\n<!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Sizing</h2>\n<!-- /wp:heading -->\n\n<!-- wp:details -->\n<details class=\"wp-block-details\"><summary>How do I pick the right size?</summary><!-- wp:paragraph -->\n<p>Check our Size guide and compare the measurements with a similar piece you already own.</p>\n<!-- /wp:paragraph --></details>\n<!-- /wp:details -->\n\n<!-- wp:details -->\n<details class=\"wp-block-details\"><summary>What if the size doesn't fit?</summary><!-- wp:paragraph -->\n<p>Exchange it for a different size, free of cost, within the return window.</p>\n<!-- /wp:paragraph --></details>\n<!-- /wp:details -->"
+        },
+        {
+          "slug": "track-order",
+          "title": "Track order",
+          "template": "page-templates/info-track-order.php",
+          "eyebrow": "Where's my order",
+          "display_title": "TRACK YOUR|ORDER.",
+          "intro": "Enter your order ID to see the latest status.",
+          "content": ""
+        },
+        {
+          "slug": "size-guide",
+          "title": "Size guide",
+          "template": "page-templates/info-size-guide.php",
+          "eyebrow": "Find your fit",
+          "display_title": "SIZE|GUIDE.",
+          "intro": "Measurements are in inches unless noted, for the most reliable fit.",
+          "content": ""
+        },
+        {
+          "slug": "account",
+          "title": "Account help",
+          "template": "page-templates/info-account.php",
+          "eyebrow": "Your account",
+          "display_title": "YOUR MI TRENDS|ACCOUNT.",
+          "intro": "Sign in to shop — your bag, wishlist and order history live here.",
+          "content": ""
+        }
+      ]
+    }
+  ]
+}
