@@ -67,7 +67,7 @@ export async function POST(request: Request) {
   // The amount charged is always recomputed here from the catalogue + coupon rules —
   // never trusted from the client. See lib/pricing.ts for the documented exception
   // (shipping and the COD fee, which have no server-side home yet).
-  const priced = priceOrder({
+  const priced = await priceOrder({
     lines: body.lines,
     couponCode: body.couponCode,
     shipping: body.shipping,

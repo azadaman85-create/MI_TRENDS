@@ -11,7 +11,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { getProductById, products } from "@/lib/catalog";
+import { useCatalog } from "@/components/CatalogProvider";
 import { calculateCouponDiscount, couponMinimum, VALID_COUPON_CODES } from "@/lib/coupons";
 import type { CartLine, Product, ProductColor } from "@/lib/types";
 
@@ -99,7 +99,9 @@ function readBag(): StoredBag | null {
   }
 }
 
-function restoreLines(stored: StoredBag["lines"]): CartLine[] {
+type ProductLookup = (id: number | string) => Product | undefined;
+
+function restoreLines(stored: StoredBag["lines"], getProductById: ProductLookup): CartLine[] {
   return stored
     .map((line) => {
       const product = getProductById(line.id);
@@ -124,6 +126,8 @@ function clampQuantity(quantity: number) {
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
+  // The live catalogue, from the database via the server layout.
+  const { products, getProductById } = useCatalog();
   const [cartLines, setCartLines] = useState<CartLine[]>([]);
   const [wishlistIds, setWishlistIds] = useState<number[]>([]);
   const [couponCode, setCouponCode] = useState<string | null>(null);
@@ -139,13 +143,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const stored = readBag();
     if (stored) {
       /* eslint-disable react-hooks/set-state-in-effect */
-      setCartLines(restoreLines(stored.lines ?? []));
+      setCartLines(restoreLines(stored.lines ?? [], getProductById));
       setWishlistIds((stored.wishlist ?? []).filter((id) => getProductById(id)));
       setCouponCode(stored.coupon ?? null);
       /* eslint-enable react-hooks/set-state-in-effect */
     }
     setHydrated(true);
-  }, []);
+  }, [getProductById]);
 
   useEffect(() => {
     if (!hydrated) return;

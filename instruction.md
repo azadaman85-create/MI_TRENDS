@@ -1,743 +1,795 @@
-# MI TRENDS — FULL WEBSITE BUG FIX & E-COMMERCE FUNCTIONALITY PROMPT
+# 🔴 CRITICAL: Diagnose Why Products Are Not Publishing to the Frontend
 
-You are working on my **MI TRENDS e-commerce website**. I need you to perform a complete audit, identify the root causes, and implement production-ready fixes.
+I need you to investigate my e-commerce application's product publishing system **end-to-end**.
 
-Do **not** redesign the website unnecessarily. Preserve the existing branding, UI/UX, components, content, functionality, typography, product layout, colors, and overall visual identity unless a change is required to fix a bug.
+Do NOT immediately change or rewrite the code.
 
----
+First, perform a complete technical audit to determine **exactly where the product data is being stored, where product images are being stored, what happens when I click Publish, and why the published product is not appearing on the customer-facing frontend.**
 
-## 1. FIX MOBILE, TABLET & ZOOM-RELATED LAYOUT GLITCHES
+The most important requirement is:
 
-The website currently has serious responsive-layout issues on:
-
-* Android mobile phones
-* iPhones
-* Tablets
-* Different browser zoom levels
-* Mobile browser zoom in / zoom out
-* Desktop browser resizing
-
-### Current problems
-
-When I:
-
-* Zoom out
-* Zoom in
-* Zoom out again
-* Rotate the device
-* Change browser width
-* Open the website on different mobile/tablet resolutions
-
-the layout sometimes completely changes incorrectly.
-
-Examples of issues:
-
-* The website becomes very small instead of adapting to the viewport.
-* Content remains compressed in a small area.
-* Blank space/panels appear on the side.
-* Side panel/container becomes blank.
-* Sections do not use the available screen width.
-* Some components move outside the viewport.
-* Horizontal overflow appears.
-* Header/navigation breaks.
-* Product grids become incorrectly sized.
-* Buttons/text/images become too small.
-* Containers retain desktop dimensions on mobile.
-* After zooming in and then zooming out, the page does not return to the correct responsive layout.
-* Some sections behave differently depending on the browser zoom level.
-* Tablet layout is also inconsistent.
-
-### Required behavior
-
-The website must use the **actual viewport dimensions** and responsive breakpoints correctly.
-
-The layout must automatically adapt to:
-
-* Small mobile
-* Large mobile
-* iPhone
-* Android
-* Small tablet
-* Large tablet
-* Laptop
-* Desktop
-* Large desktop
-
-When browser zoom changes:
-
-### Zoom OUT
-
-The page should continue to use the responsive layout appropriate for the current viewport.
-
-It must NOT:
-
-* shrink into a tiny fixed-width page
-* create blank side panels
-* break containers
-* create unexpected horizontal scrolling
-* switch into an incorrect layout
-
-### Zoom IN
-
-The browser's normal zoom behavior should work naturally.
-
-The page should remain usable and responsive.
-
-### Zoom OUT again
-
-The layout must automatically return to the correct responsive state without leaving:
-
-* broken widths
-* blank areas
-* displaced content
-* incorrect grids
-* oversized containers
-* tiny content
+> **Find the actual source of truth for my products and images. Determine whether the data is permanently stored in the database/storage or only exists temporarily in frontend/backend state.**
 
 ---
 
-## 2. PERFORM A COMPLETE RESPONSIVE AUDIT
+# 1. Trace the Complete Product Lifecycle
 
-Inspect the entire website:
-
-### Frontend
-
-Check every page and component, including:
-
-* Home
-* Shop
-* Product listing
-* Product details
-* Cart
-* Checkout
-* Login
-* Sign Up
-* Account/Profile
-* Orders
-* Order details
-* Search
-* Category pages
-* Product filters
-* Navigation
-* Header
-* Footer
-* Modals
-* Drawers
-* Sidebars
-* Forms
-* Popups
-* Admin-related frontend components where applicable
-
-### Backend/Admin UI
-
-Also check responsive behavior for:
-
-* Admin dashboard
-* Product management
-* Order management
-* Customer management
-* Reports
-* Tables
-* Forms
-* Side panels
-* Modal dialogs
-* Navigation/sidebar
-
----
-
-## 3. IDENTIFY AND FIX ROOT CAUSES
-
-Do not only patch individual pages.
-
-Find the actual technical reason for the problem.
-
-Audit for:
-
-* Fixed widths
-* `width: 100vw` causing overflow
-* Incorrect `min-width`
-* Incorrect `max-width`
-* Hardcoded pixel dimensions
-* Fixed desktop containers
-* Improper CSS breakpoints
-* Incorrect flexbox behavior
-* Incorrect grid definitions
-* `position: absolute`
-* `position: fixed`
-* Transform-based scaling
-* Negative margins
-* Overflow problems
-* Nested containers with conflicting widths
-* Incorrect viewport calculations
-* JavaScript viewport calculations
-* Resize event bugs
-* Zoom detection logic
-* CSS media-query conflicts
-* Component-level responsive overrides
-* Horizontal scrolling
-* Sidebar width conflicts
-* Drawer width conflicts
-* Image sizing issues
-* Tables overflowing
-* Parent containers restricting child width
-* `100vw` vs `100%` problems
-* Improper use of `vh`, `vw`, `%`, `rem`, and `clamp()`
-* Desktop styles leaking into mobile
-* Mobile styles leaking into tablet/desktop
-* Hydration/layout mismatch if React/Next.js is being used
-* SSR vs client-side viewport detection issues
-
-Where appropriate, prefer:
-
-```css
-width: 100%;
-max-width: 100%;
-min-width: 0;
-box-sizing: border-box;
-overflow-x: hidden;
-```
-
-and responsive CSS rather than hardcoded dimensions.
-
-Do not blindly add `overflow-x: hidden` everywhere. Fix the actual overflow source first.
-
----
-
-## 4. RESPONSIVE DESIGN REQUIREMENTS
-
-Use a robust responsive system.
-
-The design should gracefully adapt instead of relying on one or two breakpoints.
-
-Check at minimum:
-
-### Mobile
-
-* 320px
-* 360px
-* 375px
-* 390px
-* 414px
-* 430px
-* 480px
-
-### Tablet
-
-* 600px
-* 768px
-* 820px
-* 834px
-* 1024px
-* 1180px
-
-### Desktop
-
-* 1280px
-* 1366px
-* 1440px
-* 1600px
-* 1920px
-
-Also test landscape orientations.
-
-Do not create unnecessary device-specific hacks.
-
-Use reusable responsive components and breakpoints.
-
----
-
-# 5. FIX CUSTOMER SIGN-IN / SIGN-UP ERRORS
-
-There is currently an issue with the **New Customer Sign Up** flow.
-
-When a new customer attempts to register:
-
-* Error appears
-* Sign Up does not complete
-* Customer may not be created
-* Sign In does not work correctly
-
-Perform a complete audit of the authentication system.
-
-Check:
-
-* Sign Up form
-* Sign In form
-* Frontend validation
-* Backend validation
-* API requests
-* API responses
-* Authentication middleware
-* Database connection
-* MongoDB schema/model
-* Password handling
-* Session/token handling
-* Cookies
-* JWT if used
-* Error handling
-* Duplicate email handling
-* Duplicate phone handling
-* Required fields
-* Form submission
-* Loading states
-* Authentication state persistence
-
-Find the root cause and fix it.
-
-Do not hide errors just to make the UI appear successful.
-
-Return meaningful user-friendly error messages.
-
----
-
-# 6. MONGODB CUSTOMER ACCOUNT SYSTEM
-
-Use **MongoDB** as the customer database.
-
-After successful customer registration, store the necessary customer information in MongoDB.
-
-Customer record should support fields such as:
+Trace one product through the entire system:
 
 ```text
-_id
-firstName
-lastName
-email
-phone
-passwordHash
-createdAt
-updatedAt
+Admin Product Form
+        ↓
+Form State
+        ↓
+Save/Create API
+        ↓
+Backend Validation
+        ↓
+Database
+        ↓
+Image/File Storage
+        ↓
+Product Record
+        ↓
+Publish API
+        ↓
+Published Status
+        ↓
+Storefront Product API
+        ↓
+Frontend State
+        ↓
+Product Listing
+        ↓
+Product Detail Page
+```
+
+Do not skip any layer.
+
+Identify the exact file, function, API endpoint, database table/collection, storage bucket/path, and frontend component involved at each step.
+
+---
+
+# 2. Find EXACTLY Where Product Details Are Stored
+
+When I create a product from the admin dashboard, determine exactly where each field is stored.
+
+Check all product fields including:
+
+* Product ID
+* Product name
+* Description
+* Short description
+* Price
+* Sale price
+* Discount
+* Category
+* Subcategory
+* Brand
+* SKU
+* Stock
+* Inventory
+* Variants
+* Options
+* Attributes
+* Specifications
+* Tags
+* SEO title
+* SEO description
+* Slug
+* Visibility
+* Status
+* Published state
+* Active state
+* Created date
+* Updated date
+
+For every field, identify:
+
+```text
+Frontend field
+↓
+Request payload field
+↓
+Backend field
+↓
+Database column/document field
+↓
+Actual stored value
+```
+
+Do not assume the field names.
+
+Inspect the actual code and actual database schema.
+
+---
+
+# 3. Find EXACTLY Where Product Images Are Stored
+
+This is extremely important.
+
+When I upload a product image from the admin dashboard, determine:
+
+### Where does the image physically go?
+
+Check whether the application uses:
+
+* Supabase Storage
+* Firebase Storage
+* AWS S3
+* Cloudinary
+* Local filesystem
+* Database blob
+* Another object-storage provider
+* Temporary browser storage
+* Base64
+* Blob/Object URL
+* Some custom upload API
+
+Identify the exact:
+
+* Storage provider
+* Bucket name
+* Folder/path
+* File name
+* Asset ID
+* Public URL
+* Database image record
+* Product-to-image relationship
+
+Trace:
+
+```text
+Select Image
+↓
+Upload Function
+↓
+Upload API
+↓
+Storage Provider
+↓
+Storage Bucket
+↓
+Stored File
+↓
+Returned URL/Asset ID
+↓
+Database Image Record
+↓
+Product ID Relationship
+↓
+Product API
+↓
+Frontend Image
+```
+
+I need you to verify that the image is **actually permanently stored**.
+
+Do not assume that an image preview means the image was successfully uploaded.
+
+---
+
+# 4. Check for Temporary Image Storage
+
+Specifically search the code for:
+
+```text
+URL.createObjectURL()
+blob:
+FileReader
+base64
+localStorage
+sessionStorage
+temporary upload
+preview URL
+imagePreview
+previewImages
+blob URL
+```
+
+Determine whether these are being used only for preview purposes or whether the application incorrectly relies on them as the permanent product image.
+
+If the product image exists only as a temporary browser URL, identify that as a root cause.
+
+---
+
+# 5. Inspect the Product Creation API
+
+Find the exact API used when I click:
+
+**Save Product / Create Product / Add Product**
+
+Document:
+
+```text
+HTTP Method:
+Endpoint:
+Frontend file:
+Backend file:
+Request payload:
+Validation:
+Database operation:
+Database table/collection:
+Response:
+```
+
+Verify whether ALL product information is actually sent.
+
+Check for fields being:
+
+* Dropped
+* Renamed incorrectly
+* Set to `undefined`
+* Set to `null`
+* Removed during validation
+* Removed during serialization
+* Ignored by the backend
+* Stored in the wrong database field
+
+---
+
+# 6. Verify the Actual Database Record
+
+Do not rely on the admin UI.
+
+After creating a test product, inspect the **actual database record**.
+
+Show the actual structure/value of the record in a safe way.
+
+Determine:
+
+```text
+Product ID:
+Status:
+Published:
+Active:
+Visibility:
+Image reference:
+Price:
+Category:
+Stock:
+Created:
+Updated:
+```
+
+Use the application's actual field names.
+
+Do not assume the database uses:
+
+```text
+status
+isPublished
 isActive
 ```
 
-Add any other fields required by the existing website.
-
-### IMPORTANT SECURITY REQUIREMENT
-
-**Never store the customer's password in plain text.**
-
-Do NOT store:
-
-```text
-password: "MyPassword123"
-```
-
-Instead store a secure password hash using a modern password hashing algorithm such as:
-
-* Argon2id
-* bcrypt
-
-The login system must verify the entered password against the stored password hash.
+Find the real fields.
 
 ---
 
-# 7. CUSTOMER LOGIN
+# 7. Investigate the Publish Button
 
-Customers must be able to log in using their registered:
+Find the exact code executed when I click:
 
-* Email/Gmail
-* Password
+**Publish**
 
-The flow should be:
+Trace:
 
 ```text
-Customer enters email
-        ↓
-Backend finds customer in MongoDB
-        ↓
-Password is securely verified against passwordHash
-        ↓
-Authentication succeeds
-        ↓
-Secure session/JWT/cookie is created
-        ↓
-Customer is logged in
+Publish Button
+↓
+Frontend Handler
+↓
+API Request
+↓
+Backend Endpoint
+↓
+Database Update
+↓
+Response
+↓
+Frontend State
 ```
 
-The authentication state must remain available when the customer navigates through:
+Determine exactly what is happening.
 
-* Home
-* Shop
-* Product pages
-* Cart
-* Checkout
-* Account
-* Orders
+Check whether Publish:
 
-Do not rely only on frontend state for authentication.
-
-Authentication must be verified on the server.
+* Does nothing
+* Only changes local React/Vue state
+* Calls the wrong API
+* Sends the wrong product ID
+* Sends the wrong status
+* Updates the wrong database field
+* Updates the wrong database record
+* Fails validation
+* Fails authentication
+* Fails authorization
+* Updates the database but returns an incorrect response
+* Shows a fake success message
+* Updates admin state but not the database
 
 ---
 
-# 8. CUSTOMER ACCOUNT & ORDER FLOW
+# 8. Compare BEFORE and AFTER Publish
 
-After login, the customer should be able to:
+Create one real test product.
 
-* View profile
-* Update profile
-* Add products to cart
-* Proceed to checkout
-* Place an order
-* View order history
-* View order details
-* See order status
+Before Publish, inspect the database.
 
-Each order should be securely associated with the authenticated customer.
+Then click Publish.
+
+Immediately inspect the same product again.
+
+Document:
+
+### BEFORE
+
+```text
+Product ID:
+Status:
+Published:
+Active:
+Visibility:
+Image:
+```
+
+### AFTER
+
+```text
+Product ID:
+Status:
+Published:
+Active:
+Visibility:
+Image:
+```
+
+If nothing changes in the database after clicking Publish, identify the exact reason.
+
+---
+
+# 9. Check the Storefront Product API
+
+Find the API/query that the customer-facing storefront uses.
+
+Identify:
+
+```text
+Endpoint:
+HTTP Method:
+Backend file:
+Database query:
+Filters:
+Authentication:
+Response:
+```
+
+Check whether it filters products using something like:
+
+```text
+status = published
+isPublished = true
+isActive = true
+visibility = public
+stock > 0
+```
+
+or any equivalent condition.
+
+Compare the storefront query with the actual database record.
+
+For example:
+
+```text
+Database:
+status = "active"
+
+Frontend API:
+status = "published"
+```
+
+If this mismatch exists, identify it as a root cause.
+
+---
+
+# 10. Check Whether Admin and Frontend Use Different Databases
+
+This is a HIGH PRIORITY check.
+
+Verify that the admin dashboard and customer storefront are using the same:
+
+* API
+* API base URL
+* Database
+* Supabase project
+* Firebase project
+* PostgreSQL instance
+* MongoDB database
+* Environment variables
+* Production/staging environment
+
+Specifically check:
+
+```text
+Admin API URL
+Storefront API URL
+
+Admin database
+Storefront database
+
+Admin environment
+Storefront environment
+```
+
+A critical possible failure is:
+
+```text
+ADMIN
+↓
+Database A
+
+STOREFRONT
+↓
+Database B
+```
+
+If this is happening, identify it clearly.
+
+---
+
+# 11. Check Image Retrieval
+
+Once the product API returns a product, verify whether the image information is included.
+
+Trace:
+
+```text
+Database Image
+↓
+Backend Product Query
+↓
+API Response
+↓
+Frontend Product Object
+↓
+Image Component
+↓
+Image URL
+↓
+Browser
+```
+
+Determine:
+
+* Is the image URL present?
+* Is the URL correct?
+* Is it public?
+* Does it expire?
+* Does it require authentication?
+* Is the storage bucket private?
+* Is the frontend using the correct image field?
+* Is there a URL transformation issue?
+* Is CORS blocking the image?
+* Is the frontend constructing an incorrect relative URL?
+
+---
+
+# 12. Check Frontend Rendering
+
+Only after verifying the API response, inspect the frontend.
+
+If the storefront API returns:
+
+```text
+0 products
+```
+
+continue backward and find why.
+
+If the storefront API returns products but the UI shows nothing, investigate:
+
+* State management
+* API response parsing
+* Product mapping
+* Filters
+* Empty-state logic
+* Pagination
+* Product cards
+* Category filtering
+* Search filtering
+* Loading state
+* Error state
+* Product routes
+
+Do not simply remove filters without understanding why they exist.
+
+---
+
+# 13. Check Caching
+
+Investigate whether the storefront is showing stale data because of:
+
+* Browser cache
+* Next.js cache
+* ISR
+* SSR cache
+* React Query
+* SWR
+* API caching
+* CDN
+* Server-side caching
+* Database query caching
+
+Test the product API using a fresh request.
+
+Determine whether a newly published product is immediately available from the backend API.
+
+---
+
+# 14. Check Permissions / RLS
+
+If the application uses Supabase, Firebase, PostgreSQL RLS, or another permission system, inspect the relevant policies.
+
+Verify:
+
+```text
+Admin:
+Can create/update/publish products
+
+Customer:
+Can read published products
+
+Customer:
+Cannot modify products
+```
+
+Check whether anonymous/public users are allowed to read published products.
+
+Also check image/storage permissions.
+
+---
+
+# 15. Search for Hardcoded or Mock Product Data
+
+Search the entire project for:
+
+```text
+mockProducts
+sampleProducts
+dummyProducts
+products = [...]
+staticProducts
+demoProducts
+fakeProducts
+```
+
+Determine whether the storefront is accidentally reading from static/mock data instead of the real database.
+
+The storefront must use the actual product API/database.
+
+---
+
+# 16. Search for Multiple Product Models or APIs
+
+Search the project for:
+
+```text
+products
+product
+productService
+productApi
+productRepository
+productStore
+productController
+productModel
+```
+
+Determine whether there are multiple competing product systems.
+
+For example:
+
+```text
+Admin uses ProductService A
+
+Storefront uses ProductService B
+```
+
+or:
+
+```text
+Admin writes to /api/admin/products
+
+Storefront reads from /api/store/products
+```
+
+Verify that both ultimately use the same persistent source of truth.
+
+---
+
+# 17. Do NOT Fix Anything Yet
+
+First provide a diagnostic report.
+
+I want you to tell me:
+
+### ROOT CAUSE
+
+Exactly why products created in the backend are not appearing on the frontend.
+
+### PRODUCT DATA STORAGE
+
+Where product information is currently stored.
+
+### IMAGE STORAGE
+
+Where uploaded images are currently stored.
+
+### DATABASE
+
+Which database/table/collection stores the product.
+
+### IMAGE STORAGE
+
+Which bucket/folder/provider stores the images.
+
+### PUBLISH FLOW
+
+What actually happens when Publish is clicked.
+
+### STOREFRONT API
+
+Which API retrieves products.
+
+### FRONTEND
+
+Why the frontend currently shows zero products.
+
+### ENVIRONMENT
+
+Whether admin and storefront use the same environment/database.
+
+---
+
+# 18. Show Me the Actual Data Flow
+
+After investigation, provide a diagram similar to:
+
+```text
+ADMIN DASHBOARD
+      ↓
+Product Form
+      ↓
+Create Product API
+      ↓
+Database
+      ↓
+Product ID
+      ↓
+Image Upload
+      ↓
+Storage Bucket
+      ↓
+Image URL / Asset ID
+      ↓
+Product Image Record
+      ↓
+Publish API
+      ↓
+Database Status Update
+      ↓
+Storefront Product API
+      ↓
+Published Product Query
+      ↓
+Frontend
+      ↓
+Product Card
+      ↓
+Product Detail Page
+```
+
+Mark exactly where the current flow breaks.
+
+---
+
+# 19. Test With One Real Product
+
+Use a completely new test product.
 
 Example:
 
 ```text
-Customer
-   ↓
-MongoDB Customer ID
-   ↓
-Order
-   ↓
-Customer's order history
+Product Name: Publishing Test Product
+Price: 999
+Stock: 10
+Category: Test Category
+Image: newly uploaded test image
 ```
 
-A customer must only be able to access their own account and orders.
-
-Prevent IDOR / unauthorized order access.
-
----
-
-# 9. CASH ON DELIVERY (COD)
-
-Add/verify **Cash on Delivery** as a payment option.
-
-For COD:
-
-### Customer should NOT pay anything upfront.
-
-The checkout flow must be:
+Then test:
 
 ```text
-Add to Cart
-      ↓
-Checkout
-      ↓
-Select Cash on Delivery
-      ↓
-Place Order
-      ↓
-Order Confirmed
-      ↓
-Payment Due = 0 upfront
-      ↓
-Customer pays when order is delivered
+Create
+↓
+Save
+↓
+Database verification
+↓
+Image storage verification
+↓
+Publish
+↓
+Database verification
+↓
+Storefront API
+↓
+Frontend
 ```
 
-Do not redirect the customer to an online payment gateway when COD is selected.
+Do not declare success just because the admin dashboard displays:
 
-Do not charge any upfront payment for COD.
+**"Product published successfully."**
 
-The order should clearly display:
+The success condition is:
 
 ```text
-Payment Method: Cash on Delivery
-Payment Status: Pending / Unpaid
-Amount Paid: ₹0
-Amount Due on Delivery: ₹X
-```
-
-The exact labels should match the existing MI TRENDS UI.
-
-The admin should be able to identify COD orders easily.
-
----
-
-# 10. ORDER DATABASE STRUCTURE
-
-Ensure orders contain the required information, such as:
-
-```text
-orderId
-customerId
-customer details
-items
-productId
-product name
-quantity
-price
-subtotal
-shipping
-discount
-totalAmount
-paymentMethod
-paymentStatus
-orderStatus
-shippingAddress
-billingAddress
-createdAt
-updatedAt
-```
-
-For COD:
-
-```text
-paymentMethod = "COD"
-amountPaid = 0
-paymentStatus = "PENDING"
-```
-
-Do not mark COD orders as paid before delivery.
-
----
-
-# 11. SECURITY REQUIREMENTS
-
-Implement the authentication and checkout system securely.
-
-Follow modern application-security practices.
-
-At minimum:
-
-* Validate all inputs server-side
-* Sanitize user-controlled data where appropriate
-* Prevent SQL/NoSQL injection
-* Prevent XSS
-* Prevent CSRF where applicable
-* Use secure authentication tokens/sessions
-* Use secure cookies where applicable
-* Do not expose sensitive information in API responses
-* Never return password hashes to the frontend
-* Never store plaintext passwords
-* Protect admin routes
-* Protect customer routes
-* Verify ownership before returning customer/order data
-* Rate-limit authentication endpoints where appropriate
-* Do not hardcode secrets
-* Store MongoDB URI and authentication secrets in environment variables
-* Never commit `.env` files or secrets to Git
-
-Example environment variables:
-
-```env
-MONGODB_URI=
-JWT_SECRET=
-SESSION_SECRET=
-```
-
-Use the security architecture appropriate for the existing project stack.
-
----
-
-# 12. ERROR HANDLING
-
-Fix all current authentication errors and improve error handling.
-
-The frontend should show useful messages such as:
-
-```text
-Invalid email or password.
-Email address is already registered.
-Phone number is already registered.
-Please enter a valid email address.
-Password does not meet the required security requirements.
-Unable to create account. Please try again.
-Unable to connect to the server.
-```
-
-Do not expose:
-
-* MongoDB errors
-* stack traces
-* database details
-* secret values
-* internal server implementation details
-
-to customers.
-
----
-
-# 13. CROSS-BROWSER TESTING
-
-Test the website across:
-
-* Chrome Android
-* Safari iPhone
-* Chrome iPhone where applicable
-* Safari iPad
-* Chrome tablet
-* Desktop Chrome
-* Desktop Safari
-* Edge
-
-Test:
-
-* Normal zoom
-* Zoom in
-* Zoom out
-* Repeated zoom changes
-* Screen rotation
-* Browser resize
-* Different viewport widths/heights
-
----
-
-# 14. FUNCTIONAL TESTING
-
-After making changes, test at least:
-
-### Registration
-
-```text
-New customer
-→ Fill form
-→ Submit
-→ Account created
-→ Customer stored in MongoDB
-→ Password stored only as secure hash
-→ User logged in or redirected to login
-```
-
-### Login
-
-```text
-Existing customer
-→ Enter email
-→ Enter password
-→ Authenticate
-→ Login succeeds
-→ Customer account opens
-```
-
-### Invalid Login
-
-```text
-Wrong email/password
-→ Login rejected
-→ Friendly error shown
-```
-
-### COD
-
-```text
-Product
-→ Cart
-→ Checkout
-→ Cash on Delivery
-→ Place Order
-→ No upfront payment
-→ Order created
-→ Payment status = Pending
-→ Amount Paid = 0
-```
-
-### Responsive
-
-```text
-Mobile
-→ Zoom in
-→ Zoom out
-→ Zoom out again
-→ Layout remains correct
-
-Tablet
-→ Zoom in
-→ Zoom out
-→ Layout remains correct
+Database = Published
++
+Image = Permanently Stored
++
+Storefront API = Product Returned
++
+Frontend = Product Visible
 ```
 
 ---
 
-# 15. CODE QUALITY
+# 20. Important Rule
 
-While fixing the issues:
+Do NOT:
 
-* Reuse existing components
-* Avoid duplicate code
-* Keep frontend and backend responsibilities separated
-* Keep API responses consistent
-* Add proper validation
-* Add proper loading states
-* Add proper empty states
-* Add proper error states
-* Keep the code maintainable
-* Do not introduce unnecessary dependencies
-* Do not remove existing working functionality
+* Hardcode products
+* Add mock products
+* Force draft products onto the frontend
+* Remove publication filters blindly
+* Fake API responses
+* Fake successful publishing
+* Bypass authentication
+* Disable security/RLS
+* Store product information only in frontend state
+* Store images only as temporary preview URLs
+* Create a second unnecessary database
+* Hide the actual error
 
----
-
-# 16. GIT REQUIREMENTS
-
-After completing and testing all fixes:
-
-1. Review all changed files.
-2. Remove debugging code and console logs that are no longer required.
-3. Confirm there are no secrets in the repository.
-4. Confirm `.env` is ignored by Git.
-5. Run the project's available lint/build/test commands.
-6. Fix any errors found.
-7. Review the Git diff.
-8. Commit the changes with a clear commit message.
-
-Suggested commit message:
-
-```text
-fix responsive layout authentication mongodb and cod checkout
-```
-
-Then push the final changes to the existing Git repository.
-
-Repository:
-
-```text
-https://github.com/azadaman85-create/MI
-```
-
-Do not force-push or overwrite unrelated existing work.
+The objective is to find the **real architectural/root-cause problem**.
 
 ---
 
-# 17. FINAL VERIFICATION REPORT
+# FINAL OUTPUT REQUIRED
 
-Before finishing, provide a concise report containing:
+After completing the investigation, provide a concise report with:
 
-### Responsive Fix
+1. **Exact root cause**
+2. **Where product data is currently stored**
+3. **Where product images are currently stored**
+4. **Database table/collection**
+5. **Storage bucket/path/provider**
+6. **Product creation API**
+7. **Publish API**
+8. **Storefront product API**
+9. **Exact point where the data flow breaks**
+10. **Why the frontend currently shows no products**
+11. **Admin vs storefront environment comparison**
+12. **Relevant files/components**
+13. **Recommended fix**
+14. **Any database/schema changes required**
+15. **Any image-storage changes required**
+16. **End-to-end test result**
 
-* Root cause found
-* Files/components changed
-* Mobile status
-* Tablet status
-* Desktop status
-* Zoom in/out status
+Do not stop at the first error.
 
-### Authentication
+Trace the product from:
 
-* Sign Up fixed
-* Sign In fixed
-* MongoDB connection status
-* Customer schema/model
-* Password hashing method
-* Authentication/session method
+**Admin → Database → Image Storage → Publish → Storefront API → Frontend**
 
-### Orders
-
-* Customer-order relationship
-* Customer order access protection
-
-### COD
-
-* COD enabled
-* Upfront payment = ₹0
-* Payment status behavior
-* Admin visibility
-
-### Security
-
-* Validation
-* Password security
-* Secrets/environment variables
-* Authentication protection
-
-### Git
-
-* Commit created
-* Push completed
-* Branch used
-* Final commit hash
-
-Most importantly, **do not simply tell me that the problems are fixed. Actually inspect the existing codebase, identify the root causes, implement the fixes, run the application, test the affected flows, and then report the actual results.**
+and identify the exact reason why the product is not appearing on the frontend.

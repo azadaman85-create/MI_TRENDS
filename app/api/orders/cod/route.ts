@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: contact.error }, { status: 400, headers: { "x-request-id": requestId } });
   }
 
-  const priced = priceOrder({
+  const priced = await priceOrder({
     lines: body.lines,
     couponCode: body.couponCode,
     shipping: body.shipping,

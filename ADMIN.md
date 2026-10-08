@@ -103,3 +103,45 @@ static `outOfStock` list: a size at zero is disabled as sold out, and three or f
 "only N left" badge. A product the panel has never published keeps whatever the catalogue
 said, so saving one product never marks the rest in stock. The hook listens for both the
 same-tab event and cross-tab `storage`, so a shop tab left open updates on save.
+
+## Products
+
+Products live in MongoDB (`products` collection), not in `lib/catalog.ts`.
+
+`lib/catalog.ts` is now only the **seed**: the first time the collection is read and
+found empty, it is filled from that file. After that the file is never consulted for the
+live catalogue. Deleting a product in the panel is permanent — seeding is guarded on the
+collection being completely empty, so it can't resurrect anything.
+
+```
+Panel  ->  POST/PATCH /api/admin/products  ->  MongoDB `products`
+                                                    |
+Storefront layout  <-  getActiveProducts()  <-------+
+```
+
+**Publish** is `status: "active"`. There is no separate publish endpoint or flag, because
+a second source of truth for "is this live" is a second thing to get out of sync. The
+public API and the storefront both read `status: "active"` and nothing else.
+
+Order pricing (`lib/pricing.ts`) resolves against the same live catalogue, so a product
+published in the panel is immediately purchasable and an unpublished one immediately
+isn't.
+
+### Product images
+
+Uploads go to `POST /api/admin/products/images` and are stored as bytes in the
+`productImages` collection, served by `GET /api/images/<id>` with a one-year immutable
+cache. Each image is therefore read out of the database once and served from the CDN
+after that.
+
+This replaced base64 data URLs held in one browser's `localStorage`, which meant the
+photo did not exist for anyone else and silently broke the whole save once the ~5 MB
+quota was reached.
+
+**Limits:** 5 MB per file; JPG, PNG, WebP and AVIF only. The declared content type is
+checked against the file's magic bytes before anything is stored.
+
+**Moving to object storage later.** Products store a plain URL string, so switching to
+Vercel Blob, S3 or Cloudinary means changing one route — `app/api/admin/products/images/route.ts`
+— to upload there and return its URL. Existing products keep working: their
+`/api/images/...` URLs stay valid as long as the collection and the serving route remain.

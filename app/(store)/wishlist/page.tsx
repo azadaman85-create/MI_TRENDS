@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { ArrowRight, Heart, ShoppingBag, Sparkles } from "lucide-react";
-import { products } from "@/lib/catalog";
 import { ProductCard } from "@/components/ProductCard";
 import { useStore } from "@/components/StoreProvider";
+import { useProducts } from "@/components/CatalogProvider";
 
 export default function WishlistPage() {
+  const products = useProducts();
   const store = useStore();
   const savedProducts = products.filter((product) => store.wishlistIds.includes(product.id));
 

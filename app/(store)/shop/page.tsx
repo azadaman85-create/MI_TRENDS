@@ -4,10 +4,16 @@ import { Suspense, useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ChevronDown, IndianRupee, Layers, Percent, Ruler, Shapes, Shirt, Tag } from "lucide-react";
-import { collections as allCollections, products } from "@/lib/catalog";
+// The filter vocabulary (which types and sizes get a chip) is built at module scope and
+// feeds a web of pure helpers below, so it reads the seed catalogue rather than the live
+// one. The product GRID itself uses the live catalogue from the database — see
+// `useProducts()` in ShopPage. A brand-new product type therefore appears in the grid
+// immediately, but only gains its own filter chip once it is added to lib/catalog.ts.
+import { collections as allCollections, products as facetSeed } from "@/lib/catalog";
 import { ProductCard } from "@/components/ProductCard";
 import { FilterBar, type Filter, type FilterFieldDef } from "@/components/ui/filter-token-bar";
 import type { Product } from "@/lib/types";
+import { useProducts } from "@/components/CatalogProvider";
 
 type SortKey = "popular" | "newest" | "price-asc" | "price-desc" | "discount" | "rating";
 
@@ -34,7 +40,7 @@ const slugify = (value: string) =>
 
 /** Product types as they appear in the catalogue, keyed by URL slug. */
 const typeBySlug = new Map(
-  [...new Set(products.map((product) => product.type))].map((type) => [slugify(type), type]),
+  [...new Set(facetSeed.map((product) => product.type))].map((type) => [slugify(type), type]),
 );
 
 /** The mega-menu links use friendlier slugs than the raw type names. */
@@ -57,7 +63,7 @@ const sizeOrder = [
 ];
 
 const availableSizes = (() => {
-  const present = new Set(products.flatMap((product) => product.sizes));
+  const present = new Set(facetSeed.flatMap((product) => product.sizes));
   return sizeOrder.filter((size) => present.has(size));
 })();
 
@@ -89,7 +95,7 @@ const fields: FilterFieldDef[] = [
       { value: "is_any", label: "is any of", multi: true },
     ],
     options: (["men", "women", "unisex"] as const)
-      .filter((value) => products.some((product) => product.category === value))
+      .filter((value) => facetSeed.some((product) => product.category === value))
       .map((value) => ({ value, label: `${value[0].toUpperCase()}${value.slice(1)}` })),
   },
   {
@@ -289,6 +295,8 @@ function matchesFilter(product: Product, filter: Filter) {
 }
 
 function ShopContent() {
+  // The live catalogue from the database — this is what the grid renders.
+  const products = useProducts();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const paramString = searchParams.toString();
@@ -361,7 +369,7 @@ function ShopContent() {
       if (sort === "rating") return b.rating - a.rating;
       return b.popularity - a.popularity;
     });
-  }, [query, filters, sort]);
+  }, [query, filters, sort, products]);
 
   const activeCategory = filters.find((filter) => filter.field === "category");
   const activeTag = filters.find((filter) => filter.field === "tag");

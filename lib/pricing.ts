@@ -16,7 +16,7 @@
  * the total by a small, capped amount rather than zero it out. Moving settings into
  * MongoDB too would let this clamp go away entirely.
  */
-import { getProductById } from "@/lib/catalog";
+import { getActiveProducts } from "@/lib/products.server";
 import { calculateCouponDiscount, isValidCouponCode } from "@/lib/coupons";
 import type { OrderLine } from "@/lib/admin/types";
 
@@ -57,14 +57,20 @@ const MAX_LINES = 30;
 const MAX_SHIPPING = 200;
 const MAX_COD_FEE = 200;
 
-export function priceOrder(input: {
+export async function priceOrder(input: {
   lines: unknown;
   couponCode: unknown;
   shipping: unknown;
   codFee: unknown;
   paymentMode: unknown;
-}): PricingResult {
+}): Promise<PricingResult> {
   const { lines, couponCode, shipping, codFee, paymentMode } = input;
+
+  // Priced against the database, not a compiled-in list: a product published from the
+  // panel has to be purchasable, and one that has been unpublished or deleted has to
+  // stop being purchasable. Loaded once and indexed, rather than queried per line.
+  const catalogue = new Map((await getActiveProducts()).map((product) => [String(product.id), product]));
+  const getProductById = (id: number | string) => catalogue.get(String(id));
 
   if (!Array.isArray(lines) || lines.length === 0) {
     return { ok: false, error: "Your bag is empty." };

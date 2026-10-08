@@ -10,8 +10,8 @@ type UploadingFile = { id: string; name: string; progress: number };
 
 /**
  * Drag-and-drop uploader with reordering, replace, delete and primary-image
- * selection. Files are read into data URLs — there is no media backend in this
- * project, so uploads live with the product record on the device.
+ * selection. Each file is POSTed to /api/admin/products/images and the product keeps the
+ * URL that comes back, so the photo is stored once and visible to every visitor.
  */
 export function ProductImageUploader({
   images,
@@ -24,47 +24,58 @@ export function ProductImageUploader({
   const replaceIndexRef = useRef<number | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState<UploadingFile[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  const readFiles = (files: FileList | null) => {
+  /**
+   * Uploads each file and keeps the URL the server returns.
+   *
+   * This used to be a FileReader producing a base64 data URL, which was then stored on
+   * the product in this browser's localStorage. That meant the photo existed for nobody
+   * else, and once the ~5 MB quota was hit the whole save failed silently. The bytes now
+   * go to the database and the product stores a short, shareable URL.
+   */
+  const readFiles = async (files: FileList | null) => {
     if (!files?.length) return;
     const accepted = Array.from(files).filter((file) => file.type.startsWith("image/"));
     if (!accepted.length) return;
 
-    const pending: UploadingFile[] = accepted.map((file, index) => ({
-      id: `${Date.now()}-${index}`,
-      name: file.name,
-      progress: 0,
-    }));
-    setUploading(pending);
+    setError(null);
+    setUploading(
+      accepted.map((file, index) => ({ id: `${Date.now()}-${index}`, name: file.name, progress: 0 })),
+    );
 
-    Promise.all(
-      accepted.map(
-        (file) =>
-          new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onprogress = (event) => {
-              if (!event.lengthComputable) return;
-              const percent = Math.round((event.loaded / event.total) * 100);
-              setUploading((current) =>
-                current.map((entry) => (entry.name === file.name ? { ...entry, progress: percent } : entry)),
-              );
-            };
-            reader.onloadend = () => resolve(String(reader.result));
-            reader.readAsDataURL(file);
-          }),
-      ),
-    ).then((dataUrls) => {
+    const uploaded: string[] = [];
+    for (const file of accepted) {
+      const body = new FormData();
+      body.append("file", file);
+      try {
+        const response = await fetch("/api/admin/products/images", { method: "POST", body });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.url) {
+          setError(payload?.error ?? `Could not upload ${file.name}.`);
+          continue;
+        }
+        uploaded.push(payload.url as string);
+        setUploading((current) =>
+          current.map((entry) => (entry.name === file.name ? { ...entry, progress: 100 } : entry)),
+        );
+      } catch {
+        setError(`Could not upload ${file.name}. Check your connection.`);
+      }
+    }
+
+    if (uploaded.length) {
       const replaceAt = replaceIndexRef.current;
       if (replaceAt !== null) {
         const next = [...images];
-        next[replaceAt] = dataUrls[0];
+        next[replaceAt] = uploaded[0]!;
         onChange(next);
         replaceIndexRef.current = null;
       } else {
-        onChange([...images, ...dataUrls]);
+        onChange([...images, ...uploaded]);
       }
-      setUploading([]);
-    });
+    }
+    setUploading([]);
   };
 
   return (
@@ -79,7 +90,7 @@ export function ProductImageUploader({
         onDrop={(event) => {
           event.preventDefault();
           setDragOver(false);
-          readFiles(event.dataTransfer.files);
+          void readFiles(event.dataTransfer.files);
         }}
       >
         <motion.span animate={{ y: dragOver ? -3 : 0 }} transition={{ duration: 0.2 }}>
@@ -98,14 +109,20 @@ export function ProductImageUploader({
           multiple
           hidden
           onChange={(event) => {
-            readFiles(event.target.files);
+            void readFiles(event.target.files);
             event.target.value = "";
           }}
         />
       </div>
 
       <AnimatePresence>
-        {uploading.map((file) => (
+        {error ? (
+        <p className="a-uploader__error" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      {uploading.map((file) => (
           <motion.div
             key={file.id}
             initial={{ opacity: 0, height: 0 }}

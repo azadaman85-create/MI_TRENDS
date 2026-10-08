@@ -7,8 +7,8 @@ import { ArrowRight, Search, TrendingUp, X } from "lucide-react";
 
 import { useStore } from "@/components/StoreProvider";
 import { BrandLogo } from "@/components/BrandLogo";
-import { products } from "@/lib/catalog";
 import { money } from "@/lib/format";
+import { useProducts } from "@/components/CatalogProvider";
 
 const trendingSearches = [
   "Oversized tees",
@@ -44,6 +44,7 @@ export function SearchOverlay() {
 }
 
 function SearchModal({ closeSearch }: { closeSearch: () => void }) {
+  const products = useProducts();
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -68,7 +69,7 @@ function SearchModal({ closeSearch }: { closeSearch: () => void }) {
         .toLowerCase();
       return searchableText.includes(normalizedQuery);
     });
-  }, [normalizedQuery]);
+  }, [normalizedQuery, products]);
 
   useEffect(() => {
     const focusTimer = window.setTimeout(() => inputRef.current?.focus(), 0);

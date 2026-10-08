@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-import { products } from "@/lib/catalog";
+import { getActiveProducts } from "@/lib/products.server";
 import { siteUrl } from "@/lib/site";
 
 /**
@@ -29,7 +29,10 @@ const INFO_PAGES = [
   "gift-cards",
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // From the database, so a product published in the panel is submitted to search
+  // engines without waiting for a redeploy.
+  const products = await getActiveProducts();
   const base = siteUrl();
   const now = new Date();
 

@@ -2021,3 +2021,12 @@
   background: var(--white);
   outline: 0;
 }
+
+.a-uploader__error {
+  margin: 10px 0 0;
+  padding: 9px 12px;
+  border-radius: 6px;
+  background: #fdecea;
+  color: #8f2018;
+  font-size: 0.8rem;
+}

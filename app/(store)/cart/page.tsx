@@ -3,16 +3,17 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, Minus, Plus, ShieldCheck, ShoppingBag, Tag, Trash2, Truck } from "lucide-react";
-import { products } from "@/lib/catalog";
 import { ProductVisual } from "@/components/ProductVisual";
 import { ProductCard } from "@/components/ProductCard";
 import { useStore } from "@/components/StoreProvider";
 import { useCustomer } from "@/lib/account/auth";
+import { useProducts } from "@/components/CatalogProvider";
 
 const money = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 const FREE_SHIPPING = 999;
 
 export default function CartPage() {
+  const products = useProducts();
   const store = useStore();
   const { customer } = useCustomer();
   const [couponInput, setCouponInput] = useState(store.couponCode || "");

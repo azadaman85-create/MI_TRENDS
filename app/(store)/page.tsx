@@ -15,12 +15,12 @@ import {
   Truck,
   WalletCards,
 } from "lucide-react";
-import { products } from "@/lib/catalog";
 import { ProductCard } from "@/components/ProductCard";
 import { useStore } from "@/components/StoreProvider";
 import { activeBanners } from "@/lib/banner-feed";
 import { useBannerFeed } from "@/lib/use-banner-feed";
 import type { Banner } from "@/lib/admin/types";
+import { useProducts } from "@/components/CatalogProvider";
 
 type HeroSlide = {
   kicker: string;
@@ -166,6 +166,7 @@ function SectionHeading({ eyebrow, title, href, linkLabel = "View all" }: { eyeb
 }
 
 export default function HomePage() {
+  const products = useProducts();
   const { showToast } = useStore();
   const [activeSlide, setActiveSlide] = useState(0);
   const [paused, setPaused] = useState(false);

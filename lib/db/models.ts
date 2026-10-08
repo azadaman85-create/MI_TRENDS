@@ -1,7 +1,7 @@
 import type { Collection } from "mongodb";
 
 import { getDb } from "@/lib/db/mongodb";
-import type { OrderLine, OrderStatus, PaymentMode } from "@/lib/admin/types";
+import type { AdminProduct, OrderLine, OrderStatus, PaymentMode } from "@/lib/admin/types";
 
 export type AuthProvider = "password" | "google";
 
@@ -86,12 +86,45 @@ export type ReturnRequest = {
 };
 
 /**
+ * A product, as the panel edits it and the storefront reads it.
+ *
+ * `AdminProduct` is already `Product` plus the panel-only fields, so one document serves
+ * both: the storefront takes the `Product` subset of the rows where status is "active",
+ * the panel sees everything. Keeping two shapes in two places is exactly how the
+ * catalogue and the panel drifted apart in the first place.
+ *
+ * `_id` is the numeric product id because that is what carts and order lines already
+ * carry; `slug` and `sku` get their own unique indexes.
+ */
+export type ProductDoc = Omit<AdminProduct, "id"> & { _id: number };
+
+/**
+ * An uploaded product photo, stored as bytes in Mongo and served by /api/images/[id].
+ *
+ * Object storage would be the usual answer, but it needs an account and a key this
+ * project doesn't have yet, and a product photo that only exists as base64 in one
+ * browser's localStorage — which is what this replaces — is worse than any of the
+ * trade-offs here. Images are immutable and served with a one-year cache, so each one is
+ * read from the database once and lives on the CDN after that. See ADMIN.md for how to
+ * move these to Vercel Blob later without touching the product records.
+ */
+export type ProductImageDoc = {
+  _id: string;
+  data: Buffer;
+  contentType: string;
+  size: number;
+  createdAt: string;
+};
+
+/**
  * Index creation is idempotent, but issuing it on every request adds a round trip per
  * call for no benefit. These promises make it happen once per process; a failure clears
  * the cache so the next request retries rather than silently running unindexed forever.
  */
 let customerIndexes: Promise<void> | undefined;
 let orderIndexes: Promise<void> | undefined;
+let productIndexes: Promise<void> | undefined;
+let imageIndexes: Promise<void> | undefined;
 
 function once(current: Promise<void> | undefined, work: () => Promise<unknown>, reset: () => void): Promise<void> {
   if (!current) {
@@ -135,5 +168,39 @@ export async function getOrdersCollection(): Promise<Collection<OrderDoc>> {
     },
   );
   await orderIndexes;
+  return collection;
+}
+
+export async function getProductsCollection(): Promise<Collection<ProductDoc>> {
+  const db = await getDb();
+  const collection = db.collection<ProductDoc>("products");
+  productIndexes = once(
+    productIndexes,
+    () =>
+      Promise.all([
+        collection.createIndex({ slug: 1 }, { unique: true }),
+        collection.createIndex({ sku: 1 }, { unique: true }),
+        // The storefront's only query: active rows, most popular first.
+        collection.createIndex({ status: 1, popularity: -1 }),
+      ]),
+    () => {
+      productIndexes = undefined;
+    },
+  );
+  await productIndexes;
+  return collection;
+}
+
+export async function getProductImagesCollection(): Promise<Collection<ProductImageDoc>> {
+  const db = await getDb();
+  const collection = db.collection<ProductImageDoc>("productImages");
+  imageIndexes = once(
+    imageIndexes,
+    () => collection.createIndex({ createdAt: -1 }),
+    () => {
+      imageIndexes = undefined;
+    },
+  );
+  await imageIndexes;
   return collection;
 }

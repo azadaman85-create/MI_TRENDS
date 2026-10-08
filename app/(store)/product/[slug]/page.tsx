@@ -17,18 +17,20 @@ import {
   Star,
   Truck,
 } from "lucide-react";
-import { products } from "@/lib/catalog";
 import { ProductVisual, type ProductVisualVariant } from "@/components/ProductVisual";
 import { ProductCard } from "@/components/ProductCard";
 import { useStore } from "@/components/StoreProvider";
 import { SizeGuide } from "@/components/SizeGuide";
 import { useStockFeed } from "@/lib/use-stock-feed";
 import { soldOutSizes, unitsFor } from "@/lib/stock-feed";
+import { useProducts } from "@/components/CatalogProvider";
+import type { Product } from "@/lib/types";
 
 const money = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 const views = ["Front", "Back", "Fabric detail", "Styled"];
 
 export default function ProductPage() {
+  const products = useProducts();
   const params = useParams<{ slug: string }>();
   const product = products.find((item) => item.slug === params.slug);
 
@@ -53,7 +55,8 @@ export default function ProductPage() {
   return <ProductDetails key={product.id} product={product} />;
 }
 
-function ProductDetails({ product }: { product: (typeof products)[number] }) {
+function ProductDetails({ product }: { product: Product }) {
+  const products = useProducts();
   const router = useRouter();
   const store = useStore();
   const [activeView, setActiveView] = useState(0);
@@ -70,7 +73,7 @@ function ProductDetails({ product }: { product: (typeof products)[number] }) {
     const related = products.filter((item) => item.id !== product.id && (item.collection === product.collection || item.type === product.type));
     const fallback = products.filter((item) => item.id !== product.id && !related.includes(item));
     return [...related, ...fallback].slice(0, 4);
-  }, [product]);
+  }, [product, products]);
 
   // Stock the admin panel has saved wins over the catalogue's own availability.
   const stockFeed = useStockFeed();

@@ -11,7 +11,6 @@ import {
 } from "react";
 
 import {
-  adminProducts as seedProducts,
   banners as seedBanners,
   categoryTree as seedCategories,
   coupons as seedCoupons,
@@ -57,7 +56,6 @@ export type AdminToast = {
  * the same data on every device instead of whatever this browser happened to save.
  */
 type PersistedState = {
-  products: AdminProduct[];
   reviews: Review[];
   coupons: Coupon[];
   banners: Banner[];
@@ -68,6 +66,7 @@ type AdminStoreValue = PersistedState & {
   /** From MongoDB, refreshed on an interval — not persisted to this device. */
   orders: Order[];
   customers: Customer[];
+  products: AdminProduct[];
   /** Checkout rules the storefront reads — see lib/store-settings.ts. */
   settings: StoreSettings;
   updateSettings: (patch: Partial<StoreSettings>) => void;
@@ -98,7 +97,6 @@ const AdminStoreContext = createContext<AdminStoreValue | undefined>(undefined);
 
 function seedState(): PersistedState {
   return {
-    products: seedProducts,
     reviews: seedReviews,
     coupons: seedCoupons,
     banners: seedBanners,
@@ -112,6 +110,7 @@ const LIVE_REFRESH_MS = 8000;
 export function AdminStoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<PersistedState>(seedState);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [products, setProducts] = useState<AdminProduct[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [settings, setSettings] = useState<StoreSettings>(DEFAULT_STORE_SETTINGS);
@@ -142,9 +141,10 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
    */
   const refreshLiveData = useCallback(async () => {
     try {
-      const [ordersResponse, customersResponse] = await Promise.all([
+      const [ordersResponse, customersResponse, productsResponse] = await Promise.all([
         fetch("/api/admin/orders", { cache: "no-store" }),
         fetch("/api/admin/customers", { cache: "no-store" }),
+        fetch("/api/admin/products", { cache: "no-store" }),
       ]);
       if (ordersResponse.ok) {
         const data = (await ordersResponse.json()) as { orders: Order[] };
@@ -153,6 +153,10 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       if (customersResponse.ok) {
         const data = (await customersResponse.json()) as { customers: Customer[] };
         setCustomers(data.customers ?? []);
+      }
+      if (productsResponse.ok) {
+        const data = (await productsResponse.json()) as { products: AdminProduct[] };
+        setProducts(data.products ?? []);
       }
     } catch {
       // Keep whatever the panel is already showing until the next tick succeeds.
@@ -204,14 +208,43 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     setToasts((current) => current.filter((toast) => toast.id !== id));
   }, []);
 
-  const value = useMemo<AdminStoreValue>(() => {
-    const patchProducts = (updater: (products: AdminProduct[]) => AdminProduct[]) =>
-      setState((current) => ({ ...current, products: updater(current.products) }));
+  /**
+   * Product writes go to MongoDB, then the panel re-reads from there.
+   *
+   * The previous version only ever called setState: the toast said "Product created" and
+   * nothing left the browser, which is why nothing done in the panel ever reached the
+   * storefront. Each mutation now awaits the API and reports a real failure. The server
+   * assigns the id and recomputes discount and the out-of-stock list, so the refreshed
+   * copy — not an optimistic local guess — is what the panel shows.
+   */
+  const writeProduct = useCallback(
+    async (path: string, init: RequestInit, failure: string): Promise<AdminProduct | null> => {
+      try {
+        const response = await fetch(path, {
+          ...init,
+          headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
+        });
+        const body = await response.json().catch(() => null);
+        if (!response.ok) {
+          notify(failure, "error", body?.error ?? "The change was not saved.");
+          return null;
+        }
+        await refreshLiveData();
+        return (body?.product as AdminProduct) ?? null;
+      } catch {
+        notify(failure, "error", "Could not reach the server.");
+        return null;
+      }
+    },
+    [notify, refreshLiveData],
+  );
 
+  const value = useMemo<AdminStoreValue>(() => {
     return {
       ...state,
       orders,
       customers,
+      products,
       settings,
       updateSettings,
       hydrated,
@@ -219,62 +252,81 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       notify,
       dismissToast,
 
-      getProduct: (id) => state.products.find((product) => product.id === id),
+      getProduct: (id) => products.find((product) => product.id === id),
 
-      saveProduct: (product) =>
-        patchProducts((products) =>
-          products.map((item) =>
-            item.id === product.id ? { ...product, updatedAt: new Date().toISOString() } : item,
-          ),
-        ),
-
-      createProduct: (product) => patchProducts((products) => [product, ...products]),
-
-      duplicateProduct: (id) => {
-        const source = state.products.find((product) => product.id === id);
-        if (!source) return undefined;
-        const copy: AdminProduct = {
-          ...source,
-          id: Math.max(...state.products.map((product) => product.id)) + 1,
-          name: `${source.name} (copy)`,
-          slug: `${source.slug}-copy-${Date.now().toString(36).slice(-4)}`,
-          sku: `${source.sku}-C`,
-          status: "draft",
-          featured: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        patchProducts((products) => [copy, ...products]);
-        return copy;
+      saveProduct: (product) => {
+        void writeProduct(
+          `/api/admin/products/${product.id}`,
+          { method: "PATCH", body: JSON.stringify(product) },
+          "Could not save that product",
+        );
       },
 
-      deleteProducts: (ids) =>
-        patchProducts((products) => products.filter((product) => !ids.includes(product.id))),
+      createProduct: (product) => {
+        void writeProduct(
+          "/api/admin/products",
+          { method: "POST", body: JSON.stringify(product) },
+          "Could not create that product",
+        );
+      },
 
-      setProductStatus: (ids, status) =>
-        patchProducts((products) =>
-          products.map((product) =>
-            ids.includes(product.id)
-              ? { ...product, status, updatedAt: new Date().toISOString() }
-              : product,
-          ),
-        ),
+      // Returns undefined: the copy's real id is assigned by the server, so the caller
+      // picks it up from the refreshed list rather than guessing one here.
+      duplicateProduct: (id) => {
+        const source = products.find((product) => product.id === id);
+        if (!source) return undefined;
+        void writeProduct(
+          "/api/admin/products",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              ...source,
+              name: `${source.name} (copy)`,
+              slug: `${source.slug}-copy-${Date.now().toString(36).slice(-4)}`,
+              sku: `${source.sku}-C${Date.now().toString(36).slice(-3).toUpperCase()}`,
+              status: "draft",
+              featured: false,
+            }),
+          },
+          "Could not duplicate that product",
+        );
+        return undefined;
+      },
 
-      setStock: (id, size, units) =>
-        patchProducts((products) =>
-          products.map((product) =>
-            product.id === id
-              ? {
-                  ...product,
-                  stock: { ...product.stock, [size]: Math.max(0, units) },
-                  outOfStock: units <= 0
-                    ? Array.from(new Set([...product.outOfStock, size]))
-                    : product.outOfStock.filter((entry) => entry !== size),
-                  updatedAt: new Date().toISOString(),
-                }
-              : product,
-          ),
-        ),
+      deleteProducts: (ids) => {
+        void (async () => {
+          for (const id of ids) {
+            await writeProduct(`/api/admin/products/${id}`, { method: "DELETE" }, "Could not delete that product");
+          }
+        })();
+      },
+
+      setProductStatus: (ids, status) => {
+        void (async () => {
+          for (const id of ids) {
+            const product = products.find((entry) => entry.id === id);
+            if (!product) continue;
+            await writeProduct(
+              `/api/admin/products/${id}`,
+              { method: "PATCH", body: JSON.stringify({ ...product, status }) },
+              "Could not update that product",
+            );
+          }
+        })();
+      },
+
+      setStock: (id, size, units) => {
+        const product = products.find((entry) => entry.id === id);
+        if (!product) return;
+        void writeProduct(
+          `/api/admin/products/${id}`,
+          {
+            method: "PATCH",
+            body: JSON.stringify({ ...product, stock: { ...product.stock, [size]: Math.max(0, units) } }),
+          },
+          "Could not update stock",
+        );
+      },
 
       // Writes through to MongoDB, then reflects it locally so the row updates instantly
       // instead of waiting for the next poll. A failed write is surfaced and rolled back
@@ -406,7 +458,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         }
       },
     };
-  }, [state, orders, customers, hydrated, settings, updateSettings, toasts, notify, dismissToast, refreshLiveData]);
+  }, [state, orders, customers, products, hydrated, settings, updateSettings, toasts, notify, dismissToast, refreshLiveData, writeProduct]);
 
   return <AdminStoreContext.Provider value={value}>{children}</AdminStoreContext.Provider>;
 }
