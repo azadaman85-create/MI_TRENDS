@@ -27,6 +27,9 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const requestId = requestIdFrom(request);
 
+  const canonical = canonicalRedirect(request);
+  if (canonical) return canonical;
+
   if (pathname.startsWith("/api/") && MUTATING_METHODS.has(request.method)) {
     // Compare Host:port strings directly rather than `request.nextUrl.origin` — the
     // latter reflects the bind address (e.g. 0.0.0.0 in dev, or whatever a reverse
@@ -68,6 +71,45 @@ export function proxy(request: NextRequest) {
   return response;
 }
 
+/**
+ * Sends every production request to the one canonical hostname.
+ *
+ * The project answers on its generated *.vercel.app alias as well as the real domain,
+ * and that alias can lag behind on an older deployment — so a shopper who lands there
+ * gets a stale site with none of today's products. Beyond staleness it splits everything
+ * that is keyed to a hostname: session cookies don't carry across, and Google sign-in
+ * only authorises the real domain as a JavaScript origin, so it simply fails there.
+ *
+ * Only in production, and only for safe methods. Preview deployments live on
+ * *.vercel.app by design and must keep working, and redirecting a POST would break
+ * Razorpay's webhook if it were ever pointed at the wrong host.
+ */
+function canonicalRedirect(request: NextRequest): NextResponse | null {
+  if (process.env.VERCEL_ENV !== "production") return null;
+  if (request.method !== "GET" && request.method !== "HEAD") return null;
+
+  let canonical: URL;
+  try {
+    canonical = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "");
+  } catch {
+    // No canonical host configured: leave every request exactly as it came in.
+    return null;
+  }
+
+  const host = request.headers.get("host");
+  if (!host || host === canonical.host) return null;
+
+  const target = new URL(request.nextUrl.toString());
+  target.protocol = "https:";
+  // hostname and port assigned separately: setting `host` to a value without a port
+  // leaves any existing port in place, sending the visitor to a dead address.
+  target.hostname = canonical.hostname;
+  target.port = canonical.port;
+  // 308 rather than 301: it preserves the method, and browsers cache it less
+  // aggressively than a permanent GET-only redirect if the canonical host ever changes.
+  return NextResponse.redirect(target, 308);
+}
+
 function safeHost(origin: string): string | null {
   try {
     return new URL(origin).host;
@@ -77,5 +119,11 @@ function safeHost(origin: string): string | null {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/:path*"],
+  /*
+    Everything except the static asset paths, so the canonical-host redirect covers real
+    pages and not just /admin and /api. Static files are skipped because they are served
+    straight from the CDN and never need the firewall — running on them would add a hop
+    to every image and script for no benefit.
+  */
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|images/|icon.png|apple-icon.png).*)"],
 };
