@@ -25,6 +25,48 @@ const MAIL_FROM_NAME = process.env.MAIL_FROM_NAME || "MI TRENDS";
 
 export const EMAIL_CONFIGURED = Boolean(SMTP_USER && SMTP_PASSWORD);
 
+/**
+ * Which pieces of the mail configuration are present.
+ *
+ * Read from process.env on each call rather than from the constants above, so it
+ * reports what the running deployment actually has rather than what was true when this
+ * module was first loaded. Never returns the password — only whether there is one.
+ */
+export function smtpStatus(): { configured: boolean; user: string; missing: string[] } {
+  const user = process.env.SMTP_USER ?? "";
+  const password = process.env.SMTP_PASSWORD ?? "";
+  const missing: string[] = [];
+  if (!user) missing.push("SMTP_USER");
+  if (!password) missing.push("SMTP_PASSWORD");
+  return { configured: missing.length === 0, user, missing };
+}
+
+/**
+ * Sends one message and reports the real failure.
+ *
+ * The transactional senders below swallow errors on purpose — an order must not fail
+ * because the mail server did. This is the deliberate exception, used by the admin test
+ * endpoint, where the error message is the entire point.
+ */
+export async function sendRawEmail(message: {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!smtpStatus().configured) return { ok: false, error: "SMTP is not configured." };
+  try {
+    await getTransporter().sendMail({
+      from: `"${MAIL_FROM_NAME}" <${SMTP_USER}>`,
+      replyTo: SMTP_USER,
+      ...message,
+    });
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: describeError(error) };
+  }
+}
+
 let transporter: Transporter | undefined;
 
 function getTransporter(): Transporter {

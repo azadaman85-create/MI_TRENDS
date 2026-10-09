@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { RotateCcw, Save, Store, Truck, UserRound } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { BrandLogo } from "@/components/BrandLogo";
 import { PageHeader } from "@/components/admin/PageHeader";
@@ -23,6 +23,98 @@ const tabs = [
   { id: "account", label: "Account" },
   { id: "data", label: "Demo data" },
 ];
+
+/**
+ * Whether transactional email actually works.
+ *
+ * Order confirmations are best-effort — an order must never fail because the mail
+ * server did — so a misconfigured mailbox fails silently, and you find out when a
+ * customer says they never got anything. This makes it checkable on purpose.
+ */
+function EmailHealthCard() {
+  const [status, setStatus] = useState<{ configured: boolean; user: string; missing: string[] } | null>(null);
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState<{ ok: boolean; message: string; hint?: string } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch("/api/admin/email/test", { cache: "no-store" });
+        if (!cancelled && response.ok) setStatus(await response.json());
+      } catch {
+        // Leave it unknown rather than claiming it is broken.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const sendTest = async () => {
+    setSending(true);
+    setResult(null);
+    try {
+      const response = await fetch("/api/admin/email/test", { method: "POST" });
+      const body = await response.json();
+      setResult(
+        body?.ok
+          ? { ok: true, message: `Test email sent to ${body.sentTo}. Check that inbox.` }
+          : { ok: false, message: body?.error ?? "Could not send.", hint: body?.hint },
+      );
+    } catch {
+      setResult({ ok: false, message: "Could not reach the server." });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <Card title="Email" description="Order confirmations, password resets and return updates.">
+      <div className="a-stack">
+        <div className="a-row a-row--between">
+          <span className="a-label">Status</span>
+          {status === null ? (
+            <Badge>Checking…</Badge>
+          ) : status.configured ? (
+            <Badge tone="success" dot>Configured</Badge>
+          ) : (
+            <Badge tone="danger" dot>Not configured</Badge>
+          )}
+        </div>
+
+        {status && !status.configured ? (
+          <p className="a-muted" style={{ margin: 0, fontSize: "0.78rem", lineHeight: 1.6 }}>
+            {status.missing.join(" and ")} {status.missing.length === 1 ? "is" : "are"} missing on this
+            deployment, so no email is being sent. Add a Gmail App Password as SMTP_PASSWORD in
+            Vercel and redeploy.
+          </p>
+        ) : null}
+
+        {status?.user ? (
+          <div>
+            <span className="a-label">Sending as</span>
+            <p style={{ margin: "4px 0 0", fontSize: "0.86rem" }}>{status.user}</p>
+          </div>
+        ) : null}
+
+        <Button loading={sending} onClick={sendTest} disabled={!status?.configured}>
+          Send a test email
+        </Button>
+
+        {result ? (
+          <p
+            className="a-muted"
+            style={{ margin: 0, fontSize: "0.78rem", lineHeight: 1.6, color: result.ok ? "var(--green)" : "var(--red)" }}
+          >
+            {result.message}
+            {result.hint ? <><br /><span style={{ color: "var(--ink-mute)" }}>{result.hint}</span></> : null}
+          </p>
+        ) : null}
+      </div>
+    </Card>
+  );
+}
 
 export default function SettingsPage() {
   const { user } = useAdminAuth();
@@ -231,6 +323,7 @@ export default function SettingsPage() {
 
       {tab === "account" ? (
         <div className="a-split">
+          <EmailHealthCard />
           <Card title="Your account" description="How you appear in the activity log.">
             <div className="a-stack">
               <div className="a-row" style={{ gap: 12 }}>
