@@ -1,456 +1,499 @@
-# MI TRENDS — Full-Stack Audit, Cloud Storage Migration, Domain Fix & Live E-Commerce Launch
+# MI TRENDS — Complete Website Audit, End-to-End Testing & Implementation Checklist
 
-**Production Website:** https://mitrends.co.in
+**Project:** MI Trends E-Commerce Website
+**Live Website:** https://mitrends.co.in
 **GitHub Repository:** https://github.com/azadaman85-create/MI_TRENDS.git
-**Hosting Platform:** Vercel
-**Domain Provider:** GoDaddy
-**Database:** MongoDB Atlas or the existing cloud MongoDB deployment
-**Image Storage:** Existing cloud image provider, or Cloudinary/Vercel Blob if required
+**Application Hosting:** Vercel
+**Domain and DNS:** GoDaddy
+**Database:** Existing connected MongoDB cloud database
+**Image Storage:** Existing persistent cloud image storage or the approved cloud provider
 
-## PRIMARY OBJECTIVE
+## 1. PRIMARY OBJECTIVE
 
-Perform a complete technical audit of my existing MI Trends e-commerce website, identify the root causes of all existing issues, implement the necessary fixes, deploy the corrected application, and verify the complete production workflow from the admin dashboard to a successful customer order.
+Audit the entire existing MI Trends website, including every recently implemented change, modified file, frontend feature, backend API, admin dashboard, database connection, authentication flow, checkout page, payment integration, order management, inventory management, banners, and production deployment.
 
-I have already connected GoDaddy and Vercel. Verify that the actual configuration is correct. Do not assume that the integration is working simply because the platforms are connected.
+I need to verify what is already working, what has been fixed, what has actually passed testing, and what remains incomplete.
 
-**Critical requirement:** The live website must be fully cloud-hosted. No production product data, uploaded images, customer data, inventory records, payment records, or orders may depend on my local computer, a localhost server, temporary filesystem storage, or an in-memory database.
+Do not assume a feature works because its code exists or because a previous update claimed it was fixed.
 
-Do not merely explain how to fix the problems. Inspect the existing codebase, implement fixes wherever access permits, deploy through the existing deployment workflow, and verify the results using real evidence.
+Inspect the existing codebase and Git history, review the latest changes, run the relevant tests, and verify the deployed website wherever access is available.
 
-## 1. Audit the Complete Frontend and Backend
+**Mandatory deliverable:** Create and maintain the file:
 
-Inspect the entire existing project before changing anything.
+`MI_TRENDS_IMPLEMENTATION_CHECKLIST.md`
 
-Identify the current:
+This file must be the central implementation tracker for the entire project. I will use it to fix the website step by step.
 
-* Frontend and backend frameworks and API routes.
-* Admin dashboard and product management implementation.
-* MongoDB connection and database operations.
-* Image upload mechanism and image storage locations.
-* Authentication provider and Google OAuth configuration.
-* Shopping cart, checkout, payment gateway, and order management.
-* GitHub integration, Vercel settings, GoDaddy DNS records, and production environment variables.
+Do not only create a plan. Perform the audit, execute the available tests, implement safe and necessary fixes, and continuously update the checklist with verified results.
 
-Trace the complete data flow:
+## 2. CHECKLIST STATUS RULES
 
-**Admin Dashboard → Backend API → Cloud Image Storage → MongoDB → Frontend Product Listing → Cart → Authentication → Checkout → Razorpay → Order Confirmation → Admin Order Dashboard.**
+Use the following status system consistently throughout the Markdown file:
 
-Find broken connections, incorrect configurations, missing API calls, runtime errors, incomplete features, and production-only failures.
+* `[x] VERIFIED — PASS`: The functionality was actually tested and passed. Include evidence.
+* `[ ] PENDING`: The task has not been completed or verified.
+* `[!] FAILED`: A test was executed and the functionality failed. Record the issue and root cause.
+* `[B] BLOCKED`: Testing or implementation is blocked by missing access, credentials, external approval, or another dependency.
+* `[~] IMPLEMENTED — NOT VERIFIED`: Code changes have been made, but the functionality has not yet been successfully tested.
 
-Preserve the existing design, logo, branding, product catalogue, and working functionality unless a change is necessary.
+**Important rules:**
 
-## 2. Fix Admin Product Creation, Editing and Publishing
+1. Never mark a task as complete merely because code was written.
+2. Never treat an existing feature as verified without appropriate evidence.
+3. Distinguish between local tests, preview deployment tests, and live production tests.
+4. Do not mark Razorpay Live Mode as passed based only on Test Mode results.
+5. Do not mark an external dashboard configuration as complete without actually verifying it.
+6. Every failed or blocked task must include its reason and the next corrective action.
+7. Update the checklist after each implementation and testing stage.
+8. Preserve previously verified results, but re-test any affected functionality after a related code change.
+9. Record the verification date, test environment, and relevant evidence for every completed critical task.
+10. Keep the checklist readable, actionable, and updated in the GitHub project.
 
-My admin dashboard allows me to create and edit products and upload product images. Verify whether these operations actually persist correctly in the production cloud database and display on the frontend.
+## 3. AUDIT ALL RECENT UPDATES
 
-Audit every relevant operation:
+Inspect the repository before changing anything.
 
-* Create a product.
-* Edit product details.
-* Upload or replace product images.
-* Change prices, sale prices, stock, sizes, colors, variants, category, SKU and description.
-* Save drafts.
-* Publish and unpublish products.
-* Update inventory.
-* Delete products where authorized.
+Review:
 
-Requirements:
+* Latest Git commits and modified files.
+* Existing uncommitted changes.
+* Current application architecture.
+* Previous product publishing, database, image upload, authentication, checkout, payment, and domain fixes.
+* Current build errors, runtime errors, API failures, and browser console errors.
+* Existing automated tests and their results.
+* Vercel production deployment and environment-specific configuration.
 
-1. Save product records and changes to the production MongoDB database.
-2. Ensure every supported product field is saved correctly.
-3. Fix broken APIs, database writes, validation, request payloads, and frontend data-fetching logic.
-4. Ensure editing an existing product updates the correct record without creating duplicates.
-5. Ensure published products appear on the live storefront with the correct details and images.
-6. Ensure unpublished or draft products are not publicly visible.
-7. Refreshing a page, restarting the application, or deploying new code must not erase saved products.
-8. Display success messages only after the backend confirms that the changes were saved successfully.
-9. Show meaningful error messages when saving, publishing, or uploading fails.
-10. Verify both product listing APIs and individual product detail APIs.
+For every recently implemented feature, determine:
 
-Test product creation and editing against the live production database. Do not rely exclusively on mock data or a local development database.
+1. What was changed?
+2. Is the change present in the current code?
+3. Does the code work?
+4. Does it work in the deployed environment?
+5. Does the relevant data persist in the cloud?
+6. Is there evidence that the complete user workflow succeeds?
+7. Does the change cause a regression elsewhere?
 
-## 3. Fix Image Uploads and Permanent Cloud Storage
+Add every confirmed issue to the implementation checklist. Do not make assumptions about features that cannot be accessed or tested.
 
-Investigate exactly where product images are currently stored.
+## 4. CUSTOMER REGISTRATION AND LOGIN
 
-Search for local upload directories, project folders, temporary files, Base64 storage, in-memory image references, Vercel filesystem writes, and hardcoded local image paths.
+Test customer account creation and authentication from the live website.
 
-Implement permanent cloud image storage.
+Checklist:
 
-Preferred approach:
+* [ ] Registration works using the supported email authentication flow.
+* [ ] Login works using email and password, if supported.
+* [ ] Google sign-in works correctly.
+* [ ] Email verification and password reset work, where implemented.
+* [ ] Invalid email/password combinations are handled correctly.
+* [ ] Successful login creates a valid customer session.
+* [ ] Customer session persists across navigation and page refreshes as intended.
+* [ ] Logout works correctly.
+* [ ] An existing customer can log in again after placing an order.
+* [ ] A customer can access their order history after logging in.
+* [ ] Customer profile and address data are loaded from the correct cloud source.
+* [ ] One customer cannot access another customer's account or orders.
+* [ ] Production OAuth callbacks and authentication URLs use the correct domain.
 
-* Store actual image files in an existing persistent cloud storage provider.
-* If none exists, evaluate Cloudinary or Vercel Blob and configure a suitable solution.
-* Store the resulting HTTPS image URL and associated metadata in MongoDB.
-* Keep MongoDB product records linked to the correct images.
+For every failed item, identify the responsible frontend component, API endpoint, authentication configuration, or database operation.
 
-Verify that:
+## 5. COMPLETE PRODUCT-TO-ORDER CUSTOMER JOURNEY
 
-* Images upload successfully through the admin dashboard.
-* Only authorized administrators can upload images.
-* File types, sizes, and content are validated safely.
-* Main and additional product images display correctly.
-* Replacing an image updates the appropriate product.
-* Failed uploads do not save broken image URLs.
-* Existing images are preserved or migrated where necessary.
-* Images continue working after a new Vercel deployment.
+Execute the complete customer journey instead of testing each screen in isolation.
 
-Do not use Vercel's temporary filesystem or my local computer as permanent production image storage.
+**Required flow:**
 
-## 4. Make MongoDB the Persistent Production Database
-
-Verify the actual database connection used by the live website.
-
-Requirements:
-
-* Use MongoDB Atlas or the existing equivalent cloud-hosted MongoDB service.
-* Configure the production database connection securely through Vercel environment variables.
-* Confirm that production API routes use the intended cloud database, not localhost or local MongoDB.
-* Validate database schemas, permissions, indexes, connection handling, and error handling.
-* Ensure product, customer, order, payment reference, and inventory records persist correctly.
-* Handle duplicate requests and conflicting inventory updates safely.
-* Configure backups and document a recovery process.
-
-Never delete, reset, or overwrite existing production data without explicit authorization and a verified backup.
-
-## 5. Fix the Custom Domain — Remove Unwanted Vercel URLs
-
-My website is supposed to use:
-
-**https://mitrends.co.in**
-
-However, the Vercel URL is still appearing or being used when I visit the website.
-
-Find the exact cause and fix it.
-
-Check:
-
-* The custom domain configuration in the correct Vercel project.
-* GoDaddy DNS records, including required A, CNAME, and verification records.
-* DNS conflicts and incorrect forwarding rules.
-* The Vercel production domain and deployment configuration.
-* SSL certificate and HTTPS status.
-* `vercel.json`, routing, redirects, and middleware.
-* Hardcoded Vercel URLs in frontend or backend code.
-* API base URLs and environment variables.
-* Google OAuth callback and allowed-origin URLs.
-* Razorpay return URLs and webhook endpoints.
-* SEO canonical URLs, sitemap, robots.txt, and social-sharing metadata.
-
-Expected result:
-
-1. Customers use `https://mitrends.co.in` as the primary domain.
-2. HTTPS works without certificate errors.
-3. The preferred hostname and redirects are consistent.
-4. Public-facing links and canonical metadata use the custom domain.
-5. Unnecessary Vercel-hostname redirects are removed or configured appropriately.
-6. Preview deployments and internal Vercel functionality continue working.
-7. Existing DNS records needed for email and other services are preserved.
-
-Do not blindly replace DNS records. Inspect the actual configuration and identify which records need changing before applying modifications.
-
-Verify the result using actual HTTP requests, redirects, SSL checks, and the deployed application.
-
-## 6. Verify the Entire Google Authentication Workflow
-
-Audit Google sign-up and sign-in on the production domain.
-
-Test:
-
-* Google OAuth configuration and callback URLs.
-* Successful customer registration and login.
-* Session creation, persistence, expiration, and logout.
-* Secure cookies over HTTPS.
-* Error handling for failed authentication.
-* Customer profile persistence in the intended cloud database.
-* Checkout access for logged-in and logged-out users.
-* Protection against unauthorized access to customer information and orders.
-
-Update the authorized Google OAuth origins and redirect URIs where required.
-
-Preserve existing working authentication features. Do not replace the authentication provider unnecessarily.
-
-Never expose Google OAuth secrets or other authentication credentials in frontend code or GitHub.
-
-## 7. Enforce Sign-Up Before Checkout
-
-Implement and test the following exact customer journey:
-
-**Browse Products → Add to Cart → Proceed to Checkout → Sign Up or Log In → Enter Delivery Details → Review Order → Select UPI/Razorpay → Complete Payment → Verify Payment → Confirm Order.**
-
-Requirements:
-
-* Customers may browse the website and add products to their cart without signing in.
-* When proceeding to checkout, customers who are not authenticated must sign up or log in.
-* Google sign-in must work.
-* Preserve the cart during authentication.
-* After login, return the customer to checkout with the original cart contents.
-* Collect and validate all required delivery and contact information.
-* Calculate product totals, discounts, delivery fees, and final payable amount correctly.
-* Recalculate and validate prices on the backend rather than trusting browser-submitted totals.
-* Check product availability and inventory before accepting the order.
-* Prevent customers from accessing another customer's order details.
-* Make checkout responsive and functional on mobile, tablet, and desktop.
-
-An unauthenticated customer must not be able to bypass the required sign-up or login step by directly accessing checkout APIs.
-
-## 8. Verify Razorpay Live Mode and UPI Payments
-
-Audit the existing Razorpay integration and determine whether it is configured for Test Mode or Live Mode.
-
-Verify the real configuration of the authorized merchant account, without exposing any secret credentials.
-
-Check:
-
-* Correct live Key ID and matching Key Secret configuration.
-* Merchant account activation and eligibility for live payments.
-* UPI and other supported payment methods being enabled.
-* Secure server-side Razorpay order creation.
-* Correct order ID, amount, and currency.
-* Checkout initialization on desktop and mobile.
-* Payment success, failure, cancellation, timeout, and retry handling.
-* Server-side payment signature verification.
-* Authenticated webhook processing.
-* Payment status verification through a trusted server-side mechanism.
-* Correct storage of payment references and transaction status in MongoDB.
-
-**Important security and payment rules:**
-
-1. Never mark an order as paid based only on a frontend success redirect.
-2. Verify the Razorpay payment signature server-side.
-3. Verify payment status through the appropriate trusted gateway mechanism.
-4. Validate the amount, currency, gateway order ID, and associated application order.
-5. Verify webhook signatures and process duplicate webhook deliveries idempotently.
-6. Prevent failed or unverified payments from becoming paid orders.
-7. Never expose the Key Secret, webhook secret, or private merchant credentials in frontend code, logs, or GitHub.
-8. Do not claim that Live payments work simply because the live credentials exist.
-9. If merchant activation, KYC, UPI enablement, or configuration requires action in the Razorpay Dashboard, report the exact blocker.
-
-Use the authorized Razorpay merchant account only.
-
-First run Test Mode scenarios. Then, if the account is active and the account owner approves, perform a controlled low-value live transaction to verify the actual production payment flow. Never initiate a charge without explicit authorization.
-
-## 9. Fix Order Creation and Order Management
-
-After a payment is successfully verified, ensure the order is recorded correctly in MongoDB.
-
-Verify that every order contains the necessary information supported by the existing application:
-
-* Unique order number.
-* Authenticated customer reference.
-* Product IDs and item details.
-* Product names, SKUs, quantities, and purchase-price snapshots.
-* Shipping and contact information.
-* Subtotal, discount, shipping charge, and final total.
-* Payment gateway order ID and payment ID.
-* Payment and fulfilment status.
-* Creation and modification timestamps.
-
-Ensure that:
-
-* Customers receive a correct order confirmation.
-* Orders appear in customer order history.
-* Authorized administrators can view orders in the admin dashboard.
-* Inventory updates follow the existing stock-management rules.
-* Duplicate clicks, retries, refreshes, and duplicate webhooks do not create duplicate paid orders.
-* Failed payments do not appear as successful payments.
-* A successful payment followed by a database failure can be reconciled instead of losing the order.
-
-Test the entire order lifecycle, including pending payment, successful payment, failure, cancellation, and reconciliation.
-
-## 10. Remove All Production Dependencies on Local Storage or Local Servers
-
-This is a mandatory production requirement.
-
-Search the project for:
-
-* `localhost`
-* `127.0.0.1`
-* Local MongoDB connection strings.
-* Hardcoded development API endpoints.
-* Local product or order JSON files.
-* Filesystem-based image uploads.
-* Local image URLs and temporary paths.
-* In-memory arrays used as permanent storage.
-* Development-only authentication and payment callbacks.
-
-Investigate each result and determine whether it is a legitimate development configuration or a production defect.
-
-The deployed production system must use:
-
-* Vercel-hosted frontend and compatible deployed backend/API routes.
-* Cloud MongoDB for persistent application records.
-* Persistent cloud image storage for product images.
-* Secure production environment variables.
-* Correct production authentication callbacks.
-* Reachable HTTPS payment webhooks and return URLs.
-
-No production-critical feature may require my MacBook or local development server to remain online.
-
-Local development can remain available for coding and testing, but production data must never depend on it. Use separate Development, Preview, and Production configurations where appropriate.
-
-## 11. Verify Vercel and GoDaddy Deployment
-
-Inspect the actual integration and make necessary corrections.
-
-Verify:
-
-* Correct GitHub repository connected to Vercel.
-* Correct production branch and deployment workflow.
-* Valid build and framework configuration.
-* Production environment variables are configured for the correct environment.
-* Latest approved code has been deployed successfully.
-* No build failures or critical runtime errors remain.
-* Custom domain and SSL work correctly.
-* Production APIs and serverless functions are reachable.
-* Cloud database and image storage work in the deployed environment.
-* No required production secret is missing.
-* Deployment and runtime logs show no unresolved critical issue.
-
-Do not overwrite existing environment variables or modify unrelated DNS records blindly. Preserve working settings and make targeted changes.
-
-## 12. Perform a Security Audit
-
-Review the application against the current OWASP Top 10 and relevant API security risks.
-
-Inspect and address:
-
-* Broken access control and admin authorization.
-* Authentication/session security.
-* Injection attacks, including NoSQL injection.
-* Cross-site scripting.
-* CSRF risks where applicable.
-* Unsafe file uploads.
-* Rate limiting for login and sensitive operations.
-* Unauthorized order access.
-* Payment verification vulnerabilities.
-* Exposed secrets and sensitive error messages.
-* Insecure dependency or deployment configurations.
-
-Validate all untrusted inputs server-side. Use proper authorization checks on product, user, order, and payment APIs.
-
-Do not log passwords, secret keys, complete connection strings, or unnecessary sensitive payment information.
-
-## 13. Mandatory Production Test Plan
-
-Run appropriate automated tests and live integration checks. Do not mark a test as passed unless it has actually been executed.
-
-### Test A — Product Publishing
-
-1. Create a test product from the admin dashboard.
-2. Upload multiple product images.
-3. Save and publish the product.
-4. Verify the record in cloud MongoDB.
-5. Verify the image files in persistent cloud storage.
-6. Open the live storefront and confirm the correct product appears.
-7. Edit product details, price, inventory, and image.
-8. Confirm updates persist after refresh and redeployment.
-9. Unpublish the product and confirm it is no longer publicly available.
-
-### Test B — Domain and Cloud Storage
-
-1. Open `https://mitrends.co.in`.
-2. Verify the SSL certificate and redirect behaviour.
-3. Inspect public links and canonical URLs for unwanted Vercel URLs.
-4. Verify the production API endpoints.
-5. Confirm product records and images are loaded from cloud services.
-6. Confirm the application continues functioning without the local development server.
-7. Recheck persistence after a Vercel deployment.
-
-### Test C — Google Authentication
-
-1. Register or sign in through Google.
-2. Verify the production OAuth callback.
-3. Test refresh, session persistence, and logout.
-4. Attempt checkout while logged out.
-5. Verify that sign-up or login is required.
-6. Verify that the cart remains intact after login.
-
-### Test D — Checkout
-
-1. Add an available product to the cart.
-2. Log in and enter valid shipping details.
-3. Check product quantities, prices, discounts, and delivery charges.
-4. Test insufficient inventory and invalid data.
-5. Confirm that the server validates the final amount and stock.
-
-### Test E — Razorpay
-
-1. Test payment success in Test Mode.
-2. Test failure, cancellation, and retry scenarios.
-3. Test invalid payment signatures.
-4. Test duplicate webhook delivery.
-5. Verify that unpaid orders are not marked as paid.
-6. If authorized and technically ready, make a controlled Live Mode payment.
-7. Verify the transaction in the Razorpay Dashboard and application database.
-8. Verify that the customer and administrator can see the resulting order.
-
-### Test F — Full End-to-End Purchase
-
-Execute this exact workflow:
-
-**Admin publishes a product → Customer opens mitrends.co.in → Adds the product to the cart → Signs in using Google → Completes checkout → Selects an enabled UPI/Razorpay payment method → Payment is verified → Order is saved in cloud MongoDB → Customer sees confirmation → Administrator sees the order.**
-
-For each step, record the actual outcome and evidence.
-
-## 14. Fix, Deploy and Re-Test
-
-Follow this implementation sequence:
-
-1. Inspect the codebase and map the existing architecture.
-2. Identify confirmed issues and root causes.
-3. Fix product persistence and cloud image uploads.
-4. Fix frontend product fetching and publishing.
-5. Fix domain, DNS-related configuration, redirects, and production URLs.
-6. Fix Google authentication and checkout restrictions.
-7. Fix Razorpay order creation, payment verification, and webhooks.
-8. Validate production environment variables without exposing secrets.
-9. Run tests, linting, and production build checks.
-10. Back up production data and establish a rollback point before risky changes.
-11. Deploy through the existing GitHub/Vercel workflow.
-12. Verify the deployed website and re-run end-to-end tests.
-
-Do not delete existing production data, rewrite the whole application unnecessarily, or remove working features without evidence and authorization.
-
-If a task requires access to GoDaddy, Vercel, MongoDB Atlas, Google Cloud Console, or Razorpay that you do not have, complete the code-level tasks that you can and report the exact external action required. Never claim to have changed a dashboard or verified a payment when you have not.
-
-## 15. Final Report — Mandatory
-
-After completing the audit and implementation, return a report with the following sections.
-
-**A. Issues Found:** Exact problem, root cause, and severity.
-
-**B. Fixes Implemented:** Files modified, APIs corrected, database changes, image storage changes, authentication fixes, checkout changes, and payment fixes.
-
-**C. Domain and Deployment:** Custom domain status, SSL status, Vercel deployment result, GoDaddy DNS findings, and production API status.
-
-**D. Cloud Persistence:** Confirmed database, image-storage configuration, product persistence results, and remaining issues.
-
-**E. End-to-End Test Results:** Mark each test as PASS, FAIL, BLOCKED, or NOT TESTED. Include actual evidence such as HTTP responses, sanitized logs, test output, database verification, or gateway dashboard results.
-
-**F. Payment Status:** Google authentication result, checkout result, Razorpay Test Mode result, Razorpay Live Mode result, UPI availability, payment verification, order creation, and admin order visibility.
-
-**G. Remaining Actions:** List only unresolved problems or the exact actions that require my account-owner approval or external dashboard access.
-
-Never include API secrets, passwords, private keys, or database connection-string credentials in the report.
+Browse Store → Open Product → Add to Cart → Enter or Confirm Address → Proceed to Checkout → Sign Up/Login When Required → Review Order → Select Payment Method → Complete Payment → Verify Payment → Create/Confirm Order → View Order Confirmation → Log In Again → View Order History.
+
+Test and record each stage individually.
+
+### Product browsing and cart
+
+* [ ] Published products load from the production backend.
+* [ ] Correct product images, prices, sizes, colours, and availability are displayed.
+* [ ] Add to Cart works.
+* [ ] Quantity updates work.
+* [ ] Remove from Cart works.
+* [ ] Cart totals are correct.
+* [ ] Cart contents remain available during required authentication redirects.
+* [ ] Unpublished products cannot be purchased through direct API requests.
+* [ ] Out-of-stock products cannot be ordered incorrectly.
+
+### Address and checkout navigation
+
+* [ ] Customer can enter a new delivery address.
+* [ ] Required address fields are validated.
+* [ ] Existing address selection works, where supported.
+* [ ] Customer can proceed from address entry to the checkout page.
+* [ ] Checkout loads successfully without blank screens or broken redirects.
+* [ ] Customer is prompted to sign up or log in when unauthenticated.
+* [ ] After authentication, the customer returns to checkout without losing the cart or address information.
+* [ ] Product prices, discounts, delivery charges, and totals are accurate.
+* [ ] Final order amount is validated on the backend.
+* [ ] The checkout page works on desktop, tablet, Android, and iPhone.
+
+If the intended flow requires login before payment, verify that unauthenticated users cannot bypass this requirement.
+
+## 6. RAZORPAY AND UPI PAYMENT TESTING
+
+Inspect the current payment implementation and verify whether Razorpay is configured for Test Mode or Live Mode.
+
+### Razorpay configuration
+
+* [ ] Correct Razorpay merchant account is configured.
+* [ ] Production environment uses the matching live credentials.
+* [ ] Credentials remain server-side and are not exposed in frontend code.
+* [ ] Backend creates a Razorpay order with the correct amount and currency.
+* [ ] Checkout opens correctly from the website.
+* [ ] UPI appears as a payment option when enabled for the merchant.
+* [ ] Other expected payment methods appear when enabled.
+* [ ] Correct gateway order ID is passed to checkout.
+* [ ] Payment success, cancellation, failure, timeout, and retry flows work.
+* [ ] Payment signature is verified on the server.
+* [ ] Webhook signatures are validated.
+* [ ] Duplicate webhook notifications are handled idempotently.
+* [ ] Failed or unverified transactions are not marked as paid.
+* [ ] Payment records are saved in the cloud database.
+* [ ] The order status is consistent with the verified payment status.
+
+### Payment testing rules
+
+Run safe Test Mode scenarios first.
+
+Live Mode must be tested separately. Verify the actual merchant activation status, enabled payment methods, and live dashboard configuration. If required, perform a controlled low-value live payment only after explicit account-owner authorization.
+
+Never initiate a real charge without approval.
+
+Use these distinct checklist items:
+
+* [ ] Razorpay Test Mode successfully verified.
+* [ ] Razorpay Live Mode configuration verified.
+* [ ] UPI availability confirmed for the actual merchant account.
+* [ ] Authorized live transaction successfully verified, if approved.
+* [ ] Corresponding payment record verified in the production database.
+* [ ] Failed payment and duplicate-notification scenarios verified.
+
+If an account setting cannot be checked because dashboard access is unavailable, mark it `[B] BLOCKED`, not passed.
+
+## 7. VERIFY THAT EVERY CUSTOMER ORDER REACHES THE ADMIN DASHBOARD
+
+This section is critical.
+
+After placing a test order, trace its data from checkout through the backend, database, and admin dashboard.
+
+* [ ] Backend receives the checkout request.
+* [ ] A valid order record is created or updated in cloud MongoDB.
+* [ ] Order number is unique and correctly generated.
+* [ ] Customer reference is correct.
+* [ ] Ordered products, quantities, and price snapshots are correct.
+* [ ] Delivery address and contact details are correct.
+* [ ] Subtotal, discount, shipping fee, and final total match checkout.
+* [ ] Selected payment method is saved.
+* [ ] Razorpay gateway order ID is saved, where applicable.
+* [ ] Razorpay payment ID is saved after successful verification.
+* [ ] Payment status is correct.
+* [ ] Order fulfilment status is correct.
+* [ ] Order appears in the admin dashboard without manually inserting database records.
+* [ ] Admin can open the order and view all required order details.
+* [ ] Admin can see the customer's selected payment method.
+* [ ] Admin can distinguish paid, unpaid, pending, failed, and cancelled orders.
+* [ ] Customer order history shows the correct order.
+* [ ] Order details remain available after logging out and logging back in.
+* [ ] Refreshing the admin dashboard does not remove the order.
+* [ ] Repeated requests, retries, or webhook deliveries do not create duplicate paid orders.
+* [ ] A successful payment followed by a temporary database error can be identified and reconciled.
+
+Verify the displayed payment method separately from the payment status. For example, a UPI payment method does not by itself prove that a transaction succeeded.
+
+Do not mark order delivery, fulfilment, or notification features as passed unless those features were actually tested and are supported by the existing implementation.
+
+## 8. ADMIN ORDER MANAGEMENT AND STATUS UPDATES
+
+Test the complete admin order management workflow.
+
+* [ ] Admin dashboard loads orders from the production database.
+* [ ] Newly placed orders appear correctly.
+* [ ] Order details match the customer checkout.
+* [ ] Payment method and payment status are visible.
+* [ ] Admin can update supported order statuses.
+* [ ] Updated order statuses persist in MongoDB.
+* [ ] Status changes remain correct after refresh.
+* [ ] Customer-facing order status reflects the backend's latest state where implemented.
+* [ ] Inventory and fulfilment updates follow the intended application workflow.
+* [ ] Admin-only routes and APIs reject unauthorized requests.
+* [ ] Invalid status changes are rejected safely.
+* [ ] Errors are recorded and displayed appropriately.
+
+Identify exactly where any failure occurs: frontend form, backend API, database update, or subsequent customer/admin data fetch.
+
+## 9. ADMIN PRODUCT MANAGEMENT AND FRONTEND SYNCHRONIZATION
+
+Test whether every product created or edited from the admin dashboard appears correctly on the public storefront.
+
+### Product management
+
+* [ ] Admin can create a product.
+* [ ] Product details save to the production database.
+* [ ] Admin can upload the main product image.
+* [ ] Admin can upload additional images.
+* [ ] Image files are stored in persistent cloud storage.
+* [ ] MongoDB stores the correct cloud image URLs and product metadata.
+* [ ] Admin can edit product details, images, price, and stock.
+* [ ] Admin can publish and unpublish products.
+* [ ] The correct existing product is updated without duplication.
+* [ ] Invalid form data is rejected.
+* [ ] Success messages appear only after successful persistence.
+
+### Storefront verification
+
+* [ ] Newly created products appear in the correct storefront listing.
+* [ ] Updated product titles and descriptions appear correctly.
+* [ ] Updated prices and sale prices appear correctly.
+* [ ] Updated images load correctly.
+* [ ] Correct sizes, colors, and variants appear.
+* [ ] Stock changes are reflected in availability and purchasing controls.
+* [ ] Category pages display the correct products.
+* [ ] Search and filters reflect the updated product catalogue.
+* [ ] Individual product pages fetch the latest valid product information.
+* [ ] Unpublished products are not visible to customers.
+* [ ] Product changes remain correct after refresh and redeployment.
+
+Check caching, stale frontend state, API response mapping, product identifiers, publication filters, and image URLs when an admin change does not appear on the storefront.
+
+## 10. INVENTORY SYNCHRONIZATION
+
+* [ ] Admin inventory changes persist in MongoDB.
+* [ ] Updated stock quantities appear on the storefront.
+* [ ] Cart and checkout validate current available stock.
+* [ ] Successful orders update inventory according to the existing business rules.
+* [ ] Failed payments do not cause incorrect stock deductions unless the documented policy explicitly uses a reservation mechanism.
+* [ ] Concurrent orders do not produce unintended overselling.
+* [ ] Out-of-stock items cannot be purchased through a direct API request.
+* [ ] Stock changes remain correct after a refresh or redeployment.
+* [ ] Admin dashboard inventory figures match the database and storefront behaviour.
+
+Record any discrepancies between admin inventory, product details, cart, checkout, and stored order items.
+
+## 11. ADMIN BANNER AND STOREFRONT CONTENT UPDATES
+
+Check the full banner/content management workflow.
+
+* [ ] Admin can create a new banner.
+* [ ] Admin can upload a banner image to persistent cloud storage.
+* [ ] Banner image URLs and content records persist in the cloud database.
+* [ ] Admin can edit and replace a banner.
+* [ ] Admin can activate or deactivate supported banners.
+* [ ] Banner title, description, links, and scheduling fields work where implemented.
+* [ ] Updated banners appear on the live storefront.
+* [ ] Banner links navigate to the intended pages.
+* [ ] Images display correctly on desktop and mobile.
+* [ ] Removed or deactivated banners stop appearing publicly.
+* [ ] Changes persist after refresh and deployment.
+
+Inspect frontend caching and content-fetching logic if the admin dashboard shows updated banners but the live storefront continues to show old content.
+
+## 12. CLOUD STORAGE AND LOCAL SERVER INDEPENDENCE
+
+No production-critical data may be stored exclusively on my local computer.
+
+Audit all product, customer, order, payment, inventory, banner, and image persistence.
+
+* [ ] Production frontend uses the deployed application endpoints.
+* [ ] Production APIs connect to the intended cloud MongoDB database.
+* [ ] Product images use persistent cloud image storage.
+* [ ] Customer and order records persist in the cloud database.
+* [ ] Inventory and banner changes persist in the cloud database.
+* [ ] Payment records and gateway references persist in the intended database.
+* [ ] Production does not rely on local JSON files or in-memory arrays for persistent records.
+* [ ] Production does not rely on localhost or a local MongoDB instance.
+* [ ] Vercel temporary filesystem is not used for permanent file storage.
+* [ ] Environment variables are configured in the correct Vercel environment.
+* [ ] Product data, images, and orders remain accessible after redeployment.
+* [ ] All production-critical functionality works without my development computer being online.
+
+Keep local development available if useful, but separate it completely from the production data and workflow.
+
+## 13. GODADDY, VERCEL AND LIVE DOMAIN
+
+* [ ] Correct GitHub repository is connected to Vercel.
+* [ ] Intended production branch is configured correctly.
+* [ ] Latest approved build deploys successfully.
+* [ ] `https://mitrends.co.in` resolves to the correct deployment.
+* [ ] HTTPS certificate is valid.
+* [ ] Redirects and preferred hostname behave consistently.
+* [ ] Public pages do not unnecessarily redirect customers to the Vercel deployment hostname.
+* [ ] Canonical URLs and public-facing links use the preferred custom domain.
+* [ ] Production APIs use the correct endpoints.
+* [ ] Google OAuth redirect URLs use the correct domain.
+* [ ] Razorpay return URLs and webhooks use reachable HTTPS endpoints.
+* [ ] No required DNS, environment variable, or production configuration issue remains.
+
+Inspect actual DNS records and Vercel configuration before modifying them. Preserve existing email and domain verification records.
+
+## 14. PRODUCTION BUILD, SECURITY AND REGRESSION TESTS
+
+* [ ] Production build completes successfully.
+* [ ] Relevant unit and integration tests pass.
+* [ ] API routes respond as expected.
+* [ ] No unresolved critical frontend console errors remain.
+* [ ] No unresolved critical backend runtime errors remain.
+* [ ] Unauthorized users cannot modify products, inventory, banners, or orders.
+* [ ] Authentication and session handling are secure.
+* [ ] Request validation prevents invalid and unsafe input.
+* [ ] NoSQL injection and XSS risks are addressed.
+* [ ] Sensitive credentials remain outside the repository and frontend bundle.
+* [ ] Product and order endpoints enforce authorization.
+* [ ] Payment signature and webhook validation work.
+* [ ] Error logging does not expose secrets.
+* [ ] Mobile checkout and admin-related responsive layouts are verified where applicable.
+* [ ] Previously working features still pass after new changes.
+
+Review the application against the relevant current OWASP security guidance and test the areas affected by recent code changes.
+
+## 15. CREATE THE IMPLEMENTATION CHECKLIST FILE
+
+Create this file in the repository root:
+
+`MI_TRENDS_IMPLEMENTATION_CHECKLIST.md`
+
+The file must contain:
+
+### A. Overall project summary
+
+Record:
+
+* Audit date.
+* Current production deployment.
+* Last commit or release inspected.
+* Current build and test status.
+* Number of verified, pending, failed, blocked, and implemented-but-unverified tasks.
+* Highest-priority production blockers.
+
+### B. Implementation task checklist
+
+For every individual task, record:
+
+| Field            | Required information                                                              |
+| ---------------- | --------------------------------------------------------------------------------- |
+| Task ID          | Unique identifier, such as ORD-001                                                |
+| Feature          | Product, auth, checkout, payment, admin, cloud, domain, etc.                      |
+| Status           | Verified, pending, failed, blocked, or unverified                                 |
+| Issue/root cause | Exact confirmed problem, if any                                                   |
+| Required action  | Clear implementation step                                                         |
+| Files/API        | Relevant source files, routes, or configuration                                   |
+| Test             | Steps needed to validate the fix                                                  |
+| Evidence         | Actual test output, request result, sanitized log, or verified database/UI result |
+| Last verified    | Date and environment                                                              |
+| Next step        | The next action required                                                          |
+
+You may use Markdown checkbox items, but the detailed task records must remain readable.
+
+### C. Implementation sequence
+
+Group incomplete tasks in this order:
+
+1. Critical production blockers.
+2. Database and persistent image storage.
+3. Product publishing and frontend synchronization.
+4. Registration, login, and customer account access.
+5. Address, cart, and checkout.
+6. Razorpay, UPI, and payment verification.
+7. Order creation and admin order management.
+8. Inventory synchronization.
+9. Banner/content management.
+10. Domain, deployment, security, and regression testing.
+
+Show dependencies where one task cannot be completed before another.
+
+### D. Evidence and regression log
+
+For each verified fix, add a record containing:
+
+* Task ID.
+* What was changed.
+* What was tested.
+* Environment: local, preview, or production.
+* Result.
+* Relevant evidence reference.
+* Date.
+* Whether regression testing is required.
+
+Do not put secrets, passwords, complete connection strings, or sensitive customer data into the file.
+
+### E. Remaining work
+
+At the end of the file, automatically maintain these sections:
+
+* **Completed and Verified**
+* **Implemented but Not Verified**
+* **Failed Tests**
+* **Blocked by External Access**
+* **Pending Implementation**
+* **Next Recommended Task**
+* **Production Launch Readiness**
+
+The next recommended task must be the highest-priority actionable item that has not yet been verified.
+
+## 16. KEEP THE CHECKLIST UPDATED THROUGHOUT IMPLEMENTATION
+
+Whenever a task is implemented:
+
+1. Update the corresponding checklist entry.
+2. Run the associated test.
+3. Capture non-sensitive evidence.
+4. Mark `[x]` only if the relevant acceptance criteria pass.
+5. If the test fails, mark `[!]`, record the result, and fix the root cause.
+6. If testing is impossible, mark `[B]` and state the precise blocker.
+7. If only the code change is complete, mark `[~]`.
+8. Re-test affected dependent features after significant changes.
+
+Do not mark the entire project complete while required production tasks remain unfinished.
+
+After implementation changes, commit and push the updated checklist and code through the configured GitHub workflow only when authorized and when the changes are safe to commit. Do not commit secrets or unrelated user changes.
+
+If a live test cannot be performed because you lack dashboard access or credentials, leave the relevant task blocked rather than inventing a result.
+
+## 17. FINAL COMPLETION REPORT
+
+After the audit, provide a concise report containing:
+
+1. What was inspected.
+2. What was already working.
+3. What was broken and why.
+4. What fixes were implemented.
+5. Which tests passed and what evidence supports them.
+6. Which tests failed or remain blocked.
+7. Whether the full customer-to-admin order flow was verified.
+8. Whether cloud persistence was verified.
+9. Whether Razorpay Test Mode and Live Mode were separately verified.
+10. The location of the implementation checklist file.
+11. The single highest-priority next action.
+
+Clearly distinguish between:
+
+* Code-level verification.
+* Automated test verification.
+* Live production verification.
+* External dashboard settings that could not be accessed.
+
+Never claim that a live order, payment, domain change, or database operation succeeded unless it was actually verified.
 
 ## FINAL ACCEPTANCE CRITERIA
 
-The website is ready for live customers only when the following requirements are verified:
+MI Trends is production-ready only after the relevant tests establish that:
 
-* All admin product creation and editing operations persist in cloud MongoDB.
-* Product images are stored in persistent cloud image storage.
-* Product publishing and frontend fetching work correctly.
-* No production data or operation depends on my local computer or local server.
-* `https://mitrends.co.in` works with valid HTTPS and consistent redirects.
-* Google authentication works on the production domain.
-* Customers must sign up or log in before checkout.
-* Razorpay payment orders are created securely and payments are verified server-side.
-* UPI availability is confirmed for the actual merchant account.
-* Successful payments create consistent cloud orders.
-* Failed or unverified payments cannot be marked as paid.
-* Customers and authorized administrators can access their respective order information.
-* The application builds and deploys successfully.
-* All unresolved account, configuration, or deployment blockers are reported transparently.
+* Customers can register and log in.
+* Products load correctly from the cloud database.
+* Customers can add products to the cart and proceed through address entry and checkout.
+* Required authentication is enforced.
+* Razorpay payments are verified securely.
+* A successfully paid order is stored in cloud MongoDB.
+* The order appears correctly in the admin dashboard with payment method, payment status, items, and customer details.
+* Customers can log in again and access their own order history.
+* Admin order updates persist and display correctly.
+* Admin product, inventory, and banner updates appear on the live storefront.
+* No production-critical data or operation depends on the local server.
+* The custom domain and Vercel deployment work correctly.
+* The implementation checklist accurately reflects the real verification status of every critical feature.
 
-**Execute this as a real engineering audit and implementation task, not just a code review. Fix the actual problems, deploy the approved changes, verify the live workflow, and provide evidence for every claimed success. My final goal is to launch MI Trends as a stable, secure, fully cloud-hosted e-commerce website ready for real customers.**
+**Start by auditing the repository and creating/updating `MI_TRENDS_IMPLEMENTATION_CHECKLIST.md`. Then work through the highest-priority incomplete tasks in order. Execute the available fixes and tests, update the checklist continuously, and use verified evidence—not assumptions—to determine which items are complete.**

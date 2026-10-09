@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { currentCustomerId } from "@/lib/customer/session.server";
 import { validateOrderContact } from "@/lib/customer/validation";
 import { getOrdersCollection, type OrderDoc } from "@/lib/db/models";
+import { giveBackStock, takeStock } from "@/lib/inventory.server";
 import { sendOrderConfirmation } from "@/lib/email/mailer";
 import { priceOrder } from "@/lib/pricing";
 import { RATE_LIMITS } from "@/lib/security/config";
@@ -99,8 +100,23 @@ export async function POST(request: Request) {
       razorpayOrderId: `cod_${orderId}`,
     };
 
+    // Stock comes off before the order exists: a COD order is real the moment it is
+    // placed, and taking stock first means a sold-out size is refused rather than
+    // confirmed and then disappointed.
+    const stock = await takeStock(priced.lines);
+    if (!stock.ok) {
+      logSecurityEvent({ type: "ORDER_PRICE_REJECTED", requestId, ip, endpoint: ENDPOINT, result: "blocked", risk: "low", meta: { reason: stock.error } });
+      return NextResponse.json({ error: stock.error }, { status: 409, headers: { "x-request-id": requestId } });
+    }
+
     const orders = await getOrdersCollection();
-    await orders.insertOne(doc);
+    try {
+      await orders.insertOne(doc);
+    } catch (error) {
+      // The order didn't persist, so the units it claimed must go back.
+      await giveBackStock(priced.lines);
+      throw error;
+    }
 
     // Awaited, not fire-and-forget: a serverless function can be frozen the moment it
     // responds, which would kill an in-flight send. It can never fail the order — the

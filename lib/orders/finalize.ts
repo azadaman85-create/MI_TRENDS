@@ -1,6 +1,8 @@
 import type { OrderStatus } from "@/lib/admin/types";
 import { getOrdersCollection, type OrderDoc } from "@/lib/db/models";
 import { sendOrderConfirmation } from "@/lib/email/mailer";
+import { takeStock } from "@/lib/inventory.server";
+import { logSecurityEvent } from "@/lib/security/events";
 
 /**
  * Promotes a prepaid order from "awaiting_payment" to a real order.
@@ -53,6 +55,29 @@ export async function finalizePrepaidOrder(
   );
 
   if (promoted) {
+    /*
+      Stock moves here and nowhere else on the prepaid path. The conditional update above
+      is what makes that safe: only one caller can flip the order out of
+      "awaiting_payment", so the browser callback and the webhook cannot both take units
+      for the same order. Deliberately not at create-order time — that row is an
+      abandoned checkout until it is paid.
+
+      A shortfall is logged rather than refused. The customer has already been charged,
+      so the order must stand; what it means is the shop oversold and someone has to
+      decide what to do, which is a human decision, not a 500.
+    */
+    const stock = await takeStock(promoted.lines);
+    if (!stock.ok) {
+      logSecurityEvent({
+        type: "SUSPICIOUS_REQUEST",
+        requestId,
+        endpoint: "orders/finalize",
+        result: "error",
+        risk: "high",
+        meta: { order: promoted._id, reason: `paid but could not take stock: ${stock.error}` },
+      });
+    }
+
     // Best-effort, and only on the transition — a mail failure must never turn a paid
     // order into an error, and the loser of the race must not send a second copy.
     await sendOrderConfirmation(promoted, requestId);

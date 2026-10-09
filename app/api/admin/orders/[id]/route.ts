@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin/guard.server";
 import type { OrderStatus } from "@/lib/admin/types";
 import { getOrdersCollection } from "@/lib/db/models";
+import { giveBackStock } from "@/lib/inventory.server";
 import { RETURN_STATUSES, type ReturnStatus } from "@/lib/returns";
 import { RATE_LIMITS } from "@/lib/security/config";
 import { logSecurityEvent } from "@/lib/security/events";
@@ -83,6 +84,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     await orders.updateOne({ _id: id }, { $set: update });
 
+    // Cancelling puts the units back, but only on the transition into cancelled —
+    // re-saving an already-cancelled order must not restock it a second time.
+    if (nextStatus === "cancelled" && existing.status !== "cancelled") {
+      await giveBackStock(existing.lines);
+    }
+
     logSecurityEvent({
       type: "ADMIN_ACTION",
       requestId,
@@ -139,6 +146,18 @@ async function patchReturnStatus({
     if (next === "completed") update.status = "returned" as OrderStatus;
 
     await orders.updateOne({ _id: id }, { $set: update });
+
+    // Returned goods go back on the shelf — only the lines actually sent back, and only
+    // on the transition, so marking it completed twice doesn't restock twice.
+    if (next === "completed" && existing.returnRequest.status !== "completed") {
+      const returned = existing.returnRequest.items
+        .map((item) => {
+          const line = existing.lines[item.lineIndex];
+          return line ? { productId: line.productId, size: line.size, quantity: item.quantity, name: line.name } : null;
+        })
+        .filter((line): line is NonNullable<typeof line> => line !== null);
+      await giveBackStock(returned);
+    }
 
     logSecurityEvent({
       type: "ADMIN_ACTION",
