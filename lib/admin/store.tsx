@@ -16,7 +16,6 @@ import {
   coupons as seedCoupons,
   reviews as seedReviews,
 } from "@/lib/admin/data";
-import { publishBannerFeed } from "@/lib/banner-feed";
 import {
   DEFAULT_STORE_SETTINGS,
   readStoreSettings,
@@ -56,10 +55,7 @@ export type AdminToast = {
  * the same data on every device instead of whatever this browser happened to save.
  */
 type PersistedState = {
-  reviews: Review[];
   coupons: Coupon[];
-  banners: Banner[];
-  categories: CategoryNode[];
 };
 
 type AdminStoreValue = PersistedState & {
@@ -67,6 +63,9 @@ type AdminStoreValue = PersistedState & {
   orders: Order[];
   customers: Customer[];
   products: AdminProduct[];
+  banners: Banner[];
+  categories: CategoryNode[];
+  reviews: Review[];
   /** Checkout rules the storefront reads — see lib/store-settings.ts. */
   settings: StoreSettings;
   updateSettings: (patch: Partial<StoreSettings>) => void;
@@ -96,12 +95,7 @@ type AdminStoreValue = PersistedState & {
 const AdminStoreContext = createContext<AdminStoreValue | undefined>(undefined);
 
 function seedState(): PersistedState {
-  return {
-    reviews: seedReviews,
-    coupons: seedCoupons,
-    banners: seedBanners,
-    categories: seedCategories,
-  };
+  return { coupons: seedCoupons };
 }
 
 /** How often the panel re-reads orders and customers from the database. */
@@ -111,6 +105,9 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<PersistedState>(seedState);
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [categories, setCategories] = useState<CategoryNode[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [settings, setSettings] = useState<StoreSettings>(DEFAULT_STORE_SETTINGS);
@@ -141,10 +138,14 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
    */
   const refreshLiveData = useCallback(async () => {
     try {
-      const [ordersResponse, customersResponse, productsResponse] = await Promise.all([
+      const [ordersResponse, customersResponse, productsResponse, bannersResponse, categoriesResponse, reviewsResponse] =
+        await Promise.all([
         fetch("/api/admin/orders", { cache: "no-store" }),
         fetch("/api/admin/customers", { cache: "no-store" }),
         fetch("/api/admin/products", { cache: "no-store" }),
+        fetch("/api/admin/content/banners", { cache: "no-store" }),
+        fetch("/api/admin/content/categories", { cache: "no-store" }),
+        fetch("/api/admin/content/reviews", { cache: "no-store" }),
       ]);
       if (ordersResponse.ok) {
         const data = (await ordersResponse.json()) as { orders: Order[] };
@@ -158,6 +159,9 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         const data = (await productsResponse.json()) as { products: AdminProduct[] };
         setProducts(data.products ?? []);
       }
+      if (bannersResponse.ok) setBanners(((await bannersResponse.json()) as { items: Banner[] }).items ?? []);
+      if (categoriesResponse.ok) setCategories(((await categoriesResponse.json()) as { items: CategoryNode[] }).items ?? []);
+      if (reviewsResponse.ok) setReviews(((await reviewsResponse.json()) as { items: Review[] }).items ?? []);
     } catch {
       // Keep whatever the panel is already showing until the next tick succeeds.
     }
@@ -181,13 +185,6 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       // Out of quota or private mode — edits stay in memory for this session.
     }
   }, [state, hydrated]);
-
-  // Banners get their own narrow hand-off to the storefront — see lib/banner-feed.ts —
-  // rather than the storefront reading this whole admin blob (orders, customers, etc).
-  useEffect(() => {
-    if (!hydrated) return;
-    publishBannerFeed(state.banners);
-  }, [state.banners, hydrated]);
 
   const notify = useCallback(
     (message: string, tone: AdminToast["tone"] = "success", description?: string) => {
@@ -239,12 +236,43 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     [notify, refreshLiveData],
   );
 
+  /**
+   * Replaces a whole content list on the server, then refreshes from it.
+   *
+   * Banners, categories and reviews are edited as a set in the panel and are small, so
+   * sending the list is simpler than a per-row endpoint — and it means a delete and a
+   * reorder are the same operation.
+   */
+  const writeContent = useCallback(
+    async (resource: "banners" | "categories" | "reviews", items: unknown[], failure: string) => {
+      try {
+        const response = await fetch(`/api/admin/content/${resource}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items }),
+        });
+        if (!response.ok) {
+          const body = await response.json().catch(() => null);
+          notify(failure, "error", body?.error ?? "The change was not saved.");
+          return;
+        }
+        await refreshLiveData();
+      } catch {
+        notify(failure, "error", "Could not reach the server.");
+      }
+    },
+    [notify, refreshLiveData],
+  );
+
   const value = useMemo<AdminStoreValue>(() => {
     return {
       ...state,
       orders,
       customers,
       products,
+      banners,
+      categories,
+      reviews,
       settings,
       updateSettings,
       hydrated,
@@ -397,13 +425,13 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         })();
       },
 
-      setReviewStatus: (id, status) =>
-        setState((current) => ({
-          ...current,
-          reviews: current.reviews.map((review) =>
-            review.id === id ? { ...review, status } : review,
-          ),
-        })),
+      setReviewStatus: (id, status) => {
+        void writeContent(
+          "reviews",
+          reviews.map((review) => (review.id === id ? { ...review, status } : review)),
+          "Could not update that review",
+        );
+      },
 
       saveCoupon: (coupon) =>
         setState((current) => ({
@@ -419,33 +447,27 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
           coupons: current.coupons.filter((coupon) => coupon.id !== id),
         })),
 
-      saveBanner: (banner) =>
-        setState((current) => ({
-          ...current,
-          banners: current.banners.some((item) => item.id === banner.id)
-            ? current.banners.map((item) => (item.id === banner.id ? banner : item))
-            : [banner, ...current.banners],
-        })),
+      saveBanner: (banner) => {
+        const next = banners.some((item) => item.id === banner.id)
+          ? banners.map((item) => (item.id === banner.id ? banner : item))
+          : [banner, ...banners];
+        void writeContent("banners", next, "Could not save that banner");
+      },
 
-      deleteBanner: (id) =>
-        setState((current) => ({
-          ...current,
-          banners: current.banners.filter((banner) => banner.id !== id),
-        })),
+      deleteBanner: (id) => {
+        void writeContent("banners", banners.filter((banner) => banner.id !== id), "Could not delete that banner");
+      },
 
-      saveCategory: (category) =>
-        setState((current) => ({
-          ...current,
-          categories: current.categories.some((item) => item.id === category.id)
-            ? current.categories.map((item) => (item.id === category.id ? category : item))
-            : [category, ...current.categories],
-        })),
+      saveCategory: (category) => {
+        const next = categories.some((item) => item.id === category.id)
+          ? categories.map((item) => (item.id === category.id ? category : item))
+          : [category, ...categories];
+        void writeContent("categories", next, "Could not save that category");
+      },
 
-      deleteCategory: (id) =>
-        setState((current) => ({
-          ...current,
-          categories: current.categories.filter((category) => category.id !== id),
-        })),
+      deleteCategory: (id) => {
+        void writeContent("categories", categories.filter((category) => category.id !== id), "Could not delete that category");
+      },
 
       resetDemoData: () => {
         // Only resets the demo catalogue/content. Orders and customers live in MongoDB
@@ -458,7 +480,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         }
       },
     };
-  }, [state, orders, customers, products, hydrated, settings, updateSettings, toasts, notify, dismissToast, refreshLiveData, writeProduct]);
+  }, [state, orders, customers, products, banners, categories, reviews, writeContent, hydrated, settings, updateSettings, toasts, notify, dismissToast, refreshLiveData, writeProduct]);
 
   return <AdminStoreContext.Provider value={value}>{children}</AdminStoreContext.Provider>;
 }

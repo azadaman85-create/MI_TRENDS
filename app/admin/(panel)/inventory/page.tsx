@@ -16,7 +16,6 @@ import { LOW_STOCK_THRESHOLD, totalStock } from "@/lib/admin/data";
 import { formatINR, formatNumber } from "@/lib/admin/format";
 import { listVariants } from "@/lib/admin/motion";
 import { useAdminStore } from "@/lib/admin/store";
-import { publishStockFeed, type StockFeed } from "@/lib/stock-feed";
 import type { AdminProduct } from "@/lib/admin/types";
 
 export default function InventoryPage() {
@@ -72,33 +71,22 @@ export default function InventoryPage() {
     if (!dirtyCells) return;
     setSaving(true);
 
-    // 1. Commit every staged cell to the panel's own store.
+    // Each edited cell goes straight to the product record in MongoDB. The storefront
+    // reads that same record, so there is no second copy to publish and nothing to fall
+    // out of step — this previously wrote a parallel localStorage feed that only this
+    // browser could ever see.
     Object.entries(draft).forEach(([id, sizes]) => {
       Object.entries(sizes).forEach(([size, units]) => setStock(Number(id), size, units));
     });
-
-    // 2. Publish the whole catalogue's stock so the storefront has a complete picture —
-    //    publishing only the edited rows would leave every other product unknown to it.
-    const feed: StockFeed = {};
-    products.forEach((product) => {
-      const sizes: Record<string, number> = {};
-      product.sizes.forEach((size) => {
-        sizes[size] = draft[product.id]?.[size] ?? product.stock[size] ?? 0;
-      });
-      feed[String(product.id)] = sizes;
-    });
-    const published = publishStockFeed(feed);
 
     setDraft({});
     setSaving(false);
     notify(
       "Inventory saved",
-      published ? "success" : "info",
-      published
-        ? `${dirtyCells} size${dirtyCells === 1 ? "" : "s"} across ${dirtyProducts} product${dirtyProducts === 1 ? "" : "s"} updated. The storefront now shows these counts.`
-        : "Saved to the panel, but this browser blocked storage so the storefront cannot read it.",
+      "success",
+      `${dirtyCells} size${dirtyCells === 1 ? "" : "s"} across ${dirtyProducts} product${dirtyProducts === 1 ? "" : "s"} updated. The storefront reads the same records.`,
     );
-  }, [draft, dirtyCells, dirtyProducts, notify, products, setStock]);
+  }, [draft, dirtyCells, dirtyProducts, notify, setStock]);
 
   const rows = useMemo(() => {
     if (view === "low")

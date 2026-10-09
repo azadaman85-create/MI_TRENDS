@@ -1,5 +1,6 @@
 import { CatalogProvider } from "@/components/CatalogProvider";
 import { StoreProvider } from "@/components/StoreProvider";
+import { getLiveBanners } from "@/lib/content.server";
 import { getActiveProducts } from "@/lib/products.server";
 import { CustomerAuthProvider } from "@/lib/account/auth";
 import { Header } from "@/components/Header";
@@ -20,11 +21,11 @@ export const dynamic = "force-dynamic";
 export default async function StoreLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const products = await getActiveProducts();
+  const [products, banners] = await Promise.all([getActiveProducts(), getLiveBanners()]);
 
   return (
     <CustomerAuthProvider>
-      <CatalogProvider products={products}>
+      <CatalogProvider products={products} banners={banners}>
         <StoreProvider>
           <Header />
           <main id="main-content">{children}</main>

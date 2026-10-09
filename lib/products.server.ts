@@ -44,6 +44,7 @@ export function toProduct(doc: ProductDoc): Product {
     palette: p.palette,
     imageUrl: p.imageUrl,
     backImageUrl: p.backImageUrl,
+    stock: p.stock,
   };
 }
 

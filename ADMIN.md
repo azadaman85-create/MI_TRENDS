@@ -145,3 +145,38 @@ checked against the file's magic bytes before anything is stored.
 Vercel Blob, S3 or Cloudinary means changing one route — `app/api/admin/products/images/route.ts`
 — to upload there and return its URL. Existing products keep working: their
 `/api/images/...` URLs stay valid as long as the collection and the serving route remain.
+
+## Banners, categories and reviews
+
+All three live in MongoDB (`banners`, `categories`, `reviews`), alongside products.
+
+They used to be written to this browser's `localStorage`, which meant a banner the owner
+added was visible to the owner and to nobody else — every customer saw the hardcoded
+homepage slides instead.
+
+```
+Panel  ->  PUT /api/admin/content/<banners|categories|reviews>  ->  MongoDB
+                                                                      |
+Homepage  <-  getLiveBanners()  <-------------------------------------+
+```
+
+Each list is read and written **whole**: `PUT` replaces it, and anything not in the body
+is deleted. They are small, hand-curated lists edited as a set, so this is simpler than
+a per-row endpoint and makes a delete and a reorder the same operation. The trade-off is
+last-write-wins if two people edit the same list at once.
+
+Banner links and image URLs are restricted to site-relative paths or `https://` URLs —
+a `javascript:` URL in a banner would otherwise be stored XSS.
+
+Whether a banner is currently running (its `startsAt`/`endsAt` window) is decided on the
+server, not in the browser: it is a fact about the data, and reading the clock during
+render is impure.
+
+## Inventory
+
+There is no longer a separate stock feed. The Inventory screen writes stock onto the
+product record itself, which is the same record the storefront reads — so the two can no
+longer disagree. `lib/stock-feed.ts` and `lib/banner-feed.ts` have been deleted.
+
+Setting a size to zero marks it out of stock server-side; the product page reads
+`outOfStock` and `stock` straight from the product.

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useMemo } from "react";
 
+import type { Banner } from "@/lib/admin/types";
 import type { Product } from "@/lib/types";
 
 /**
@@ -18,13 +19,23 @@ import type { Product } from "@/lib/types";
 
 type CatalogValue = {
   products: Product[];
+  /** Live banners from the panel. Empty is normal — the homepage falls back to its own slides. */
+  banners: Banner[];
   getProductById: (id: number | string) => Product | undefined;
   getProductBySlug: (slug: string) => Product | undefined;
 };
 
 const CatalogContext = createContext<CatalogValue | null>(null);
 
-export function CatalogProvider({ products, children }: { products: Product[]; children: React.ReactNode }) {
+export function CatalogProvider({
+  products,
+  banners,
+  children,
+}: {
+  products: Product[];
+  banners: Banner[];
+  children: React.ReactNode;
+}) {
   const value = useMemo<CatalogValue>(() => {
     // Indexed once per catalogue change: the cart rebuilds every line through
     // getProductById on each render, and a linear scan per line adds up.
@@ -32,10 +43,11 @@ export function CatalogProvider({ products, children }: { products: Product[]; c
     const bySlug = new Map(products.map((product) => [product.slug, product]));
     return {
       products,
+      banners,
       getProductById: (id) => byId.get(String(id)),
       getProductBySlug: (slug) => bySlug.get(slug),
     };
-  }, [products]);
+  }, [products, banners]);
 
   return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>;
 }
@@ -49,4 +61,8 @@ export function useCatalog(): CatalogValue {
 /** Convenience for the many screens that only want the list. */
 export function useProducts(): Product[] {
   return useCatalog().products;
+}
+
+export function useBanners(): Banner[] {
+  return useCatalog().banners;
 }

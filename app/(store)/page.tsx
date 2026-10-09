@@ -17,10 +17,9 @@ import {
 } from "lucide-react";
 import { ProductCard } from "@/components/ProductCard";
 import { useStore } from "@/components/StoreProvider";
-import { activeBanners } from "@/lib/banner-feed";
-import { useBannerFeed } from "@/lib/use-banner-feed";
+
 import type { Banner } from "@/lib/admin/types";
-import { useProducts } from "@/components/CatalogProvider";
+import { useBanners, useProducts } from "@/components/CatalogProvider";
 
 type HeroSlide = {
   kicker: string;
@@ -174,19 +173,23 @@ export default function HomePage() {
   const [copiedCoupon, setCopiedCoupon] = useState(false);
   const touchStart = useRef<number | null>(null);
 
-  const bannerFeed = useBannerFeed();
+  const bannerFeed = useBanners();
   const heroSlides = useMemo(() => {
-    const liveHeroBanners = activeBanners(bannerFeed, "hero");
+    // The server has already filtered to banners that are live and in their scheduling
+    // window, so only the placement choice is left here.
+    const liveHeroBanners = bannerFeed
+      .filter((banner) => banner.placement === "hero")
+      .sort((a, b) => a.sortOrder - b.sortOrder);
     return liveHeroBanners.length > 0 ? liveHeroBanners.map(bannerToSlide) : defaultHeroSlides;
   }, [bannerFeed]);
 
-  const trending = useMemo(() => [...products].sort((a, b) => b.popularity - a.popularity).slice(0, 9), []);
-  const newDrops = useMemo(() => products.filter((product) => product.tags.includes("new")).slice(0, 8), []);
+  const trending = useMemo(() => [...products].sort((a, b) => b.popularity - a.popularity).slice(0, 9), [products]);
+  const newDrops = useMemo(() => products.filter((product) => product.tags.includes("new")).slice(0, 8), [products]);
   const deals = useMemo(() => {
     const under = products.filter((product) => product.price <= 799);
     return (under.length >= 6 ? under : [...products].sort((a, b) => a.price - b.price)).slice(0, 9);
-  }, []);
-  const shirts = useMemo(() => products.filter((product) => product.type === "Shirt").slice(0, 8), []);
+  }, [products]);
+  const shirts = useMemo(() => products.filter((product) => product.type === "Shirt").slice(0, 8), [products]);
 
   const activeFeedProducts = useMemo(() => {
     switch (activeFeedTab) {

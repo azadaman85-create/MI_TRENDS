@@ -28,6 +28,8 @@ export type Product = {
   palette: [string, string, string];
   imageUrl?: string;
   backImageUrl?: string;
+  /** Units on hand per size. Drives the "only N left" nudge on the product page. */
+  stock?: Record<string, number>;
 };
 
 export type CartLine = {

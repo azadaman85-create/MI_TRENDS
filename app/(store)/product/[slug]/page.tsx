@@ -21,8 +21,6 @@ import { ProductVisual, type ProductVisualVariant } from "@/components/ProductVi
 import { ProductCard } from "@/components/ProductCard";
 import { useStore } from "@/components/StoreProvider";
 import { SizeGuide } from "@/components/SizeGuide";
-import { useStockFeed } from "@/lib/use-stock-feed";
-import { soldOutSizes, unitsFor } from "@/lib/stock-feed";
 import { useProducts } from "@/components/CatalogProvider";
 import type { Product } from "@/lib/types";
 
@@ -75,12 +73,9 @@ function ProductDetails({ product }: { product: Product }) {
     return [...related, ...fallback].slice(0, 4);
   }, [product, products]);
 
-  // Stock the admin panel has saved wins over the catalogue's own availability.
-  const stockFeed = useStockFeed();
-  const soldOut = useMemo(
-    () => new Set(soldOutSizes(stockFeed, product.id, product.sizes, product.outOfStock)),
-    [stockFeed, product],
-  );
+  // Availability comes from the product record itself — the panel writes stock there, so
+  // there is no separate feed that can disagree with it.
+  const soldOut = useMemo(() => new Set(product.outOfStock), [product.outOfStock]);
 
   const currentColor = product.colors[selectedColor] || product.colors[0];
   const saved = store.isWishlisted(product);
@@ -178,7 +173,7 @@ function ProductDetails({ product }: { product: Product }) {
             <div className="sizes" role="radiogroup" aria-label="Choose size">
               {product.sizes.map((size) => {
                 const unavailable = soldOut.has(size);
-                const left = unitsFor(stockFeed, product.id, size);
+                const left = product.stock?.[size] ?? null;
                 const scarce = !unavailable && left !== null && left > 0 && left <= 3;
                 return (
                   <button

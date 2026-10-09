@@ -1,7 +1,15 @@
 import type { Collection } from "mongodb";
 
 import { getDb } from "@/lib/db/mongodb";
-import type { AdminProduct, OrderLine, OrderStatus, PaymentMode } from "@/lib/admin/types";
+import type {
+  AdminProduct,
+  Banner,
+  CategoryNode,
+  OrderLine,
+  OrderStatus,
+  PaymentMode,
+  Review,
+} from "@/lib/admin/types";
 
 export type AuthProvider = "password" | "google";
 
@@ -124,6 +132,7 @@ export type ProductImageDoc = {
 let customerIndexes: Promise<void> | undefined;
 let orderIndexes: Promise<void> | undefined;
 let productIndexes: Promise<void> | undefined;
+let contentIndexes: Promise<void> | undefined;
 let imageIndexes: Promise<void> | undefined;
 
 function once(current: Promise<void> | undefined, work: () => Promise<unknown>, reset: () => void): Promise<void> {
@@ -203,4 +212,37 @@ export async function getProductImagesCollection(): Promise<Collection<ProductIm
   );
   await imageIndexes;
   return collection;
+}
+
+/**
+ * Storefront content the panel edits: banners, the category tree and reviews.
+ *
+ * Each already carries its own string `id`, which becomes `_id`. They share one helper
+ * because they share a shape of problem — small, hand-curated lists that used to live in
+ * one browser's localStorage and so were invisible to every customer.
+ */
+export type BannerDoc = Omit<Banner, "id"> & { _id: string };
+export type CategoryDoc = Omit<CategoryNode, "id"> & { _id: string };
+export type ReviewDoc = Omit<Review, "id"> & { _id: string };
+
+export async function getBannersCollection(): Promise<Collection<BannerDoc>> {
+  const db = await getDb();
+  const collection = db.collection<BannerDoc>("banners");
+  contentIndexes = once(
+    contentIndexes,
+    () => collection.createIndex({ status: 1, sortOrder: 1 }),
+    () => {
+      contentIndexes = undefined;
+    },
+  );
+  await contentIndexes;
+  return collection;
+}
+
+export async function getCategoriesCollection(): Promise<Collection<CategoryDoc>> {
+  return (await getDb()).collection<CategoryDoc>("categories");
+}
+
+export async function getReviewsCollection(): Promise<Collection<ReviewDoc>> {
+  return (await getDb()).collection<ReviewDoc>("reviews");
 }
