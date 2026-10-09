@@ -12,7 +12,6 @@ import {
 } from "react";
 
 import { useCatalog } from "@/components/CatalogProvider";
-import { calculateCouponDiscount, couponMinimum, VALID_COUPON_CODES } from "@/lib/coupons";
 import type { CartLine, Product, ProductColor } from "@/lib/types";
 
 export type ToastTone = "success" | "error" | "info";
@@ -52,7 +51,7 @@ export type StoreContextValue = {
   clearCart: () => void;
   toggleWishlist: (product: Product | number) => void;
   isWishlisted: (product: Product | number) => boolean;
-  applyCoupon: (code: string) => boolean;
+  applyCoupon: (code: string) => Promise<boolean>;
   clearCoupon: () => void;
   drawerOpen: boolean;
   isCartOpen: boolean;
@@ -184,10 +183,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [cartLines],
   );
 
-  const couponDiscount = useMemo(
-    () => calculateCouponDiscount(couponCode, subtotal),
-    [couponCode, subtotal],
-  );
+  /*
+    Set by the server when the code was applied. The browser holds no coupon rules — it
+    can't, without being handed every unreleased code — so this is a figure to display,
+    and the amount actually charged is recomputed server-side at checkout.
+  */
+  const [couponDiscount, setCouponDiscount] = useState(0);
 
   const coupon = useMemo<AppliedCoupon | null>(
     () => (couponCode ? { code: couponCode, discount: couponDiscount } : null),
@@ -359,7 +360,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
 
   const applyCoupon = useCallback(
-    (rawCode: string) => {
+    async (rawCode: string) => {
       const code = rawCode.trim().toUpperCase();
 
       if (!subtotal) {
@@ -367,29 +368,33 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
-      if (!(VALID_COUPON_CODES as readonly string[]).includes(code)) {
-        showToast("That coupon code is not valid.", "error");
+      try {
+        const response = await fetch("/api/coupons/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, subtotal }),
+        });
+        const result = await response.json();
+        if (!result?.ok) {
+          showToast(result?.message ?? "That coupon code is not valid.", "error");
+          return false;
+        }
+
+        setCouponCode(code);
+        setCouponDiscount(Number(result.discount) || 0);
+        showToast(`${code} applied. Your new total is ready.`);
+        return true;
+      } catch {
+        showToast("Could not check that code. Try again.", "error");
         return false;
       }
-
-      const minimum = couponMinimum(code);
-      if (subtotal < minimum) {
-        showToast(
-          `${code} works on orders of ₹${minimum.toLocaleString("en-IN")} or more.`,
-          "error",
-        );
-        return false;
-      }
-
-      setCouponCode(code);
-      showToast(`${code} applied. Your new total is ready.`);
-      return true;
     },
     [showToast, subtotal],
   );
 
   const clearCoupon = useCallback(() => {
     setCouponCode(null);
+    setCouponDiscount(0);
     showToast("Coupon removed.", "info");
   }, [showToast]);
 

@@ -11,12 +11,6 @@ import {
 } from "react";
 
 import {
-  banners as seedBanners,
-  categoryTree as seedCategories,
-  coupons as seedCoupons,
-  reviews as seedReviews,
-} from "@/lib/admin/data";
-import {
   DEFAULT_STORE_SETTINGS,
   readStoreSettings,
   writeStoreSettings,
@@ -50,19 +44,17 @@ export type AdminToast = {
 };
 
 /**
- * What still lives in this device's localStorage. Orders and customers deliberately
- * aren't here any more — those come from MongoDB via `/api/admin/*`, so the panel shows
- * the same data on every device instead of whatever this browser happened to save.
+ * Nothing is persisted to this device any more. Products, orders, customers, banners,
+ * categories, reviews and coupons all come from MongoDB via `/api/admin/*`, so the panel
+ * shows the same data on every device instead of whatever this browser happened to save.
  */
-type PersistedState = {
-  coupons: Coupon[];
-};
 
-type AdminStoreValue = PersistedState & {
+type AdminStoreValue = {
   /** From MongoDB, refreshed on an interval — not persisted to this device. */
   orders: Order[];
   customers: Customer[];
   products: AdminProduct[];
+  coupons: Coupon[];
   banners: Banner[];
   categories: CategoryNode[];
   reviews: Review[];
@@ -94,17 +86,13 @@ type AdminStoreValue = PersistedState & {
 
 const AdminStoreContext = createContext<AdminStoreValue | undefined>(undefined);
 
-function seedState(): PersistedState {
-  return { coupons: seedCoupons };
-}
-
 /** How often the panel re-reads orders and customers from the database. */
 const LIVE_REFRESH_MS = 8000;
 
 export function AdminStoreProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<PersistedState>(seedState);
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [categories, setCategories] = useState<CategoryNode[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -113,20 +101,17 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<StoreSettings>(DEFAULT_STORE_SETTINGS);
   const [toasts, setToasts] = useState<AdminToast[]>([]);
 
-  // Persisted edits load after mount so the server and first client render match.
+  // Settings still live in this browser; everything else now comes from the database.
+  // The old admin-state blobs are cleared out on load so they can't shadow it.
   useEffect(() => {
     try {
-      LEGACY_STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key));
-      const saved = window.localStorage.getItem(STORAGE_KEY);
-      const parsed = saved ? (JSON.parse(saved) as Partial<PersistedState>) : null;
-      /* Settings and saved edits can only be read in the browser, so they land after the
-         first paint rather than during render. */
-      /* eslint-disable react-hooks/set-state-in-effect */
+      [...LEGACY_STORAGE_KEYS, STORAGE_KEY].forEach((key) => window.localStorage.removeItem(key));
+      /* Settings can only be read in the browser, so they land after the first paint
+         rather than during render. */
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSettings(readStoreSettings());
-      if (parsed) setState((current) => ({ ...current, ...parsed }));
-      /* eslint-enable react-hooks/set-state-in-effect */
     } catch {
-      // A corrupt or blocked store just means we stay on the seeded data.
+      // Storage blocked — the defaults are fine.
     }
     setHydrated(true);
   }, []);
@@ -138,7 +123,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
    */
   const refreshLiveData = useCallback(async () => {
     try {
-      const [ordersResponse, customersResponse, productsResponse, bannersResponse, categoriesResponse, reviewsResponse] =
+      const [ordersResponse, customersResponse, productsResponse, bannersResponse, categoriesResponse, reviewsResponse, couponsResponse] =
         await Promise.all([
         fetch("/api/admin/orders", { cache: "no-store" }),
         fetch("/api/admin/customers", { cache: "no-store" }),
@@ -146,6 +131,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         fetch("/api/admin/content/banners", { cache: "no-store" }),
         fetch("/api/admin/content/categories", { cache: "no-store" }),
         fetch("/api/admin/content/reviews", { cache: "no-store" }),
+        fetch("/api/admin/content/coupons", { cache: "no-store" }),
       ]);
       if (ordersResponse.ok) {
         const data = (await ordersResponse.json()) as { orders: Order[] };
@@ -162,6 +148,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       if (bannersResponse.ok) setBanners(((await bannersResponse.json()) as { items: Banner[] }).items ?? []);
       if (categoriesResponse.ok) setCategories(((await categoriesResponse.json()) as { items: CategoryNode[] }).items ?? []);
       if (reviewsResponse.ok) setReviews(((await reviewsResponse.json()) as { items: Review[] }).items ?? []);
+      if (couponsResponse.ok) setCoupons(((await couponsResponse.json()) as { items: Coupon[] }).items ?? []);
     } catch {
       // Keep whatever the panel is already showing until the next tick succeeds.
     }
@@ -176,15 +163,6 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     const timer = window.setInterval(() => void refreshLiveData(), LIVE_REFRESH_MS);
     return () => window.clearInterval(timer);
   }, [hydrated, refreshLiveData]);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      // Out of quota or private mode — edits stay in memory for this session.
-    }
-  }, [state, hydrated]);
 
   const notify = useCallback(
     (message: string, tone: AdminToast["tone"] = "success", description?: string) => {
@@ -244,7 +222,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
    * reorder are the same operation.
    */
   const writeContent = useCallback(
-    async (resource: "banners" | "categories" | "reviews", items: unknown[], failure: string) => {
+    async (resource: "banners" | "categories" | "reviews" | "coupons", items: unknown[], failure: string) => {
       try {
         const response = await fetch(`/api/admin/content/${resource}`, {
           method: "PUT",
@@ -266,10 +244,10 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AdminStoreValue>(() => {
     return {
-      ...state,
       orders,
       customers,
       products,
+      coupons,
       banners,
       categories,
       reviews,
@@ -433,19 +411,16 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         );
       },
 
-      saveCoupon: (coupon) =>
-        setState((current) => ({
-          ...current,
-          coupons: current.coupons.some((item) => item.id === coupon.id)
-            ? current.coupons.map((item) => (item.id === coupon.id ? coupon : item))
-            : [coupon, ...current.coupons],
-        })),
+      saveCoupon: (coupon) => {
+        const next = coupons.some((item) => item.id === coupon.id)
+          ? coupons.map((item) => (item.id === coupon.id ? coupon : item))
+          : [coupon, ...coupons];
+        void writeContent("coupons", next, "Could not save that coupon");
+      },
 
-      deleteCoupon: (id) =>
-        setState((current) => ({
-          ...current,
-          coupons: current.coupons.filter((coupon) => coupon.id !== id),
-        })),
+      deleteCoupon: (id) => {
+        void writeContent("coupons", coupons.filter((coupon) => coupon.id !== id), "Could not delete that coupon");
+      },
 
       saveBanner: (banner) => {
         const next = banners.some((item) => item.id === banner.id)
@@ -469,18 +444,23 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         void writeContent("categories", categories.filter((category) => category.id !== id), "Could not delete that category");
       },
 
+      /*
+        Clears this browser's leftover state and re-reads everything from the database.
+        It no longer resets anything: with products, coupons, banners, categories and
+        reviews all persisted server-side, "reset demo data" would mean deleting real
+        records, which is not something a stray click should do.
+      */
       resetDemoData: () => {
-        // Only resets the demo catalogue/content. Orders and customers live in MongoDB
-        // and are real records — this never touches them.
-        setState(seedState());
         try {
-          window.localStorage.removeItem(STORAGE_KEY);
+          [...LEGACY_STORAGE_KEYS, STORAGE_KEY].forEach((key) => window.localStorage.removeItem(key));
         } catch {
           // Nothing to clear.
         }
+        void refreshLiveData();
+        notify("Reloaded from the database", "info", "Local leftovers cleared. Nothing was deleted.");
       },
     };
-  }, [state, orders, customers, products, banners, categories, reviews, writeContent, hydrated, settings, updateSettings, toasts, notify, dismissToast, refreshLiveData, writeProduct]);
+  }, [orders, customers, products, coupons, banners, categories, reviews, writeContent, hydrated, settings, updateSettings, toasts, notify, dismissToast, refreshLiveData, writeProduct]);
 
   return <AdminStoreContext.Provider value={value}>{children}</AdminStoreContext.Provider>;
 }

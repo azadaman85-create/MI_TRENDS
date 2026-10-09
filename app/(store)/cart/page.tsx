@@ -30,14 +30,20 @@ export default function CartPage() {
 
   const suggestions = useMemo(() => products.filter((product) => !cart.some((line) => line.product.id === product.id)).slice(0, 4), [cart]);
 
-  const applyCoupon = () => {
+  const [checkingCoupon, setCheckingCoupon] = useState(false);
+
+  // The server decides whether the code applies, so this waits for the answer rather
+  // than guessing. The toast carries the specific reason; this line just confirms.
+  const applyCoupon = async () => {
     const value = couponInput.trim().toUpperCase();
     if (!value) {
       setCouponMessage("Enter a coupon code to continue.");
       return;
     }
-    const applied = store.applyCoupon(value);
-    setCouponMessage(applied ? `${value} is now working on your bag.` : "That code is invalid or your bag does not meet the minimum.");
+    setCheckingCoupon(true);
+    const applied = await store.applyCoupon(value);
+    setCheckingCoupon(false);
+    setCouponMessage(applied ? `${value} is now working on your bag.` : "");
   };
 
   if (!cart.length) {
@@ -114,7 +120,7 @@ export default function CartPage() {
 
             <div className="coupon">
               <label htmlFor="coupon"><Tag size={15} /> Have a coupon?</label>
-              <div><input id="coupon" value={couponInput} onChange={(event) => { setCouponInput(event.target.value.toUpperCase()); setCouponMessage(""); }} placeholder="Enter code" /><button type="button" onClick={applyCoupon}>{store.coupon ? "Change" : "Apply"}</button></div>
+              <div><input id="coupon" value={couponInput} onChange={(event) => { setCouponInput(event.target.value.toUpperCase()); setCouponMessage(""); }} placeholder="Enter code" /><button type="button" onClick={() => void applyCoupon()} disabled={checkingCoupon}>{checkingCoupon ? "Checking…" : store.coupon ? "Change" : "Apply"}</button></div>
               {store.coupon && <button className="coupon-active" type="button" onClick={() => { store.clearCoupon(); setCouponInput(""); setCouponMessage("Coupon removed."); }}><Check size={13} />{store.couponCode} applied · remove</button>}
               {couponMessage && <p className={store.coupon ? "good" : "bad"} aria-live="polite">{couponMessage}</p>}
               <div className="code-hints"><button type="button" onClick={() => setCouponInput("HYPE10")}>HYPE10</button><button type="button" onClick={() => setCouponInput("FLAT200")}>FLAT200</button><button type="button" onClick={() => setCouponInput("FIRST15")}>FIRST15</button></div>

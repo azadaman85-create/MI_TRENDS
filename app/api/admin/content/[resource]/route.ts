@@ -1,20 +1,22 @@
 import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/admin/guard.server";
-import type { Banner, CategoryNode, Review } from "@/lib/admin/types";
+import type { Banner, CategoryNode, Coupon, Review } from "@/lib/admin/types";
 import {
   getBanners,
   getCategories,
+  getCoupons,
   getReviews,
   replaceBanners,
   replaceCategories,
+  replaceCoupons,
   replaceReviews,
 } from "@/lib/content.server";
 import { RATE_LIMITS } from "@/lib/security/config";
 import { logSecurityEvent } from "@/lib/security/events";
 import { clientIpFrom, consumeRateLimit } from "@/lib/security/rate-limit";
 import { requestIdFrom } from "@/lib/security/request-id";
-import { normaliseBanners, normaliseCategories, normaliseReviews } from "@/lib/content.validate";
+import { normaliseBanners, normaliseCategories, normaliseCoupons, normaliseReviews } from "@/lib/content.validate";
 
 const ENDPOINT = "/api/admin/content/[resource]";
 
@@ -25,7 +27,7 @@ const ENDPOINT = "/api/admin/content/[resource]";
  * as a set in the panel. PUT replaces the list; whatever isn't in the body is deleted.
  * Everything is re-validated here, since "the panel sent it" is not a guarantee.
  */
-const RESOURCES = ["banners", "categories", "reviews"] as const;
+const RESOURCES = ["banners", "categories", "reviews", "coupons"] as const;
 type Resource = (typeof RESOURCES)[number];
 
 export async function GET(request: Request, { params }: { params: Promise<{ resource: string }> }) {
@@ -48,7 +50,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ reso
 
   try {
     const items =
-      resource === "banners" ? await getBanners() : resource === "categories" ? await getCategories() : await getReviews();
+      resource === "banners"
+        ? await getBanners()
+        : resource === "categories"
+          ? await getCategories()
+          : resource === "coupons"
+            ? await getCoupons()
+            : await getReviews();
     return NextResponse.json({ items }, { headers: { "x-request-id": requestId, "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Could not load that list." }, { status: 503, headers: { "x-request-id": requestId } });
@@ -92,6 +100,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ reso
     } else if (resource === "categories") {
       const items = normaliseCategories(body.items);
       await replaceCategories(items as CategoryNode[]);
+      count = items.length;
+    } else if (resource === "coupons") {
+      const items = normaliseCoupons(body.items);
+      await replaceCoupons(items as Coupon[]);
       count = items.length;
     } else {
       const items = normaliseReviews(body.items);

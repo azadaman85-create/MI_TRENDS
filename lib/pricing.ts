@@ -17,7 +17,8 @@
  * MongoDB too would let this clamp go away entirely.
  */
 import { getActiveProducts } from "@/lib/products.server";
-import { calculateCouponDiscount, isValidCouponCode } from "@/lib/coupons";
+import { getCoupons } from "@/lib/content.server";
+import { couponDiscount } from "@/lib/coupons";
 import type { OrderLine } from "@/lib/admin/types";
 
 export type TrustedOrderLine = {
@@ -69,7 +70,8 @@ export async function priceOrder(input: {
   // Priced against the database, not a compiled-in list: a product published from the
   // panel has to be purchasable, and one that has been unpublished or deleted has to
   // stop being purchasable. Loaded once and indexed, rather than queried per line.
-  const catalogue = new Map((await getActiveProducts()).map((product) => [String(product.id), product]));
+  const [catalogueList, coupons] = await Promise.all([getActiveProducts(), getCoupons()]);
+  const catalogue = new Map(catalogueList.map((product) => [String(product.id), product]));
   const getProductById = (id: number | string) => catalogue.get(String(id));
 
   if (!Array.isArray(lines) || lines.length === 0) {
@@ -120,7 +122,9 @@ export async function priceOrder(input: {
   }
 
   const code = typeof couponCode === "string" ? couponCode.trim().toUpperCase() : "";
-  const discount = code && isValidCouponCode(code) ? calculateCouponDiscount(code, subtotal) : 0;
+  // Evaluated against the coupon records in the database, so a code an admin created
+  // actually works and one they paused actually stops.
+  const discount = couponDiscount(coupons, code, subtotal);
 
   const clampedShipping = clamp(Number(shipping) || 0, 0, MAX_SHIPPING);
   const clampedCodFee = clamp(Number(codFee) || 0, 0, MAX_COD_FEE);

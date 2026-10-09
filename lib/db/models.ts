@@ -5,6 +5,7 @@ import type {
   AdminProduct,
   Banner,
   CategoryNode,
+  Coupon,
   OrderLine,
   OrderStatus,
   PaymentMode,
@@ -224,6 +225,7 @@ export async function getProductImagesCollection(): Promise<Collection<ProductIm
 export type BannerDoc = Omit<Banner, "id"> & { _id: string };
 export type CategoryDoc = Omit<CategoryNode, "id"> & { _id: string };
 export type ReviewDoc = Omit<Review, "id"> & { _id: string };
+export type CouponDoc = Omit<Coupon, "id"> & { _id: string };
 
 export async function getBannersCollection(): Promise<Collection<BannerDoc>> {
   const db = await getDb();
@@ -245,4 +247,8 @@ export async function getCategoriesCollection(): Promise<Collection<CategoryDoc>
 
 export async function getReviewsCollection(): Promise<Collection<ReviewDoc>> {
   return (await getDb()).collection<ReviewDoc>("reviews");
+}
+
+export async function getCouponsCollection(): Promise<Collection<CouponDoc>> {
+  return (await getDb()).collection<CouponDoc>("coupons");
 }

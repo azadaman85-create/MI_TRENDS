@@ -1,15 +1,18 @@
 import {
   banners as seedBanners,
   categoryTree as seedCategories,
+  coupons as seedCoupons,
   reviews as seedReviews,
 } from "@/lib/admin/data";
-import type { Banner, CategoryNode, Review } from "@/lib/admin/types";
+import type { Banner, CategoryNode, Coupon, Review } from "@/lib/admin/types";
 import {
   getBannersCollection,
   getCategoriesCollection,
+  getCouponsCollection,
   getReviewsCollection,
   type BannerDoc,
   type CategoryDoc,
+  type CouponDoc,
   type ReviewDoc,
 } from "@/lib/db/models";
 
@@ -111,6 +114,31 @@ export async function getReviews(): Promise<Review[]> {
 
 export async function replaceReviews(items: Review[]): Promise<void> {
   const collection = await getReviewsCollection();
+  await collection.bulkWrite(
+    [
+      ...items.map(({ id, ...rest }) => ({
+        updateOne: { filter: { _id: id }, update: { $set: rest }, upsert: true },
+      })),
+      { deleteMany: { filter: { _id: { $nin: items.map((item) => item.id) } } } },
+    ],
+    { ordered: true },
+  );
+}
+
+/* ---------------------------------- coupons --------------------------------- */
+
+export async function getCoupons(): Promise<Coupon[]> {
+  const collection = await getCouponsCollection();
+  if ((await collection.estimatedDocumentCount()) === 0 && seedCoupons.length > 0) {
+    const docs: CouponDoc[] = seedCoupons.map(({ id, ...rest }) => ({ ...rest, _id: id }));
+    await collection.insertMany(docs, { ordered: false }).catch(ignoreDuplicate);
+  }
+  const docs = await collection.find({}).toArray();
+  return docs.map(({ _id, ...rest }) => ({ ...rest, id: _id }));
+}
+
+export async function replaceCoupons(items: Coupon[]): Promise<void> {
+  const collection = await getCouponsCollection();
   await collection.bulkWrite(
     [
       ...items.map(({ id, ...rest }) => ({

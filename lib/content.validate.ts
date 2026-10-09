@@ -1,4 +1,4 @@
-import type { Banner, CategoryNode, Review } from "@/lib/admin/types";
+import type { Banner, CategoryNode, Coupon, Review } from "@/lib/admin/types";
 
 /**
  * Rebuilds banners, categories and reviews from whatever the panel posted.
@@ -112,4 +112,39 @@ export function normaliseReviews(input: unknown[]): Review[] {
       };
     })
     .filter((r): r is Review => r !== null);
+}
+
+const COUPON_TYPES: Coupon["type"][] = ["percent", "flat", "shipping"];
+const COUPON_STATUSES: Coupon["status"][] = ["active", "scheduled", "expired", "paused"];
+
+export function normaliseCoupons(input: unknown[]): Coupon[] {
+  const seenCodes = new Set<string>();
+  return input
+    .slice(0, MAX_ITEMS)
+    .map((raw, index): Coupon | null => {
+      if (typeof raw !== "object" || raw === null) return null;
+      const c = raw as Record<string, unknown>;
+      const code = str(c.code, 40).toUpperCase().replace(/\s+/g, "");
+      if (!code) return null;
+      // A duplicate code would make which discount applies a coin toss.
+      if (seenCodes.has(code)) return null;
+      seenCodes.add(code);
+
+      const type = COUPON_TYPES.includes(c.type as Coupon["type"]) ? (c.type as Coupon["type"]) : "flat";
+      const rawValue = Math.max(0, num(c.value));
+      return {
+        id: str(c.id, 64) || `coupon-${index}`,
+        code,
+        type,
+        // A percentage above 100 would pay the customer to shop.
+        value: type === "percent" ? Math.min(100, Math.round(rawValue)) : Math.round(rawValue),
+        minimumSpend: Math.max(0, Math.round(num(c.minimumSpend))),
+        usage: Math.max(0, Math.round(num(c.usage))),
+        usageLimit: Math.max(0, Math.round(num(c.usageLimit))),
+        startsAt: str(c.startsAt, 40),
+        expiresAt: str(c.expiresAt, 40),
+        status: COUPON_STATUSES.includes(c.status as Coupon["status"]) ? (c.status as Coupon["status"]) : "paused",
+      };
+    })
+    .filter((c): c is Coupon => c !== null);
 }
