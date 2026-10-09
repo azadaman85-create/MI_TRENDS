@@ -19,3 +19,5 @@ secrets*
 .agents/
 .claude/
 skills-lock.json
+# Database dumps — contain customer emails and password hashes.
+scripts/backups/

@@ -180,3 +180,62 @@ longer disagree. `lib/stock-feed.ts` and `lib/banner-feed.ts` have been deleted.
 
 Setting a size to zero marks it out of stock server-side; the product page reads
 `outOfStock` and `stock` straight from the product.
+
+## Coupons
+
+Coupons live in MongoDB (`coupons`) and the rules are evaluated from the record:
+percent / flat / free-shipping, minimum spend, usage limit, and the date window.
+
+They used to be a hardcoded switch over three literal codes while the panel wrote to
+localStorage — so a coupon created in the panel did nothing, and one paused there kept
+working.
+
+**Dates beat the stored status.** A coupon marked `active` whose `expiresAt` has passed
+is rejected, because the status only reflects whenever an admin last touched it. An
+explicit `paused` still wins over the dates, because that is a deliberate act.
+
+**The coupon list never reaches the browser.** It holds scheduled and paused codes that
+haven't been announced. The cart asks about one code at a time via
+`POST /api/coupons/validate` (rate-limited, so the list can't be brute-forced), and the
+discount actually charged is recomputed at checkout from the same records — the reply to
+the browser is a preview, never an input.
+
+Two guards: a percentage above 100 is clamped to 100, and no discount can exceed the
+bag total.
+
+## Backup and recovery
+
+Atlas keeps its own cluster snapshots, restored through the Atlas UI. These scripts are
+the other half — a file you hold, that can be inspected and restored one collection at a
+time, which is what you want after a bad bulk edit rather than a whole-cluster rollback.
+
+**Take a backup** (do this before any risky change):
+
+```
+npx tsx --env-file=.env.local scripts/backup.ts
+```
+
+Writes `scripts/backups/mitrends-<timestamp>.json` covering products, productImages,
+orders, customers, banners, categories, reviews and coupons. Product image bytes are
+included, so a restore brings the pictures back too.
+
+The file contains customer emails and password hashes. `scripts/backups/` is gitignored —
+keep it that way, and off shared drives.
+
+**Restore:**
+
+```
+npx tsx --env-file=.env.local scripts/restore.ts <file> coupons,banners
+npx tsx --env-file=.env.local scripts/restore.ts <file> products --replace
+```
+
+You must name the collections; there is no restore-everything switch. By default only
+documents whose `_id` is missing are inserted, so a restore brings back what was deleted
+without undoing edits made since. `--replace` overwrites matching documents as well.
+Neither mode ever deletes something the backup doesn't contain.
+
+Take a fresh backup before restoring, so the current state is recoverable if the restore
+turns out to be the wrong call.
+
+**Housekeeping note:** deleting a product or replacing an image leaves the old bytes in
+`productImages`. They are harmless but accumulate; there is no automatic sweep yet.
