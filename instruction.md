@@ -1,795 +1,456 @@
-# 🔴 CRITICAL: Diagnose Why Products Are Not Publishing to the Frontend
-
-I need you to investigate my e-commerce application's product publishing system **end-to-end**.
-
-Do NOT immediately change or rewrite the code.
-
-First, perform a complete technical audit to determine **exactly where the product data is being stored, where product images are being stored, what happens when I click Publish, and why the published product is not appearing on the customer-facing frontend.**
-
-The most important requirement is:
-
-> **Find the actual source of truth for my products and images. Determine whether the data is permanently stored in the database/storage or only exists temporarily in frontend/backend state.**
-
----
-
-# 1. Trace the Complete Product Lifecycle
-
-Trace one product through the entire system:
-
-```text
-Admin Product Form
-        ↓
-Form State
-        ↓
-Save/Create API
-        ↓
-Backend Validation
-        ↓
-Database
-        ↓
-Image/File Storage
-        ↓
-Product Record
-        ↓
-Publish API
-        ↓
-Published Status
-        ↓
-Storefront Product API
-        ↓
-Frontend State
-        ↓
-Product Listing
-        ↓
-Product Detail Page
-```
-
-Do not skip any layer.
-
-Identify the exact file, function, API endpoint, database table/collection, storage bucket/path, and frontend component involved at each step.
-
----
-
-# 2. Find EXACTLY Where Product Details Are Stored
-
-When I create a product from the admin dashboard, determine exactly where each field is stored.
-
-Check all product fields including:
-
-* Product ID
-* Product name
-* Description
-* Short description
-* Price
-* Sale price
-* Discount
-* Category
-* Subcategory
-* Brand
-* SKU
-* Stock
-* Inventory
-* Variants
-* Options
-* Attributes
-* Specifications
-* Tags
-* SEO title
-* SEO description
-* Slug
-* Visibility
-* Status
-* Published state
-* Active state
-* Created date
-* Updated date
-
-For every field, identify:
-
-```text
-Frontend field
-↓
-Request payload field
-↓
-Backend field
-↓
-Database column/document field
-↓
-Actual stored value
-```
-
-Do not assume the field names.
-
-Inspect the actual code and actual database schema.
+# MI TRENDS — Full-Stack Audit, Cloud Storage Migration, Domain Fix & Live E-Commerce Launch
 
----
-
-# 3. Find EXACTLY Where Product Images Are Stored
-
-This is extremely important.
-
-When I upload a product image from the admin dashboard, determine:
-
-### Where does the image physically go?
-
-Check whether the application uses:
-
-* Supabase Storage
-* Firebase Storage
-* AWS S3
-* Cloudinary
-* Local filesystem
-* Database blob
-* Another object-storage provider
-* Temporary browser storage
-* Base64
-* Blob/Object URL
-* Some custom upload API
-
-Identify the exact:
-
-* Storage provider
-* Bucket name
-* Folder/path
-* File name
-* Asset ID
-* Public URL
-* Database image record
-* Product-to-image relationship
+**Production Website:** https://mitrends.co.in
+**GitHub Repository:** https://github.com/azadaman85-create/MI_TRENDS.git
+**Hosting Platform:** Vercel
+**Domain Provider:** GoDaddy
+**Database:** MongoDB Atlas or the existing cloud MongoDB deployment
+**Image Storage:** Existing cloud image provider, or Cloudinary/Vercel Blob if required
 
-Trace:
+## PRIMARY OBJECTIVE
 
-```text
-Select Image
-↓
-Upload Function
-↓
-Upload API
-↓
-Storage Provider
-↓
-Storage Bucket
-↓
-Stored File
-↓
-Returned URL/Asset ID
-↓
-Database Image Record
-↓
-Product ID Relationship
-↓
-Product API
-↓
-Frontend Image
-```
-
-I need you to verify that the image is **actually permanently stored**.
-
-Do not assume that an image preview means the image was successfully uploaded.
+Perform a complete technical audit of my existing MI Trends e-commerce website, identify the root causes of all existing issues, implement the necessary fixes, deploy the corrected application, and verify the complete production workflow from the admin dashboard to a successful customer order.
 
----
+I have already connected GoDaddy and Vercel. Verify that the actual configuration is correct. Do not assume that the integration is working simply because the platforms are connected.
 
-# 4. Check for Temporary Image Storage
+**Critical requirement:** The live website must be fully cloud-hosted. No production product data, uploaded images, customer data, inventory records, payment records, or orders may depend on my local computer, a localhost server, temporary filesystem storage, or an in-memory database.
 
-Specifically search the code for:
+Do not merely explain how to fix the problems. Inspect the existing codebase, implement fixes wherever access permits, deploy through the existing deployment workflow, and verify the results using real evidence.
 
-```text
-URL.createObjectURL()
-blob:
-FileReader
-base64
-localStorage
-sessionStorage
-temporary upload
-preview URL
-imagePreview
-previewImages
-blob URL
-```
-
-Determine whether these are being used only for preview purposes or whether the application incorrectly relies on them as the permanent product image.
-
-If the product image exists only as a temporary browser URL, identify that as a root cause.
-
----
-
-# 5. Inspect the Product Creation API
+## 1. Audit the Complete Frontend and Backend
 
-Find the exact API used when I click:
-
-**Save Product / Create Product / Add Product**
-
-Document:
-
-```text
-HTTP Method:
-Endpoint:
-Frontend file:
-Backend file:
-Request payload:
-Validation:
-Database operation:
-Database table/collection:
-Response:
-```
-
-Verify whether ALL product information is actually sent.
-
-Check for fields being:
-
-* Dropped
-* Renamed incorrectly
-* Set to `undefined`
-* Set to `null`
-* Removed during validation
-* Removed during serialization
-* Ignored by the backend
-* Stored in the wrong database field
+Inspect the entire existing project before changing anything.
 
----
+Identify the current:
 
-# 6. Verify the Actual Database Record
+* Frontend and backend frameworks and API routes.
+* Admin dashboard and product management implementation.
+* MongoDB connection and database operations.
+* Image upload mechanism and image storage locations.
+* Authentication provider and Google OAuth configuration.
+* Shopping cart, checkout, payment gateway, and order management.
+* GitHub integration, Vercel settings, GoDaddy DNS records, and production environment variables.
 
-Do not rely on the admin UI.
-
-After creating a test product, inspect the **actual database record**.
+Trace the complete data flow:
 
-Show the actual structure/value of the record in a safe way.
+**Admin Dashboard → Backend API → Cloud Image Storage → MongoDB → Frontend Product Listing → Cart → Authentication → Checkout → Razorpay → Order Confirmation → Admin Order Dashboard.**
 
-Determine:
+Find broken connections, incorrect configurations, missing API calls, runtime errors, incomplete features, and production-only failures.
 
-```text
-Product ID:
-Status:
-Published:
-Active:
-Visibility:
-Image reference:
-Price:
-Category:
-Stock:
-Created:
-Updated:
-```
+Preserve the existing design, logo, branding, product catalogue, and working functionality unless a change is necessary.
 
-Use the application's actual field names.
+## 2. Fix Admin Product Creation, Editing and Publishing
 
-Do not assume the database uses:
+My admin dashboard allows me to create and edit products and upload product images. Verify whether these operations actually persist correctly in the production cloud database and display on the frontend.
 
-```text
-status
-isPublished
-isActive
-```
+Audit every relevant operation:
 
-Find the real fields.
-
----
+* Create a product.
+* Edit product details.
+* Upload or replace product images.
+* Change prices, sale prices, stock, sizes, colors, variants, category, SKU and description.
+* Save drafts.
+* Publish and unpublish products.
+* Update inventory.
+* Delete products where authorized.
 
-# 7. Investigate the Publish Button
+Requirements:
 
-Find the exact code executed when I click:
+1. Save product records and changes to the production MongoDB database.
+2. Ensure every supported product field is saved correctly.
+3. Fix broken APIs, database writes, validation, request payloads, and frontend data-fetching logic.
+4. Ensure editing an existing product updates the correct record without creating duplicates.
+5. Ensure published products appear on the live storefront with the correct details and images.
+6. Ensure unpublished or draft products are not publicly visible.
+7. Refreshing a page, restarting the application, or deploying new code must not erase saved products.
+8. Display success messages only after the backend confirms that the changes were saved successfully.
+9. Show meaningful error messages when saving, publishing, or uploading fails.
+10. Verify both product listing APIs and individual product detail APIs.
 
-**Publish**
-
-Trace:
-
-```text
-Publish Button
-↓
-Frontend Handler
-↓
-API Request
-↓
-Backend Endpoint
-↓
-Database Update
-↓
-Response
-↓
-Frontend State
-```
+Test product creation and editing against the live production database. Do not rely exclusively on mock data or a local development database.
 
-Determine exactly what is happening.
+## 3. Fix Image Uploads and Permanent Cloud Storage
 
-Check whether Publish:
+Investigate exactly where product images are currently stored.
 
-* Does nothing
-* Only changes local React/Vue state
-* Calls the wrong API
-* Sends the wrong product ID
-* Sends the wrong status
-* Updates the wrong database field
-* Updates the wrong database record
-* Fails validation
-* Fails authentication
-* Fails authorization
-* Updates the database but returns an incorrect response
-* Shows a fake success message
-* Updates admin state but not the database
+Search for local upload directories, project folders, temporary files, Base64 storage, in-memory image references, Vercel filesystem writes, and hardcoded local image paths.
 
----
+Implement permanent cloud image storage.
 
-# 8. Compare BEFORE and AFTER Publish
+Preferred approach:
 
-Create one real test product.
+* Store actual image files in an existing persistent cloud storage provider.
+* If none exists, evaluate Cloudinary or Vercel Blob and configure a suitable solution.
+* Store the resulting HTTPS image URL and associated metadata in MongoDB.
+* Keep MongoDB product records linked to the correct images.
 
-Before Publish, inspect the database.
+Verify that:
 
-Then click Publish.
+* Images upload successfully through the admin dashboard.
+* Only authorized administrators can upload images.
+* File types, sizes, and content are validated safely.
+* Main and additional product images display correctly.
+* Replacing an image updates the appropriate product.
+* Failed uploads do not save broken image URLs.
+* Existing images are preserved or migrated where necessary.
+* Images continue working after a new Vercel deployment.
 
-Immediately inspect the same product again.
+Do not use Vercel's temporary filesystem or my local computer as permanent production image storage.
 
-Document:
+## 4. Make MongoDB the Persistent Production Database
 
-### BEFORE
+Verify the actual database connection used by the live website.
 
-```text
-Product ID:
-Status:
-Published:
-Active:
-Visibility:
-Image:
-```
+Requirements:
 
-### AFTER
+* Use MongoDB Atlas or the existing equivalent cloud-hosted MongoDB service.
+* Configure the production database connection securely through Vercel environment variables.
+* Confirm that production API routes use the intended cloud database, not localhost or local MongoDB.
+* Validate database schemas, permissions, indexes, connection handling, and error handling.
+* Ensure product, customer, order, payment reference, and inventory records persist correctly.
+* Handle duplicate requests and conflicting inventory updates safely.
+* Configure backups and document a recovery process.
 
-```text
-Product ID:
-Status:
-Published:
-Active:
-Visibility:
-Image:
-```
+Never delete, reset, or overwrite existing production data without explicit authorization and a verified backup.
 
-If nothing changes in the database after clicking Publish, identify the exact reason.
+## 5. Fix the Custom Domain — Remove Unwanted Vercel URLs
 
----
+My website is supposed to use:
 
-# 9. Check the Storefront Product API
+**https://mitrends.co.in**
 
-Find the API/query that the customer-facing storefront uses.
+However, the Vercel URL is still appearing or being used when I visit the website.
 
-Identify:
+Find the exact cause and fix it.
 
-```text
-Endpoint:
-HTTP Method:
-Backend file:
-Database query:
-Filters:
-Authentication:
-Response:
-```
+Check:
 
-Check whether it filters products using something like:
+* The custom domain configuration in the correct Vercel project.
+* GoDaddy DNS records, including required A, CNAME, and verification records.
+* DNS conflicts and incorrect forwarding rules.
+* The Vercel production domain and deployment configuration.
+* SSL certificate and HTTPS status.
+* `vercel.json`, routing, redirects, and middleware.
+* Hardcoded Vercel URLs in frontend or backend code.
+* API base URLs and environment variables.
+* Google OAuth callback and allowed-origin URLs.
+* Razorpay return URLs and webhook endpoints.
+* SEO canonical URLs, sitemap, robots.txt, and social-sharing metadata.
 
-```text
-status = published
-isPublished = true
-isActive = true
-visibility = public
-stock > 0
-```
+Expected result:
 
-or any equivalent condition.
+1. Customers use `https://mitrends.co.in` as the primary domain.
+2. HTTPS works without certificate errors.
+3. The preferred hostname and redirects are consistent.
+4. Public-facing links and canonical metadata use the custom domain.
+5. Unnecessary Vercel-hostname redirects are removed or configured appropriately.
+6. Preview deployments and internal Vercel functionality continue working.
+7. Existing DNS records needed for email and other services are preserved.
 
-Compare the storefront query with the actual database record.
+Do not blindly replace DNS records. Inspect the actual configuration and identify which records need changing before applying modifications.
 
-For example:
+Verify the result using actual HTTP requests, redirects, SSL checks, and the deployed application.
 
-```text
-Database:
-status = "active"
+## 6. Verify the Entire Google Authentication Workflow
 
-Frontend API:
-status = "published"
-```
+Audit Google sign-up and sign-in on the production domain.
 
-If this mismatch exists, identify it as a root cause.
+Test:
 
----
+* Google OAuth configuration and callback URLs.
+* Successful customer registration and login.
+* Session creation, persistence, expiration, and logout.
+* Secure cookies over HTTPS.
+* Error handling for failed authentication.
+* Customer profile persistence in the intended cloud database.
+* Checkout access for logged-in and logged-out users.
+* Protection against unauthorized access to customer information and orders.
 
-# 10. Check Whether Admin and Frontend Use Different Databases
+Update the authorized Google OAuth origins and redirect URIs where required.
 
-This is a HIGH PRIORITY check.
+Preserve existing working authentication features. Do not replace the authentication provider unnecessarily.
 
-Verify that the admin dashboard and customer storefront are using the same:
+Never expose Google OAuth secrets or other authentication credentials in frontend code or GitHub.
 
-* API
-* API base URL
-* Database
-* Supabase project
-* Firebase project
-* PostgreSQL instance
-* MongoDB database
-* Environment variables
-* Production/staging environment
+## 7. Enforce Sign-Up Before Checkout
 
-Specifically check:
+Implement and test the following exact customer journey:
 
-```text
-Admin API URL
-Storefront API URL
+**Browse Products → Add to Cart → Proceed to Checkout → Sign Up or Log In → Enter Delivery Details → Review Order → Select UPI/Razorpay → Complete Payment → Verify Payment → Confirm Order.**
 
-Admin database
-Storefront database
+Requirements:
 
-Admin environment
-Storefront environment
-```
+* Customers may browse the website and add products to their cart without signing in.
+* When proceeding to checkout, customers who are not authenticated must sign up or log in.
+* Google sign-in must work.
+* Preserve the cart during authentication.
+* After login, return the customer to checkout with the original cart contents.
+* Collect and validate all required delivery and contact information.
+* Calculate product totals, discounts, delivery fees, and final payable amount correctly.
+* Recalculate and validate prices on the backend rather than trusting browser-submitted totals.
+* Check product availability and inventory before accepting the order.
+* Prevent customers from accessing another customer's order details.
+* Make checkout responsive and functional on mobile, tablet, and desktop.
 
-A critical possible failure is:
+An unauthenticated customer must not be able to bypass the required sign-up or login step by directly accessing checkout APIs.
 
-```text
-ADMIN
-↓
-Database A
+## 8. Verify Razorpay Live Mode and UPI Payments
 
-STOREFRONT
-↓
-Database B
-```
+Audit the existing Razorpay integration and determine whether it is configured for Test Mode or Live Mode.
 
-If this is happening, identify it clearly.
+Verify the real configuration of the authorized merchant account, without exposing any secret credentials.
 
----
+Check:
 
-# 11. Check Image Retrieval
+* Correct live Key ID and matching Key Secret configuration.
+* Merchant account activation and eligibility for live payments.
+* UPI and other supported payment methods being enabled.
+* Secure server-side Razorpay order creation.
+* Correct order ID, amount, and currency.
+* Checkout initialization on desktop and mobile.
+* Payment success, failure, cancellation, timeout, and retry handling.
+* Server-side payment signature verification.
+* Authenticated webhook processing.
+* Payment status verification through a trusted server-side mechanism.
+* Correct storage of payment references and transaction status in MongoDB.
 
-Once the product API returns a product, verify whether the image information is included.
+**Important security and payment rules:**
 
-Trace:
+1. Never mark an order as paid based only on a frontend success redirect.
+2. Verify the Razorpay payment signature server-side.
+3. Verify payment status through the appropriate trusted gateway mechanism.
+4. Validate the amount, currency, gateway order ID, and associated application order.
+5. Verify webhook signatures and process duplicate webhook deliveries idempotently.
+6. Prevent failed or unverified payments from becoming paid orders.
+7. Never expose the Key Secret, webhook secret, or private merchant credentials in frontend code, logs, or GitHub.
+8. Do not claim that Live payments work simply because the live credentials exist.
+9. If merchant activation, KYC, UPI enablement, or configuration requires action in the Razorpay Dashboard, report the exact blocker.
 
-```text
-Database Image
-↓
-Backend Product Query
-↓
-API Response
-↓
-Frontend Product Object
-↓
-Image Component
-↓
-Image URL
-↓
-Browser
-```
+Use the authorized Razorpay merchant account only.
 
-Determine:
+First run Test Mode scenarios. Then, if the account is active and the account owner approves, perform a controlled low-value live transaction to verify the actual production payment flow. Never initiate a charge without explicit authorization.
 
-* Is the image URL present?
-* Is the URL correct?
-* Is it public?
-* Does it expire?
-* Does it require authentication?
-* Is the storage bucket private?
-* Is the frontend using the correct image field?
-* Is there a URL transformation issue?
-* Is CORS blocking the image?
-* Is the frontend constructing an incorrect relative URL?
+## 9. Fix Order Creation and Order Management
 
----
+After a payment is successfully verified, ensure the order is recorded correctly in MongoDB.
 
-# 12. Check Frontend Rendering
+Verify that every order contains the necessary information supported by the existing application:
 
-Only after verifying the API response, inspect the frontend.
+* Unique order number.
+* Authenticated customer reference.
+* Product IDs and item details.
+* Product names, SKUs, quantities, and purchase-price snapshots.
+* Shipping and contact information.
+* Subtotal, discount, shipping charge, and final total.
+* Payment gateway order ID and payment ID.
+* Payment and fulfilment status.
+* Creation and modification timestamps.
 
-If the storefront API returns:
+Ensure that:
 
-```text
-0 products
-```
+* Customers receive a correct order confirmation.
+* Orders appear in customer order history.
+* Authorized administrators can view orders in the admin dashboard.
+* Inventory updates follow the existing stock-management rules.
+* Duplicate clicks, retries, refreshes, and duplicate webhooks do not create duplicate paid orders.
+* Failed payments do not appear as successful payments.
+* A successful payment followed by a database failure can be reconciled instead of losing the order.
 
-continue backward and find why.
+Test the entire order lifecycle, including pending payment, successful payment, failure, cancellation, and reconciliation.
 
-If the storefront API returns products but the UI shows nothing, investigate:
+## 10. Remove All Production Dependencies on Local Storage or Local Servers
 
-* State management
-* API response parsing
-* Product mapping
-* Filters
-* Empty-state logic
-* Pagination
-* Product cards
-* Category filtering
-* Search filtering
-* Loading state
-* Error state
-* Product routes
-
-Do not simply remove filters without understanding why they exist.
-
----
-
-# 13. Check Caching
-
-Investigate whether the storefront is showing stale data because of:
-
-* Browser cache
-* Next.js cache
-* ISR
-* SSR cache
-* React Query
-* SWR
-* API caching
-* CDN
-* Server-side caching
-* Database query caching
-
-Test the product API using a fresh request.
-
-Determine whether a newly published product is immediately available from the backend API.
-
----
-
-# 14. Check Permissions / RLS
-
-If the application uses Supabase, Firebase, PostgreSQL RLS, or another permission system, inspect the relevant policies.
-
-Verify:
-
-```text
-Admin:
-Can create/update/publish products
-
-Customer:
-Can read published products
-
-Customer:
-Cannot modify products
-```
-
-Check whether anonymous/public users are allowed to read published products.
-
-Also check image/storage permissions.
-
----
-
-# 15. Search for Hardcoded or Mock Product Data
-
-Search the entire project for:
-
-```text
-mockProducts
-sampleProducts
-dummyProducts
-products = [...]
-staticProducts
-demoProducts
-fakeProducts
-```
-
-Determine whether the storefront is accidentally reading from static/mock data instead of the real database.
-
-The storefront must use the actual product API/database.
-
----
-
-# 16. Search for Multiple Product Models or APIs
+This is a mandatory production requirement.
 
 Search the project for:
 
-```text
-products
-product
-productService
-productApi
-productRepository
-productStore
-productController
-productModel
-```
+* `localhost`
+* `127.0.0.1`
+* Local MongoDB connection strings.
+* Hardcoded development API endpoints.
+* Local product or order JSON files.
+* Filesystem-based image uploads.
+* Local image URLs and temporary paths.
+* In-memory arrays used as permanent storage.
+* Development-only authentication and payment callbacks.
 
-Determine whether there are multiple competing product systems.
+Investigate each result and determine whether it is a legitimate development configuration or a production defect.
 
-For example:
+The deployed production system must use:
 
-```text
-Admin uses ProductService A
+* Vercel-hosted frontend and compatible deployed backend/API routes.
+* Cloud MongoDB for persistent application records.
+* Persistent cloud image storage for product images.
+* Secure production environment variables.
+* Correct production authentication callbacks.
+* Reachable HTTPS payment webhooks and return URLs.
 
-Storefront uses ProductService B
-```
+No production-critical feature may require my MacBook or local development server to remain online.
 
-or:
+Local development can remain available for coding and testing, but production data must never depend on it. Use separate Development, Preview, and Production configurations where appropriate.
 
-```text
-Admin writes to /api/admin/products
+## 11. Verify Vercel and GoDaddy Deployment
 
-Storefront reads from /api/store/products
-```
+Inspect the actual integration and make necessary corrections.
 
-Verify that both ultimately use the same persistent source of truth.
+Verify:
 
----
+* Correct GitHub repository connected to Vercel.
+* Correct production branch and deployment workflow.
+* Valid build and framework configuration.
+* Production environment variables are configured for the correct environment.
+* Latest approved code has been deployed successfully.
+* No build failures or critical runtime errors remain.
+* Custom domain and SSL work correctly.
+* Production APIs and serverless functions are reachable.
+* Cloud database and image storage work in the deployed environment.
+* No required production secret is missing.
+* Deployment and runtime logs show no unresolved critical issue.
 
-# 17. Do NOT Fix Anything Yet
+Do not overwrite existing environment variables or modify unrelated DNS records blindly. Preserve working settings and make targeted changes.
 
-First provide a diagnostic report.
+## 12. Perform a Security Audit
 
-I want you to tell me:
+Review the application against the current OWASP Top 10 and relevant API security risks.
 
-### ROOT CAUSE
+Inspect and address:
 
-Exactly why products created in the backend are not appearing on the frontend.
+* Broken access control and admin authorization.
+* Authentication/session security.
+* Injection attacks, including NoSQL injection.
+* Cross-site scripting.
+* CSRF risks where applicable.
+* Unsafe file uploads.
+* Rate limiting for login and sensitive operations.
+* Unauthorized order access.
+* Payment verification vulnerabilities.
+* Exposed secrets and sensitive error messages.
+* Insecure dependency or deployment configurations.
 
-### PRODUCT DATA STORAGE
+Validate all untrusted inputs server-side. Use proper authorization checks on product, user, order, and payment APIs.
 
-Where product information is currently stored.
+Do not log passwords, secret keys, complete connection strings, or unnecessary sensitive payment information.
 
-### IMAGE STORAGE
+## 13. Mandatory Production Test Plan
 
-Where uploaded images are currently stored.
+Run appropriate automated tests and live integration checks. Do not mark a test as passed unless it has actually been executed.
 
-### DATABASE
+### Test A — Product Publishing
 
-Which database/table/collection stores the product.
+1. Create a test product from the admin dashboard.
+2. Upload multiple product images.
+3. Save and publish the product.
+4. Verify the record in cloud MongoDB.
+5. Verify the image files in persistent cloud storage.
+6. Open the live storefront and confirm the correct product appears.
+7. Edit product details, price, inventory, and image.
+8. Confirm updates persist after refresh and redeployment.
+9. Unpublish the product and confirm it is no longer publicly available.
 
-### IMAGE STORAGE
+### Test B — Domain and Cloud Storage
 
-Which bucket/folder/provider stores the images.
+1. Open `https://mitrends.co.in`.
+2. Verify the SSL certificate and redirect behaviour.
+3. Inspect public links and canonical URLs for unwanted Vercel URLs.
+4. Verify the production API endpoints.
+5. Confirm product records and images are loaded from cloud services.
+6. Confirm the application continues functioning without the local development server.
+7. Recheck persistence after a Vercel deployment.
 
-### PUBLISH FLOW
+### Test C — Google Authentication
 
-What actually happens when Publish is clicked.
+1. Register or sign in through Google.
+2. Verify the production OAuth callback.
+3. Test refresh, session persistence, and logout.
+4. Attempt checkout while logged out.
+5. Verify that sign-up or login is required.
+6. Verify that the cart remains intact after login.
 
-### STOREFRONT API
+### Test D — Checkout
 
-Which API retrieves products.
+1. Add an available product to the cart.
+2. Log in and enter valid shipping details.
+3. Check product quantities, prices, discounts, and delivery charges.
+4. Test insufficient inventory and invalid data.
+5. Confirm that the server validates the final amount and stock.
 
-### FRONTEND
+### Test E — Razorpay
 
-Why the frontend currently shows zero products.
+1. Test payment success in Test Mode.
+2. Test failure, cancellation, and retry scenarios.
+3. Test invalid payment signatures.
+4. Test duplicate webhook delivery.
+5. Verify that unpaid orders are not marked as paid.
+6. If authorized and technically ready, make a controlled Live Mode payment.
+7. Verify the transaction in the Razorpay Dashboard and application database.
+8. Verify that the customer and administrator can see the resulting order.
 
-### ENVIRONMENT
+### Test F — Full End-to-End Purchase
 
-Whether admin and storefront use the same environment/database.
+Execute this exact workflow:
 
----
+**Admin publishes a product → Customer opens mitrends.co.in → Adds the product to the cart → Signs in using Google → Completes checkout → Selects an enabled UPI/Razorpay payment method → Payment is verified → Order is saved in cloud MongoDB → Customer sees confirmation → Administrator sees the order.**
 
-# 18. Show Me the Actual Data Flow
+For each step, record the actual outcome and evidence.
 
-After investigation, provide a diagram similar to:
+## 14. Fix, Deploy and Re-Test
 
-```text
-ADMIN DASHBOARD
-      ↓
-Product Form
-      ↓
-Create Product API
-      ↓
-Database
-      ↓
-Product ID
-      ↓
-Image Upload
-      ↓
-Storage Bucket
-      ↓
-Image URL / Asset ID
-      ↓
-Product Image Record
-      ↓
-Publish API
-      ↓
-Database Status Update
-      ↓
-Storefront Product API
-      ↓
-Published Product Query
-      ↓
-Frontend
-      ↓
-Product Card
-      ↓
-Product Detail Page
-```
+Follow this implementation sequence:
 
-Mark exactly where the current flow breaks.
+1. Inspect the codebase and map the existing architecture.
+2. Identify confirmed issues and root causes.
+3. Fix product persistence and cloud image uploads.
+4. Fix frontend product fetching and publishing.
+5. Fix domain, DNS-related configuration, redirects, and production URLs.
+6. Fix Google authentication and checkout restrictions.
+7. Fix Razorpay order creation, payment verification, and webhooks.
+8. Validate production environment variables without exposing secrets.
+9. Run tests, linting, and production build checks.
+10. Back up production data and establish a rollback point before risky changes.
+11. Deploy through the existing GitHub/Vercel workflow.
+12. Verify the deployed website and re-run end-to-end tests.
 
----
+Do not delete existing production data, rewrite the whole application unnecessarily, or remove working features without evidence and authorization.
 
-# 19. Test With One Real Product
+If a task requires access to GoDaddy, Vercel, MongoDB Atlas, Google Cloud Console, or Razorpay that you do not have, complete the code-level tasks that you can and report the exact external action required. Never claim to have changed a dashboard or verified a payment when you have not.
 
-Use a completely new test product.
+## 15. Final Report — Mandatory
 
-Example:
+After completing the audit and implementation, return a report with the following sections.
 
-```text
-Product Name: Publishing Test Product
-Price: 999
-Stock: 10
-Category: Test Category
-Image: newly uploaded test image
-```
+**A. Issues Found:** Exact problem, root cause, and severity.
 
-Then test:
+**B. Fixes Implemented:** Files modified, APIs corrected, database changes, image storage changes, authentication fixes, checkout changes, and payment fixes.
 
-```text
-Create
-↓
-Save
-↓
-Database verification
-↓
-Image storage verification
-↓
-Publish
-↓
-Database verification
-↓
-Storefront API
-↓
-Frontend
-```
+**C. Domain and Deployment:** Custom domain status, SSL status, Vercel deployment result, GoDaddy DNS findings, and production API status.
 
-Do not declare success just because the admin dashboard displays:
+**D. Cloud Persistence:** Confirmed database, image-storage configuration, product persistence results, and remaining issues.
 
-**"Product published successfully."**
+**E. End-to-End Test Results:** Mark each test as PASS, FAIL, BLOCKED, or NOT TESTED. Include actual evidence such as HTTP responses, sanitized logs, test output, database verification, or gateway dashboard results.
 
-The success condition is:
+**F. Payment Status:** Google authentication result, checkout result, Razorpay Test Mode result, Razorpay Live Mode result, UPI availability, payment verification, order creation, and admin order visibility.
 
-```text
-Database = Published
-+
-Image = Permanently Stored
-+
-Storefront API = Product Returned
-+
-Frontend = Product Visible
-```
+**G. Remaining Actions:** List only unresolved problems or the exact actions that require my account-owner approval or external dashboard access.
 
----
+Never include API secrets, passwords, private keys, or database connection-string credentials in the report.
 
-# 20. Important Rule
+## FINAL ACCEPTANCE CRITERIA
 
-Do NOT:
+The website is ready for live customers only when the following requirements are verified:
 
-* Hardcode products
-* Add mock products
-* Force draft products onto the frontend
-* Remove publication filters blindly
-* Fake API responses
-* Fake successful publishing
-* Bypass authentication
-* Disable security/RLS
-* Store product information only in frontend state
-* Store images only as temporary preview URLs
-* Create a second unnecessary database
-* Hide the actual error
+* All admin product creation and editing operations persist in cloud MongoDB.
+* Product images are stored in persistent cloud image storage.
+* Product publishing and frontend fetching work correctly.
+* No production data or operation depends on my local computer or local server.
+* `https://mitrends.co.in` works with valid HTTPS and consistent redirects.
+* Google authentication works on the production domain.
+* Customers must sign up or log in before checkout.
+* Razorpay payment orders are created securely and payments are verified server-side.
+* UPI availability is confirmed for the actual merchant account.
+* Successful payments create consistent cloud orders.
+* Failed or unverified payments cannot be marked as paid.
+* Customers and authorized administrators can access their respective order information.
+* The application builds and deploys successfully.
+* All unresolved account, configuration, or deployment blockers are reported transparently.
 
-The objective is to find the **real architectural/root-cause problem**.
-
----
-
-# FINAL OUTPUT REQUIRED
-
-After completing the investigation, provide a concise report with:
-
-1. **Exact root cause**
-2. **Where product data is currently stored**
-3. **Where product images are currently stored**
-4. **Database table/collection**
-5. **Storage bucket/path/provider**
-6. **Product creation API**
-7. **Publish API**
-8. **Storefront product API**
-9. **Exact point where the data flow breaks**
-10. **Why the frontend currently shows no products**
-11. **Admin vs storefront environment comparison**
-12. **Relevant files/components**
-13. **Recommended fix**
-14. **Any database/schema changes required**
-15. **Any image-storage changes required**
-16. **End-to-end test result**
-
-Do not stop at the first error.
-
-Trace the product from:
-
-**Admin → Database → Image Storage → Publish → Storefront API → Frontend**
-
-and identify the exact reason why the product is not appearing on the frontend.
+**Execute this as a real engineering audit and implementation task, not just a code review. Fix the actual problems, deploy the approved changes, verify the live workflow, and provide evidence for every claimed success. My final goal is to launch MI Trends as a stable, secure, fully cloud-hosted e-commerce website ready for real customers.**

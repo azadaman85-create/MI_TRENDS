@@ -20,9 +20,14 @@ export async function GET(request: Request) {
       {
         headers: {
           "x-request-id": requestId,
-          // Short shared cache: a publish shows up within a minute without every
-          // shopper hitting the database, and stale-while-revalidate keeps it instant.
-          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+          /*
+            Not cached. The storefront reads the catalogue server-side in the layout, so
+            nothing in the app depends on this endpoint being fast — but a shared cache
+            here meant a product published in the panel was still missing from the API a
+            minute later, which reads as a bug every time. A single indexed query over a
+            catalogue this size is not worth that confusion.
+          */
+          "Cache-Control": "no-store",
         },
       },
     );
