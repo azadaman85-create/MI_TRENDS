@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 import { ADMIN_SESSION_COOKIE, readAdminSessionToken } from "@/lib/admin/session.server";
 import { logSecurityEvent } from "@/lib/security/events";
 import { clientIpFrom } from "@/lib/security/rate-limit";
+import { PATHNAME_HEADER } from "@/lib/request-path";
 import { REQUEST_ID_HEADER, requestIdFrom } from "@/lib/security/request-id";
 
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -66,6 +67,9 @@ export function proxy(request: NextRequest) {
 
   const forwardedHeaders = new Headers(request.headers);
   forwardedHeaders.set(REQUEST_ID_HEADER, requestId);
+  // generateMetadata has no access to the current route, so the canonical URL would
+  // otherwise have to be hardcoded. Passing the path through is the supported way.
+  forwardedHeaders.set(PATHNAME_HEADER, pathname);
   response = NextResponse.next({ request: { headers: forwardedHeaders } });
   response.headers.set(REQUEST_ID_HEADER, requestId);
   return response;

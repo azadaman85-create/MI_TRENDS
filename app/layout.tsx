@@ -58,7 +58,6 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     images: ["/images/logo-email.png"],
   },
-  alternates: { canonical: "/" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
